@@ -16,6 +16,7 @@ static unsigned draft_style, draft_color;
 static uint16_t face_year = 2026;
 static uint8_t face_month = 10, face_day = 4, face_hour, face_minute, face_second;
 static bool face_twelve;
+static bool face_clock_valid = true;
 static const uint32_t accents[] = {0xFFA9C6, 0x94E8C5, 0x92CFFF};
 static const uint32_t ink_accents[] = {0xA73C67, 0x20725F, 0x315E9D};
 static const char *style_names[] = {"Pastel", "Neon", "Klasik"};
@@ -149,6 +150,16 @@ void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
 {
     face_year = year; face_month = month; face_day = day;
     face_hour = hour; face_minute = minute; face_second = second; face_twelve = twelve_hour;
+    if(!face_clock_valid) {
+        for(unsigned i = 0; i < 2; ++i) {
+            lv_label_set_text(face_clock[i], "--:--");
+            lv_label_set_text(mini_clocks[i], "--:--");
+            lv_label_set_text(period_labels[i], "");
+        }
+        lv_label_set_text(seconds_label, "--");
+        for(unsigned i = 0; i < FACE_COUNT; ++i) lv_label_set_text(face_date[i], "SAATI AYARLAYIN");
+        return;
+    }
     unsigned h = twelve_hour ? (hour % 12 ? hour % 12 : 12) : hour;
     char value[40]; snprintf(value, sizeof value, "%02u:%02u", h, minute);
     for(unsigned i = 0; i < 2; ++i) {
@@ -163,6 +174,17 @@ void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
     update_hand(second_hand, hand_points[2], second * 6, 240, 225, 134, 24);
     update_hand(mini_hands[0], mini_hand_points[0], (hour % 12) * 30 + minute * .5f, 50, 50, 21, 0);
     update_hand(mini_hands[1], mini_hand_points[1], minute * 6, 50, 50, 34, 0);
+}
+void watch_faces_set_clock_valid(bool valid)
+{
+    face_clock_valid = valid;
+    lv_obj_t *hands[] = {hour_hand, minute_hand, second_hand, mini_hands[0], mini_hands[1]};
+    for(unsigned i = 0; i < sizeof hands / sizeof hands[0]; ++i) {
+        if(valid) lv_obj_remove_flag(hands[i], LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_add_flag(hands[i], LV_OBJ_FLAG_HIDDEN);
+    }
+    watch_faces_set_datetime(face_year, face_month, face_day, face_hour, face_minute, face_second, face_twelve);
+    watch_faces_refresh();
 }
 void watch_faces_set_battery(uint8_t percent, bool valid)
 {
@@ -179,8 +201,9 @@ void watch_faces_refresh(void)
 {
     if(!neon_ring) return;
     unsigned ml = watch_data.water[0].ml, goal = watch_data.water_goal;
-    unsigned progress = ml >= goal ? 100 : ml * 100 / goal;
+    unsigned progress = !face_clock_valid ? 0 : ml >= goal ? 100 : ml * 100 / goal;
     char value[48]; snprintf(value, sizeof value, "%u / %u ml", ml, goal);
+    if(!face_clock_valid) snprintf(value, sizeof value, "Saat ayari gerekli");
     for(unsigned i = 0; i < FACE_COUNT; ++i) lv_label_set_text(face_water[i], value);
     lv_obj_set_width(pastel_progress, progress ? progress * 226 / 100 : 1);
     lv_arc_set_value(neon_ring, progress); lv_arc_set_value(mini_ring, progress);
@@ -190,7 +213,8 @@ void watch_faces_refresh(void)
         unsigned distance = (target + 1440 - face_hour * 60 - face_minute) % 1440;
         if(distance < closest) { closest = distance; next_alarm = i; }
     }
-    if(next_alarm >= 0) snprintf(value, sizeof value, "Alarm  %02u:%02u", watch_data.alarms[next_alarm].hour, watch_data.alarms[next_alarm].minute);
+    if(!face_clock_valid) snprintf(value, sizeof value, "Alarm icin saati ayarlayin");
+    else if(next_alarm >= 0) snprintf(value, sizeof value, "Alarm  %02u:%02u", watch_data.alarms[next_alarm].hour, watch_data.alarms[next_alarm].minute);
     else snprintf(value, sizeof value, "Alarm kapali");
     for(unsigned i = 0; i < 2; ++i) lv_label_set_text(face_alarm[i], value);
 }

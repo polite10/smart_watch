@@ -4,12 +4,19 @@
 #include <string.h>
 #include "watch_model.h"
 #include "watch_faces.h"
+#include "watch_clock.h"
+#include "build_time.h"
 
 enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR,
-       NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, SCREEN_COUNT };
+       NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, SCREEN_COUNT };
 static lv_obj_t *screens[SCREEN_COUNT];
 static lv_obj_t *calendar, *format_button_label, *theme_button_label;
 static lv_obj_t *day_label, *rtc_source_label;
+static lv_obj_t *clock_day, *clock_month, *clock_year, *clock_hour, *clock_minute;
+static lv_obj_t *clock_hint, *clock_result, *clock_status_label;
+static bool ui_clock_valid;
+static void clock_editor_init(void);
+static void clock_editor_open(void);
 static bool twelve_hour, light_theme;
 static void apps_init(void);
 static void apps_refresh(void);
@@ -29,6 +36,7 @@ static void navigate(lv_event_t *e)
 {
     unsigned screen = (unsigned)(uintptr_t)lv_event_get_user_data(e);
     if(screen == FACES) watch_faces_open();
+    else if(screen == CLOCK_EDIT) clock_editor_open();
     else lv_screen_load(screens[screen]);
 }
 static lv_obj_t *button_at(lv_obj_t *parent, const char *text, int x, int y,
@@ -114,22 +122,25 @@ void watch_ui_init(void)
     lv_obj_add_event_cb(calendar, selected_date, LV_EVENT_VALUE_CHANGED, NULL);
     day_label = label_at(screens[2], "Bir gun secin", 380, &lv_font_montserrat_16);
     button_at(screens[2], LV_SYMBOL_LEFT "  Geri", 0, 413, 110, navigate, (void *)(uintptr_t)1);
-    label_at(screens[3], "AYARLAR", 80, &lv_font_montserrat_24);
-    format_button_label = button_at(screens[3], "Saat bicimi: 24 saat", 0, 160, 278, format_clicked, NULL);
-    theme_button_label = button_at(screens[3], "Tema: Koyu", 0, 226, 278, theme_clicked, NULL);
-    button_at(screens[SETTINGS], "Saat arayuzleri", 0, 292, 278, navigate, (void *)(uintptr_t)FACES);
-    rtc_source_label = label_at(screens[SETTINGS], "RTC", 354, &lv_font_montserrat_16);
-    button_at(screens[3], LV_SYMBOL_LEFT "  Geri", 0, 395, 110, navigate, (void *)(uintptr_t)1);
+    label_at(screens[SETTINGS], "AYARLAR", 61, &lv_font_montserrat_24);
+    button_at(screens[SETTINGS], "Saat ve tarih ayarla", 0, 108, 278, navigate, (void *)(uintptr_t)CLOCK_EDIT);
+    format_button_label = button_at(screens[SETTINGS], "Saat bicimi: 24 saat", 0, 170, 278, format_clicked, NULL);
+    theme_button_label = button_at(screens[SETTINGS], "Tema: Koyu", 0, 232, 278, theme_clicked, NULL);
+    button_at(screens[SETTINGS], "Saat arayuzleri", 0, 294, 278, navigate, (void *)(uintptr_t)FACES);
+    rtc_source_label = label_at(screens[SETTINGS], "RTC", 352, &lv_font_montserrat_14);
+    clock_status_label = label_at(screens[SETTINGS], "Saat ayari gerekli", 377, &lv_font_montserrat_14);
+    button_at(screens[SETTINGS], LV_SYMBOL_LEFT "  Geri", 0, 411, 110, navigate, (void *)(uintptr_t)MENU);
     lv_label_set_text(format_button_label, twelve_hour ? "Saat bicimi: 12 saat" : "Saat bicimi: 24 saat");
     lv_label_set_text(theme_button_label, light_theme ? "Tema: Acik" : "Tema: Koyu");
     apps_init();
+    clock_editor_init();
     refresh_time();
     lv_screen_load(screens[0]);
 }
 void watch_ui_set_datetime(uint16_t year, uint8_t month, uint8_t day,
                            uint8_t hour, uint8_t minute, uint8_t second)
 {
-    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+    if(!ui_clock_valid || !watch_datetime_valid(year,month,day,hour,minute,second)) return;
     current_year = year; current_month = month; current_day = day;
     current_hour = hour; current_minute = minute; current_second = second;
     refresh_time();
@@ -147,6 +158,83 @@ void watch_ui_set_rtc_source(bool crystal)
     lv_label_set_text(rtc_source_label, crystal ? "Saat: LSE kristal" : "Saat: LSI / zaman kayabilir");
 }
 
+static void clock_options(lv_obj_t *roller, unsigned first, unsigned count, bool year)
+{
+    char options[512]={0};
+    for(unsigned i=0; i<count; ++i) {
+        char value[8];
+        snprintf(value,sizeof value,year ? "%04u%s" : "%02u%s",first+i,i+1==count ? "" : "\n");
+        strcat(options,value);
+    }
+    lv_roller_set_options(roller,options,LV_ROLLER_MODE_NORMAL);
+}
+static void clock_date_changed(lv_event_t *e)
+{
+    (void)e;
+    unsigned selected=lv_roller_get_selected(clock_day);
+    unsigned days=watch_days_in_month(2000+lv_roller_get_selected(clock_year),1+lv_roller_get_selected(clock_month));
+    clock_options(clock_day,1,days,false);
+    lv_roller_set_selected(clock_day,selected<days ? selected : days-1,LV_ANIM_OFF);
+    lv_label_set_text(clock_result, "Kaydet: saniye 00 olur.");
+}
+static void clock_editor_open(void)
+{
+    uint16_t year=ui_clock_valid ? current_year : BUILD_YEAR;
+    uint8_t month=ui_clock_valid ? current_month : BUILD_MONTH;
+    uint8_t day=ui_clock_valid ? current_day : BUILD_DAY;
+    lv_roller_set_selected(clock_year,year-2000,LV_ANIM_OFF);
+    lv_roller_set_selected(clock_month,month-1,LV_ANIM_OFF);
+    clock_date_changed(NULL);
+    lv_roller_set_selected(clock_day,day-1,LV_ANIM_OFF);
+    lv_roller_set_selected(clock_hour,ui_clock_valid ? current_hour : 0,LV_ANIM_OFF);
+    lv_roller_set_selected(clock_minute,ui_clock_valid ? current_minute : 0,LV_ANIM_OFF);
+    lv_label_set_text(clock_hint, ui_clock_valid ? "Telefonunuzdaki saat ve tarihi girin.\nSaat bicimi: 24 saat" : "Saat bilinmiyor. Telefonunuza bakin.\nPrizden saat bilgisi alinmaz.");
+    lv_label_set_text(clock_result, "Kaydet: saniye 00 olur.");
+    lv_screen_load(screens[CLOCK_EDIT]);
+}
+static void clock_save(lv_event_t *e)
+{
+    (void)e;
+    if(!watch_clock_set_datetime(2000+lv_roller_get_selected(clock_year),1+lv_roller_get_selected(clock_month),
+        1+lv_roller_get_selected(clock_day),lv_roller_get_selected(clock_hour),lv_roller_get_selected(clock_minute),0)) {
+        lv_label_set_text(clock_result,"Saat kaydedilemedi. Tekrar deneyin.");
+        return;
+    }
+    lv_screen_load(screens[HOME]);
+}
+static lv_obj_t *clock_roller(int x,int y,int width,unsigned first,unsigned count,bool year)
+{
+    lv_obj_t *roller=lv_roller_create(screens[CLOCK_EDIT]);
+    lv_obj_set_style_text_font(roller,&lv_font_montserrat_16,LV_PART_MAIN);
+    lv_obj_set_style_text_font(roller,&lv_font_montserrat_16,LV_PART_SELECTED);
+    lv_obj_set_style_text_line_space(roller,6,LV_PART_MAIN);
+    clock_options(roller,first,count,year);
+    lv_roller_set_visible_row_count(roller,3);
+    lv_obj_set_width(roller,width);
+    lv_obj_align(roller,LV_ALIGN_TOP_MID,x,y);
+    return roller;
+}
+static void clock_editor_init(void)
+{
+    label_at(screens[CLOCK_EDIT],"SAAT VE TARIH",47,&lv_font_montserrat_24);
+    clock_hint=label_at(screens[CLOCK_EDIT],"",83,&lv_font_montserrat_14);
+    lv_obj_set_width(clock_hint,330); lv_obj_set_style_text_align(clock_hint,LV_TEXT_ALIGN_CENTER,0);
+    label_at(screens[CLOCK_EDIT],"GUN       AY           YIL",120,&lv_font_montserrat_14);
+    clock_day=clock_roller(-96,144,72,1,31,false);
+    clock_month=clock_roller(-16,144,72,1,12,false);
+    clock_year=clock_roller(88,144,98,2000,100,true);
+    lv_obj_add_event_cb(clock_month,clock_date_changed,LV_EVENT_VALUE_CHANGED,NULL);
+    lv_obj_add_event_cb(clock_year,clock_date_changed,LV_EVENT_VALUE_CHANGED,NULL);
+    label_at(screens[CLOCK_EDIT],"SAAT          DAKIKA",237,&lv_font_montserrat_14);
+    clock_hour=clock_roller(-56,259,82,0,24,false);
+    clock_minute=clock_roller(56,259,82,0,60,false);
+    label_at(screens[CLOCK_EDIT],":",282,&lv_font_montserrat_24);
+    clock_result=label_at(screens[CLOCK_EDIT],"",349,&lv_font_montserrat_14);
+    lv_obj_set_width(clock_result,330); lv_obj_set_style_text_align(clock_result,LV_TEXT_ALIGN_CENTER,0);
+    button_at(screens[CLOCK_EDIT],"Kaydet",-67,390,122,clock_save,NULL);
+    button_at(screens[CLOCK_EDIT],"Geri",67,390,122,navigate,(void *)(uintptr_t)MENU);
+}
+
 static lv_obj_t *storage_notice, *alarm_labels[WATCH_ALARMS], *alarm_toggle_labels[WATCH_ALARMS];
 static lv_obj_t *alarm_hour, *alarm_minute, *alarm_repeat_label;
 static lv_obj_t *calc_label, *note_labels[WATCH_NOTES], *note_text, *note_hint, *note_delete_label;
@@ -158,6 +246,21 @@ static bool edit_daily, confirm_delete, calc_result;
 static char calc_expression[48];
 static int displayed_notification = -2; /* -2 none, -1 water, >=0 alarm */
 
+void watch_ui_set_clock_valid(bool valid)
+{
+    bool lost=ui_clock_valid && !valid;
+    ui_clock_valid=valid;
+    watch_faces_set_clock_valid(valid);
+    lv_label_set_text(clock_status_label, valid ? "Saat ayarlandi" : "Saat ayari gerekli");
+    if(!valid) {
+        lv_calendar_set_today_date(calendar,0,0,0);
+        lv_obj_add_flag(notification,LV_OBJ_FLAG_HIDDEN);
+        displayed_notification=-2;
+        if(lost || lv_screen_active()==screens[HOME]) clock_editor_open();
+    }
+    apps_refresh();
+}
+
 static void save_data(void)
 {
     bool ok = watch_model_save();
@@ -165,6 +268,16 @@ static void save_data(void)
         if(ok) lv_obj_add_flag(storage_notice, LV_OBJ_FLAG_HIDDEN);
         else lv_obj_remove_flag(storage_notice, LV_OBJ_FLAG_HIDDEN);
     }
+}
+void watch_ui_datetime_changed(uint16_t year, uint8_t month, uint8_t day,
+                               uint8_t hour, uint8_t minute, uint8_t second)
+{
+    watch_model_time_changed(watch_day_key(year,month,day),
+        watch_epoch(year,month,day,hour,minute,second),hour,minute);
+    watch_ui_set_clock_valid(true);
+    watch_ui_set_datetime(year,month,day,hour,minute,second);
+    lv_calendar_set_showed_date(calendar,year,month);
+    save_data();
 }
 static void page_header(unsigned screen, const char *title, unsigned back)
 {
@@ -272,11 +385,13 @@ static void note_changed(lv_event_t *e)
 }
 static void water_add(lv_event_t *e)
 {
+    if(!ui_clock_valid) { clock_editor_open(); return; }
     watch_water_add((int)(intptr_t)lv_event_get_user_data(e));
     save_data(); apps_refresh(); notifications_refresh();
 }
 static void water_goal(lv_event_t *e)
 {
+    if(!ui_clock_valid) { clock_editor_open(); return; }
     watch_water_goal((int)(intptr_t)lv_event_get_user_data(e));
     save_data(); apps_refresh();
 }
@@ -299,7 +414,10 @@ static void notification_action(lv_event_t *e)
 }
 static void notifications_refresh(void)
 {
-    int selected = watch_alarm_next();
+    int selected = ui_clock_valid ? watch_alarm_next() : -2;
+    if(!ui_clock_valid) {
+        lv_obj_add_flag(notification,LV_OBJ_FLAG_HIDDEN); displayed_notification=-2; return;
+    }
     if(selected < 0) selected = watch_water_reminder_due() ? -1 : -2;
     if(selected == -2) {
         lv_obj_add_flag(notification, LV_OBJ_FLAG_HIDDEN);
@@ -345,9 +463,12 @@ static void apps_refresh(void)
         lv_label_set_text(note_labels[i], text);
     }
     unsigned ml = watch_data.water[0].ml, goal = watch_data.water_goal;
-    lv_arc_set_value(water_ring, ml >= goal ? 100 : ml * 100 / goal);
-    snprintf(text, sizeof text, "%u ml", ml); lv_label_set_text(water_total, text);
-    snprintf(text, sizeof text, ml >= goal ? "Hedef tamamlandi" : "Kalan: %u ml", ml >= goal ? 0 : goal - ml);
+    lv_arc_set_value(water_ring, !ui_clock_valid ? 0 : ml >= goal ? 100 : ml * 100 / goal);
+    if(ui_clock_valid) snprintf(text, sizeof text, "%u ml", ml);
+    else snprintf(text, sizeof text, "-- ml");
+    lv_label_set_text(water_total, text);
+    if(!ui_clock_valid) snprintf(text, sizeof text, "Once saat ve tarihi ayarlayin");
+    else snprintf(text, sizeof text, ml >= goal ? "Hedef tamamlandi" : "Kalan: %u ml", ml >= goal ? 0 : goal - ml);
     lv_label_set_text(water_remaining, text);
     snprintf(text, sizeof text, "Gunluk hedef: %u ml", goal); lv_label_set_text(water_goal_label, text);
     if(watch_data.reminder_minutes) snprintf(text, sizeof text, "Hatirlatma: %u dk", watch_data.reminder_minutes);

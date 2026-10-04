@@ -9,4 +9,5 @@ void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
                               uint8_t hour, uint8_t minute, uint8_t second, bool twelve_hour);
 void watch_faces_set_battery(uint8_t percent, bool valid);
 void watch_faces_refresh(void);
+void watch_faces_set_clock_valid(bool valid);
 #endif

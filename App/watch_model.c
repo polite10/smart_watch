@@ -37,6 +37,18 @@ void watch_model_init(void)
     water_due = false;
 }
 bool watch_model_save(void) { return watch_storage_save(&watch_data); }
+uint8_t watch_days_in_month(uint16_t year, uint8_t month)
+{
+    static const uint8_t days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    if(year < 2000 || year > 2099 || month < 1 || month > 12) return 0;
+    return days[month - 1] + (month == 2 && year % 4 == 0);
+}
+bool watch_datetime_valid(uint16_t year, uint8_t month, uint8_t day,
+                          uint8_t hour, uint8_t minute, uint8_t second)
+{
+    return day >= 1 && day <= watch_days_in_month(year, month) &&
+           hour < 24 && minute < 60 && second < 60;
+}
 uint32_t watch_day_key(uint16_t year, uint8_t month, uint8_t day)
 { return (uint32_t)year * 10000 + (uint32_t)month * 100 + day; }
 uint32_t watch_epoch(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second)
@@ -53,6 +65,19 @@ static void reset_reminder(void)
     water_due = false;
     next_water = watch_data.reminder_minutes ? now_seconds + watch_data.reminder_minutes * 60U : 0;
 }
+void watch_model_time_changed(uint32_t day, uint32_t now, uint8_t hour, uint8_t minute)
+{
+    /* Do not retain deadlines or ring immediately when the user sets a clock. */
+    now_seconds = now;
+    current_date = 0;
+    pending_alarms = 0;
+    memset(snooze_until, 0, sizeof snooze_until);
+    reset_reminder();
+    for(unsigned i = 0; i < WATCH_ALARMS; ++i) {
+        watch_alarm_t *a = &watch_data.alarms[i];
+        if(a->hour == hour && a->minute == minute) a->fired_day = day;
+    }
+}
 bool watch_model_tick(uint32_t day, uint32_t now, uint8_t hour, uint8_t minute)
 {
     bool changed = false;
@@ -62,8 +87,14 @@ bool watch_model_tick(uint32_t day, uint32_t now, uint8_t hour, uint8_t minute)
         current_date = day;
         /* Retain only recorded days; a gap does not fabricate consumption. */
         if(watch_data.water[0].day != day) {
-            memmove(&watch_data.water[1], &watch_data.water[0], (WATCH_HISTORY - 1) * sizeof(watch_water_day_t));
-            watch_data.water[0] = (watch_water_day_t){day, 0, watch_data.water_goal};
+            unsigned index=1;
+            while(index<WATCH_HISTORY && watch_data.water[index].day!=day) ++index;
+            /* Correcting the date back to a recorded day must retain its water. */
+            watch_water_day_t record = index<WATCH_HISTORY ? watch_data.water[index] :
+                (watch_water_day_t){day, 0, watch_data.water_goal};
+            unsigned moved=index<WATCH_HISTORY ? index : WATCH_HISTORY-1;
+            memmove(&watch_data.water[1], &watch_data.water[0], moved * sizeof(watch_water_day_t));
+            watch_data.water[0] = record;
             changed = true;
         }
         reset_reminder();

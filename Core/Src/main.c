@@ -7,10 +7,13 @@
 #include "watch_ui.h"
 #include "build_time.h"
 #include "watch_model.h"
+#include "watch_clock.h"
 
 volatile uint32_t smartwatch_status, smartwatch_heartbeat;
 volatile uint32_t smartwatch_rtc_lse;
 static RTC_HandleTypeDef rtc;
+static bool clock_valid;
+#define RTC_TIME_SET_MAGIC 0x54494D32U
 static uint32_t draw_buffer[480 * 40] __attribute__((aligned(16)));
 static void SystemClock_Config(void);
 
@@ -70,13 +73,53 @@ static void RTC_Init(void)
     if(HAL_RTC_Init(&rtc)!=HAL_OK) Error_Handler();
     if(HAL_RTCEx_BKUPRead(&rtc,RTC_BKP_DR0)!=0x53574D32) {
         RTC_TimeTypeDef t={0}; RTC_DateTypeDef d={0};
-        t.Hours=BUILD_HOUR; t.Minutes=BUILD_MINUTE; t.Seconds=BUILD_SECOND;
+        /* Neutral calendar only; a build timestamp is never trusted wall time. */
+        t.Hours=0; t.Minutes=0; t.Seconds=0;
         t.DayLightSaving=RTC_DAYLIGHTSAVING_NONE; t.StoreOperation=RTC_STOREOPERATION_RESET;
-        d.Year=BUILD_YEAR-2000; d.Month=BUILD_MONTH; d.Date=BUILD_DAY; d.WeekDay=BUILD_WEEKDAY;
+        d.Year=0; d.Month=1; d.Date=1; d.WeekDay=6;
         if(HAL_RTC_SetTime(&rtc,&t,RTC_FORMAT_BIN)!=HAL_OK ||
            HAL_RTC_SetDate(&rtc,&d,RTC_FORMAT_BIN)!=HAL_OK) Error_Handler();
         HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR0,0x53574D32);
+        HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR1,0);
     }
+    /* Old firmware's initialized marker does not imply an accurate clock. */
+    clock_valid = HAL_RTCEx_BKUPRead(&rtc,RTC_BKP_DR1) == RTC_TIME_SET_MAGIC;
+}
+bool watch_clock_is_valid(void) { return clock_valid; }
+bool watch_clock_set_datetime(uint16_t year, uint8_t month, uint8_t day,
+                              uint8_t hour, uint8_t minute, uint8_t second)
+{
+    if(!watch_datetime_valid(year, month, day, hour, minute, second)) return false;
+    RTC_TimeTypeDef t={0}; RTC_DateTypeDef d={0};
+    t.Hours=hour; t.Minutes=minute; t.Seconds=second;
+    t.DayLightSaving=RTC_DAYLIGHTSAVING_NONE; t.StoreOperation=RTC_STOREOPERATION_RESET;
+    d.Year=year-2000; d.Month=month; d.Date=day;
+    d.WeekDay=(watch_epoch(year,month,day,0,0,0)/86400U + 5U)%7U + 1U;
+    HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR1,0);
+    if(HAL_RTC_SetDate(&rtc,&d,RTC_FORMAT_BIN)!=HAL_OK ||
+       HAL_RTC_SetTime(&rtc,&t,RTC_FORMAT_BIN)!=HAL_OK) {
+        clock_valid=false;
+        watch_ui_set_clock_valid(false);
+        return false;
+    }
+    HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR1,RTC_TIME_SET_MAGIC);
+    clock_valid=true;
+    watch_ui_datetime_changed(year,month,day,hour,minute,second);
+    return true;
+}
+static void refresh_rtc(void)
+{
+    if(!clock_valid) return;
+    RTC_TimeTypeDef t={0}; RTC_DateTypeDef d={0};
+    HAL_StatusTypeDef ts=HAL_RTC_GetTime(&rtc,&t,RTC_FORMAT_BIN);
+    HAL_StatusTypeDef ds=HAL_RTC_GetDate(&rtc,&d,RTC_FORMAT_BIN);
+    if(ts!=HAL_OK || ds!=HAL_OK || !watch_datetime_valid(2000+d.Year,d.Month,d.Date,t.Hours,t.Minutes,t.Seconds)) {
+        clock_valid=false;
+        HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR1,0);
+        watch_ui_set_clock_valid(false);
+        return;
+    }
+    watch_ui_set_datetime(2000+d.Year,d.Month,d.Date,t.Hours,t.Minutes,t.Seconds);
 }
 int main(void)
 {
@@ -104,19 +147,17 @@ int main(void)
     lv_indev_set_read_cb(input,read_touch);
     watch_ui_init();
     watch_ui_set_rtc_source(smartwatch_rtc_lse != 0);
+    watch_ui_set_clock_valid(clock_valid);
     smartwatch_status=4;
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
         if(HAL_GetTick()-last_update>=1000) {
-            RTC_TimeTypeDef t; RTC_DateTypeDef d;
-            HAL_RTC_GetTime(&rtc,&t,RTC_FORMAT_BIN);
-            HAL_RTC_GetDate(&rtc,&d,RTC_FORMAT_BIN);
-            watch_ui_set_datetime(2000+d.Year,d.Month,d.Date,t.Hours,t.Minutes,t.Seconds);
+            refresh_rtc();
             last_update=HAL_GetTick();
             ++smartwatch_heartbeat;
         }
         lv_timer_handler();
-        if(watch_alarm_active()) {
+        if(clock_valid && watch_alarm_active()) {
             if((HAL_GetTick() / 300) % 2) BSP_LED_On(LED_RED);
             else BSP_LED_Off(LED_RED);
         } else BSP_LED_Off(LED_RED);

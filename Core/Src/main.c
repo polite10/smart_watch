@@ -6,8 +6,10 @@
 #include "lvgl.h"
 #include "watch_ui.h"
 #include "build_time.h"
+#include "watch_model.h"
 
 volatile uint32_t smartwatch_status, smartwatch_heartbeat;
+volatile uint32_t smartwatch_rtc_lse;
 static RTC_HandleTypeDef rtc;
 static uint32_t draw_buffer[480 * 40] __attribute__((aligned(16)));
 static void SystemClock_Config(void);
@@ -39,34 +41,41 @@ static void RTC_Init(void)
     __HAL_RCC_PWR_CLK_ENABLE();
     HAL_PWR_EnableBkUpAccess();
     RCC_OscInitTypeDef osc={0};
-    osc.OscillatorType=RCC_OSCILLATORTYPE_LSI;
-    osc.LSIState=RCC_LSI_ON;
+    /* The board has a 32.768 kHz crystal. Use it for stable alarm timing. */
+    __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_HIGH);
+    osc.OscillatorType=RCC_OSCILLATORTYPE_LSE;
+    osc.LSEState=RCC_LSE_ON;
     osc.PLL.PLLState=RCC_PLL_NONE;
-    if(HAL_RCC_OscConfig(&osc)!=HAL_OK) Error_Handler();
+    smartwatch_rtc_lse = HAL_RCC_OscConfig(&osc)==HAL_OK;
+    if(!smartwatch_rtc_lse) {
+        osc.OscillatorType=RCC_OSCILLATORTYPE_LSI;
+        osc.LSIState=RCC_LSI_ON;
+        if(HAL_RCC_OscConfig(&osc)!=HAL_OK) Error_Handler();
+    }
     RCC_PeriphCLKInitTypeDef periph={0};
     periph.PeriphClockSelection=RCC_PERIPHCLK_RTC;
-    periph.RTCClockSelection=RCC_RTCCLKSOURCE_LSI;
+    periph.RTCClockSelection=smartwatch_rtc_lse ? RCC_RTCCLKSOURCE_LSE : RCC_RTCCLKSOURCE_LSI;
     if(HAL_RCCEx_PeriphCLKConfig(&periph)!=HAL_OK) Error_Handler();
     __HAL_RCC_RTC_ENABLE();
     __HAL_RCC_RTCAPB_CLK_ENABLE();
     rtc.Instance=RTC;
     rtc.Init.HourFormat=RTC_HOURFORMAT_24;
     rtc.Init.AsynchPrediv=127;
-    rtc.Init.SynchPrediv=249;
+    rtc.Init.SynchPrediv=smartwatch_rtc_lse ? 255 : 249;
     rtc.Init.OutPut=RTC_OUTPUT_DISABLE;
     rtc.Init.OutPutRemap=RTC_OUTPUT_REMAP_NONE;
     rtc.Init.OutPutPolarity=RTC_OUTPUT_POLARITY_HIGH;
     rtc.Init.OutPutType=RTC_OUTPUT_TYPE_OPENDRAIN;
     rtc.Init.OutPutPullUp=RTC_OUTPUT_PULLUP_NONE;
     if(HAL_RTC_Init(&rtc)!=HAL_OK) Error_Handler();
-    if(HAL_RTCEx_BKUPRead(&rtc,RTC_BKP_DR0)!=0x53574D31) {
+    if(HAL_RTCEx_BKUPRead(&rtc,RTC_BKP_DR0)!=0x53574D32) {
         RTC_TimeTypeDef t={0}; RTC_DateTypeDef d={0};
         t.Hours=BUILD_HOUR; t.Minutes=BUILD_MINUTE; t.Seconds=BUILD_SECOND;
         t.DayLightSaving=RTC_DAYLIGHTSAVING_NONE; t.StoreOperation=RTC_STOREOPERATION_RESET;
         d.Year=BUILD_YEAR-2000; d.Month=BUILD_MONTH; d.Date=BUILD_DAY; d.WeekDay=BUILD_WEEKDAY;
         if(HAL_RTC_SetTime(&rtc,&t,RTC_FORMAT_BIN)!=HAL_OK ||
            HAL_RTC_SetDate(&rtc,&d,RTC_FORMAT_BIN)!=HAL_OK) Error_Handler();
-        HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR0,0x53574D31);
+        HAL_RTCEx_BKUPWrite(&rtc,RTC_BKP_DR0,0x53574D32);
     }
 }
 int main(void)
@@ -94,6 +103,7 @@ int main(void)
     lv_indev_set_type(input,LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(input,read_touch);
     watch_ui_init();
+    watch_ui_set_rtc_source(smartwatch_rtc_lse != 0);
     smartwatch_status=4;
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
@@ -106,6 +116,10 @@ int main(void)
             ++smartwatch_heartbeat;
         }
         lv_timer_handler();
+        if(watch_alarm_active()) {
+            if((HAL_GetTick() / 300) % 2) BSP_LED_On(LED_RED);
+            else BSP_LED_Off(LED_RED);
+        } else BSP_LED_Off(LED_RED);
         HAL_Delay(5);
     }
 }

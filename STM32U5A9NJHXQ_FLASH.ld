@@ -45,7 +45,8 @@ _Min_Stack_Size = 0x2000; /* required amount of stack */
 MEMORY
 {
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 2496K
-  ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 4096K
+  /* Last two 8 KB pages belong to the settings journal, never the firmware. */
+  ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 4080K
 }
 
 /* Sections */

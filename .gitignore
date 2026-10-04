@@ -1,0 +1,13 @@
+Debug/
+Release/
+Backup/
+.local/
+.metadata/
+*.launch
+*.o
+*.d
+*.su
+*.cyclo
+*.list
+*.map
+build-report.txt

@@ -1,6 +1,6 @@
 param(
     [string]$IdeRoot = 'C:\ST\STM32CubeIDE_2.2.0\STM32CubeIDE',
-    [Parameter(Mandatory=$true)][string]$SerialNumber
+    [string]$SerialNumber = '001D000E4D4B500620373831'
 )
 $ErrorActionPreference = 'Stop'
 $pluginPath = Join-Path $IdeRoot 'plugins'
@@ -11,6 +11,8 @@ if (!$programmer) { throw 'STM32CubeProgrammer araci bulunamadi.' }
 $cli = Join-Path $programmer.FullName 'tools\bin\STM32_Programmer_CLI.exe'
 $firmware = Join-Path $PSScriptRoot 'Debug\Smartwatch.elf'
 if (!(Test-Path -LiteralPath $firmware)) { throw 'Once Build.ps1 ile projeyi derleyin.' }
-& $cli -c port=SWD "sn=$SerialNumber" mode=UR -d $firmware -v -g 0x08000000
-if ($LASTEXITCODE -ne 0) { throw 'Karta yukleme basarisiz.' }
-
+Push-Location -LiteralPath (Join-Path $PSScriptRoot 'Debug')
+try {
+    & $cli -c port=SWD "sn=$SerialNumber" mode=UR -d Smartwatch.elf -v -g 0x08000000
+    if ($LASTEXITCODE -ne 0) { throw 'Karta yukleme basarisiz.' }
+} finally { Pop-Location }

@@ -1,13 +1,45 @@
-Debug/
-Release/
-Backup/
-.local/
-.metadata/
+# STM32CubeIDE generated build files and local workspaces
+/Debug/
+/Release/
+/.metadata/
+/.local/
+/.settings/*.prefs
 *.launch
 *.o
 *.d
 *.su
 *.cyclo
-*.list
+*.elf
 *.map
-build-report.txt
+*.list
+
+# Local flash backups and captured user settings
+/Backup/
+/output/*.bin
+
+# Development logs, running-process state and PDF render intermediates
+/tmp/
+/output/pdf/
+/output/build_detailed_guide.py
+/output/check_detailed_guide.py
+/output/*.log
+!/output/build-faces.log
+!/output/flash-faces.log
+!/output/verify-faces.log
+!/output/verify-features.log
+!/output/verify-reboot.log
+!/output/final-faces-status.log
+/output/*.pid
+__pycache__/
+*.pyc
+
+# Historical screenshots from the removed compass version
+/screen.png
+/output/compass.png
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key

@@ -1,0 +1,15 @@
+Smartwatch arayuz surumu — 4 Ekim 2026
+Pusula kaldirildi. Pastel, Neon, Klasik kadranlar eklendi.
+Renkler: Pembe, Mint, Mavi. Secim Uygula ile kalici kaydedilir.
+CubeIDE Debug: 0 hata, 0 uyari.
+text=559756, data=920, bss=1093600 bayt.
+Flash=560676, statik RAM=1094520 bayt.
+Yukleme ve flash dogrulamasi basarili.
+Arayuz kontrolleri: 25 gecti, 0 basarisizlik (output/verify-faces.log).
+Gorunum ve renk gercek sistem resetinde korundu.
+Onceki/sonraki 916 baytlik ayarlar birebir ayni; not, alarm ve su kayitlari korundu.
+Kadranlar gercek GFXMMU framebuffer verisinden incelendi.
+Son calisma: status=4; heartbeat 110'dan 178'e ilerledi.
+Kullanicinin Klasik / Mint secimi korundu; saat ekrani acik, firmware calisiyor.
+RTC Istanbul saatiyle yeniden esitlendi.
+Yedek: Backup/before-faces-flash.bin

@@ -1,0 +1,9 @@
+0x08008ff2 in HAL_Delay (Delay=5) at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:419
+419	  while ((HAL_GetTick() - tickstart) < wait)
+Temporary breakpoint 1 at 0x800693e: file ../Core/Src/main.c, line 112.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, refresh_rtc () at ../Core/Src/main.c:112
+112	    if(!clock_valid) return;
+CLOCK_SYNC_OK: 2026-10-04 19:30:31 Europe/Istanbul
+[Inferior 1 (Remote target) detached]

@@ -1,0 +1,61 @@
+HAL_GetTick () at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:342
+342	{
+Temporary breakpoint 1 at 0x800693e: file ../Core/Src/main.c, line 112.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, refresh_rtc () at ../Core/Src/main.c:112
+112	    if(!clock_valid) return;
+STM32 Successfully completed reset operation (System reset)
+Temporary breakpoint 2 at 0x800693e: file ../Core/Src/main.c, line 112.
+
+Temporary breakpoint 2, refresh_rtc () at ../Core/Src/main.c:112
+112	    if(!clock_valid) return;
+PASS: Application running
+PASS: Existing flash format retained
+PASS: Untrusted RTC does not use build timestamp as actual time
+PASS: Lost time opens manual editor
+PASS: Unknown time does not advance water history
+PASS: Unknown digital time hidden
+PASS: Unknown analog time hidden
+PASS: Unknown time suppresses notifications
+PASS: Water input requires valid date
+PASS: Leap day accepted
+PASS: Non-leap February rejected
+PASS: April 31 rejected
+PASS: RTC century range enforced
+PASS: Invalid hour rejected
+$1 = LV_RESULT_OK
+PASS: Month change clamps January 31 to February 28
+$2 = LV_RESULT_OK
+PASS: Leap-year editor offers February 29
+PASS: Invalid date cannot mark RTC trusted
+PASS: Manual clock apply updates hardware and UI
+PASS: Clock correction clears obsolete alarm deadlines
+PASS: Matching minute does not immediately ring or disable alarm
+PASS: Valid time restores analog hands
+PASS: All faces receive applied time
+PASS: Trusted marker written to backup domain
+PASS: Save button applies minute with zero seconds
+PASS: Save returns to clock face
+PASS: Unsaved editor changes do not alter clock
+PASS: Date correction reuses existing water record
+PASS: Other recorded day retained without duplicates
+Restoring binary file ../output/settings-before-clock-test.bin into memory (0x20000880 to 0x20000c14)
+PASS: Original persistent records restored
+STM32 Successfully completed reset operation (System reset)
+Temporary breakpoint 3 at 0x800693e: file ../Core/Src/main.c, line 112.
+
+Temporary breakpoint 3, refresh_rtc () at ../Core/Src/main.c:112
+112	    if(!clock_valid) return;
+PASS: Powered reset retains trusted RTC
+PASS: Powered reset opens saved clock face
+STM32 Successfully completed reset operation (System reset)
+Temporary breakpoint 4 at 0x800693e: file ../Core/Src/main.c, line 112.
+
+Temporary breakpoint 4, refresh_rtc () at ../Core/Src/main.c:112
+112	    if(!clock_valid) return;
+PASS: Simulated backup-marker loss leaves clock untrusted
+PASS: Simulated time loss asks for manual date and time
+TOTAL FAILURES: 0
+STATUS: 4 LSE: 1
+[Inferior 1 (Remote target) detached]

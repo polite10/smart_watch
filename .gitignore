@@ -29,6 +29,10 @@
 !/output/verify-features.log
 !/output/verify-reboot.log
 !/output/final-faces-status.log
+!/output/build-clock.log
+!/output/flash-clock.log
+!/output/verify-clock.log
+!/output/sync-clock.log
 /output/*.pid
 __pycache__/
 *.pyc

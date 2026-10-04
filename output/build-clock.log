@@ -1,0 +1,23 @@
+Opening 'Smartwatch'.
+19:28:24 **** Build of configuration Debug for project Smartwatch ****
+make -j12 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32U5A9xx -DLV_CONF_INCLUDE_SIMPLE -c -I../Core/Inc -I../App -I../Middlewares -I../Middlewares/lvgl -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I../Drivers/STM32U5xx_HAL_Driver/Inc -I../Drivers/BSP/STM32U5x9J-DK -I../Drivers/BSP/Components/Common -O0 -ffunction-sections -fdata-sections -Wall -Wno-format -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../App/watch_faces.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32U5A9xx -DLV_CONF_INCLUDE_SIMPLE -c -I../Core/Inc -I../App -I../Middlewares -I../Middlewares/lvgl -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I../Drivers/STM32U5xx_HAL_Driver/Inc -I../Drivers/BSP/STM32U5x9J-DK -I../Drivers/BSP/Components/Common -O0 -ffunction-sections -fdata-sections -Wall -Wno-format -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"App/watch_faces.d" -MT"App/watch_faces.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "App/watch_faces.o"
+arm-none-eabi-gcc "../App/watch_model.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32U5A9xx -DLV_CONF_INCLUDE_SIMPLE -c -I../Core/Inc -I../App -I../Middlewares -I../Middlewares/lvgl -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I../Drivers/STM32U5xx_HAL_Driver/Inc -I../Drivers/BSP/STM32U5x9J-DK -I../Drivers/BSP/Components/Common -O0 -ffunction-sections -fdata-sections -Wall -Wno-format -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"App/watch_model.d" -MT"App/watch_model.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "App/watch_model.o"
+arm-none-eabi-gcc "../App/watch_storage.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32U5A9xx -DLV_CONF_INCLUDE_SIMPLE -c -I../Core/Inc -I../App -I../Middlewares -I../Middlewares/lvgl -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I../Drivers/STM32U5xx_HAL_Driver/Inc -I../Drivers/BSP/STM32U5x9J-DK -I../Drivers/BSP/Components/Common -O0 -ffunction-sections -fdata-sections -Wall -Wno-format -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"App/watch_storage.d" -MT"App/watch_storage.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "App/watch_storage.o"
+arm-none-eabi-gcc "../App/watch_ui.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32U5A9xx -DLV_CONF_INCLUDE_SIMPLE -c -I../Core/Inc -I../App -I../Middlewares -I../Middlewares/lvgl -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I../Drivers/STM32U5xx_HAL_Driver/Inc -I../Drivers/BSP/STM32U5x9J-DK -I../Drivers/BSP/Components/Common -O0 -ffunction-sections -fdata-sections -Wall -Wno-format -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"App/watch_ui.d" -MT"App/watch_ui.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "App/watch_ui.o"
+arm-none-eabi-gcc -o "Smartwatch.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\omeri\OneDrive\Desktop\MERFAR~1\SMARTW~1\STM32U5A9NJHXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Smartwatch.map" -Wl,--gc-sections -static -Wl,-z,noexecstack --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Smartwatch.elf
+ 
+arm-none-eabi-size  Smartwatch.elf 
+arm-none-eabi-objdump -h -S Smartwatch.elf  > "Smartwatch.list"
+   text	   data	    bss	    dec	    hex	filename
+ 563788	    924	1093648	1658360	 194df8	Smartwatch.elf
+Finished building: default.size.stdout
+ 
+Finished building: Smartwatch.list
+ 
+
+19:28:34 Build Finished. 0 errors, 0 warnings. (took 9s.790ms)
+
+Saving workspace.

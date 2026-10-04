@@ -1,0 +1,52 @@
+0x08008158 in HAL_GetTick () at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:344
+344	}
+Temporary breakpoint 1 at 0x8003ff2: file ../App/watch_ui.c, line 132.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=16 '\020', minute=13 '\r', second=18 '\022') at ../App/watch_ui.c:132
+132	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+PASS: UI running
+PASS: Version-1 storage size retained
+$1 = LV_RESULT_OK
+$2 = LV_RESULT_OK
+PASS: Preview does not apply or save
+PASS: Reopening cancels uncommitted changes
+$3 = LV_RESULT_OK
+$4 = LV_RESULT_OK
+$5 = LV_RESULT_OK
+PASS: Face and color applied
+PASS: Only selected face visible
+PASS: Only selected face visible
+PASS: Only selected face visible
+$6 = LV_RESULT_OK
+$7 = LV_RESULT_OK
+$8 = LV_RESULT_OK
+PASS: Face and color applied
+PASS: Only selected face visible
+PASS: Only selected face visible
+PASS: Only selected face visible
+$9 = LV_RESULT_OK
+$10 = LV_RESULT_OK
+$11 = LV_RESULT_OK
+PASS: Face and color applied
+PASS: Only selected face visible
+PASS: Only selected face visible
+PASS: Only selected face visible
+PASS: 12-hour midnight display
+PASS: Afternoon marker
+PASS: Live seconds display
+PASS: Analog hour hand at 3 oclock
+PASS: Analog minute hand at 12
+$12 = LV_RESULT_OK
+PASS: Long press opens current selection
+STM32 Successfully completed reset operation (System reset)
+Temporary breakpoint 2 at 0x8003ff2: file ../App/watch_ui.c, line 132.
+
+Temporary breakpoint 2, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=16 '\020', minute=13 '\r', second=34 '"') at ../App/watch_ui.c:132
+132	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+PASS: Face and color survive hardware reset
+PASS: Saved face visible on startup
+PASS: Original face preference restored
+TOTAL FAILURES: 0
+STATUS: 4 HEARTBEAT: 0
+[Inferior 1 (Remote target) detached]

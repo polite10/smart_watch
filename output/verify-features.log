@@ -1,0 +1,41 @@
+HAL_GetTick () at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:343
+343	  return uwTick;
+Temporary breakpoint 1 at 0x80029d6: file ../App/watch_ui.c, line 161.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=15 '\017', minute=46 '.', second=32 ' ') at ../App/watch_ui.c:161
+161	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+PASS: UI running
+PASS: One glass is 200 ml
+PASS: Undo never below zero
+PASS: Consumption upper bound
+PASS: Midnight archive and reset
+PASS: Goal minimum
+PASS: Goal maximum
+PASS: No early water reminder
+PASS: Water reminder at 30 minutes
+PASS: Drinking clears reminder
+PASS: Goal completion suppresses reminders
+PASS: Quiet hours suppress water reminders
+PASS: Alarm waits for set time
+PASS: Alarm fires at set time
+PASS: Alarm does not repeat in same minute
+PASS: Daily alarm repeats next day
+PASS: Snooze waits five minutes
+PASS: Snooze fires after five minutes
+PASS: One-shot alarm disables after firing
+PASS: Leap-day timestamp
+PASS: Calculator precedence
+PASS: Calculator decimals and negatives
+PASS: Division by zero rejected
+PASS: Incomplete expression rejected
+PASS: Non-number rejected
+PASS: Overflow rejected
+PASS: Journal rotation and reload
+$1 = LV_RESULT_OK
+$2 = LV_RESULT_OK
+PASS: Note survives model reload
+Restoring binary file ../output/settings-before-tests.bin into memory (0x200003bc to 0x20000750)
+PASS: Original settings restored
+TOTAL FAILURES: 0
+[Inferior 1 (Remote target) detached]

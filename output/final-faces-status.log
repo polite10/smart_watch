@@ -1,0 +1,14 @@
+0x0800823e in HAL_Delay (Delay=5) at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:419
+419	  while ((HAL_GetTick() - tickstart) < wait)
+Temporary breakpoint 1 at 0x800409a: file ../App/watch_ui.c, line 132.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=16 '\020', minute=20 '\024', second=12 '\f') at ../App/watch_ui.c:132
+132	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+$1 = HAL_OK
+$2 = HAL_OK
+$3 = 4
+$4 = 178
+$5 = 2 '\002'
+$6 = 1 '\001'
+[Inferior 1 (Remote target) detached]

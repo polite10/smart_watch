@@ -1,0 +1,19 @@
+lv_draw_sw_blend_color_to_argb8888 (dsc=0x2026f368) at ../Middlewares/lvgl/src/draw/sw/blend/lv_draw_sw_blend_to_argb8888.c:317
+317	                    color_argb.alpha = mask[x];
+Temporary breakpoint 1 at 0x80029d6: file ../App/watch_ui.c, line 161.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=15 '\017', minute=53 '5', second=33 '!') at ../App/watch_ui.c:161
+161	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+$1 = LV_RESULT_OK
+$2 = LV_RESULT_OK
+$3 = LV_RESULT_OK
+STM32 Successfully completed reset operation (System reset)
+Temporary breakpoint 2 at 0x80029d6: file ../App/watch_ui.c, line 161.
+
+Temporary breakpoint 2, watch_ui_set_datetime (year=2026, month=10 '\n', day=4 '\004', hour=15 '\017', minute=53 '5', second=36 '$') at ../App/watch_ui.c:161
+161	    if(year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return;
+REBOOT: status=4 crystal=1 water=200 note_match=1 failures=0
+Restoring binary file ../output/settings-before-reboot.bin into memory (0x200003bc to 0x20000750)
+RESTORE: 1
+[Inferior 1 (Remote target) detached]

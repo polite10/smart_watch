@@ -56,9 +56,42 @@ kayıtları korunur. Saat fontu mevcut Montserrat bitmaplerinden türetilmiş 72
 ### RTC
 
 RTC kartın 32.768 kHz LSE kristalini kullanır. Kristal başlatılamazsa LSI'ye döner; kaynak ayarlarda gösterilir.
-İlk başlatma saati derleme anındaki İstanbul saatidir. Tam güç kesintisinde RTC korunması garanti edilmez;
-flash kayıtları korunur. Pil ölçümü henüz bağlı değildir; geçerli veri gelince kadranda gösterilir.
+Derleme zamanı artık gerçek saat olarak kabul edilmez. İlk güncellemede veya RTC yedek alanı kaybolduğunda
+**Saat ve tarih** ekranı açılır. Telefondaki tarih ve saati 24 saat biçiminde seçip **Kaydet** düğmesine basın;
+saniye 00 olur. Daha sonra **Ayarlar → Saat ve tarih ayarla** üzerinden düzeltilebilir. Geçerli aralık
+2000–2099'dur; ay ve artık yıla göre gün seçenekleri değişir. Kaydetmeden geri dönmek saati değiştirmez.
+
+Saat bilinmiyorken dijital kadran `--:--` gösterir, analog ibreler gizlenir; alarmlar, su hatırlatmaları ve
+günlük su kayıtları saat ayarlanmasını bekler. Hesap makinesi ve notlar kullanılabilir. Saati düzeltmek
+eski erteleme sürelerini temizler; ayarlanan dakikaya denk gelen alarm hemen çalmaz. Tarih daha önce
+kayıtlı bir güne döndürülürse o günün su kaydı korunur. Notlar ve tüm mevcut flash ayarları korunur.
+
+**Priz adaptörü sadece güç sağlar; güncel saat göndermez.** Wi-Fi/Bluetooth ve yedek besleme olmadan,
+tam güç kesintisinde geçen süre cihaz tarafından belirlenemez. Tekrar açılışta tarih/saat elle girilir.
+Güç açıkken sistem reseti RTC'yi korur; uygulama otomatik başlar ve tekrar derleme gerekmez.
+
+RTC yedek pili, STM32'nin `VBAT` alanındaki RTC/kristal ve yedek kayıtları ana besleme kesilince yaşatan
+küçük beslemedir; ekranı veya uygulamayı çalıştırmaz, saat doğruluğunu kalibre etmez. Piliniz olmadan bu
+sürüm kullanılabilir. STM32U5A9J-DK üzerinde SB29 varsayılan olarak VBAT'ı VDD_MCU'ya bağlar; harici pil
+eklemek kart şeması/revizyonuna uygun bağlantı ve besleme ayrımı gerektirir. VBAT'a doğrudan pil bağlamayın.
+Bkz. [STM32U5A9NJ datasheet](https://www.st.com/resource/en/datasheet/stm32u5a9nj.pdf) ve
+[UM2967 kart kılavuzu](https://www.st.com/resource/en/user_manual/um2967-discovery-kit-with-stm32u5a9nj-mcu-stmicroelectronics.pdf).
+
+Pil ölçümü henüz bağlı değildir; geçerli veri gelince kadranda gösterilir.
 Takvim ay gezinmesi ve gün seçimi sunar; etkinlik/eşitleme yoktur.
+
+### Bilgisayardan isteğe bağlı saat eşitleme
+
+Kartın **ST-LINK USB** portunu bilgisayara takın ve `./Sync-Time.ps1` çalıştırın. Betik bilgisayarın güncel
+İstanbul saatini, UI görev sınırında ST-LINK üzerinden RTC'ye aktarır ve uygulamayı çalışır durumda bırakır.
+IDE'de yeniden derleme veya firmware yükleme yapmaz; USB seri haberleşmesi/Wi-Fi/Bluetooth kullanmaz.
+Bilgisayarın kendi saatinin doğru olması gerekir. Priz adaptörüyle kullanırken bu yöntem kullanılamaz;
+kart üzerindeki manuel ayar kullanılır. Aktif IDE Debug oturumunu önce kapatın.
+
+STM32CubeIDE'nin kurulu araçları ve **karta yüklenen firmware ile eşleşen** `Debug/Smartwatch.elf` dosyası
+gereklidir. Başka bilgisayarda önce aynı kaynak sürümünü derleyip yükleyin. `-IdeRoot`, `-SerialNumber` ve
+`-Port` parametreleri desteklenir. Saat, bağlantı kurulup hedef durduktan sonra okunur; sabit zaman damgası
+kullanılmaz. İşlem sırasında kısa süreli duraklama vardır; betik harici servis kurmaz.
 
 ## Derleme ve çalıştırma
 
@@ -68,7 +101,8 @@ Run/Debug için ST-LINK ve `Debug/Smartwatch.elf` seçilir.
 
 PowerShell'den `./Build.ps1`, ardından `./Flash.ps1` çalıştırılabilir.
 Betikler Türkçe klasör yollarını destekler; Eclipse çalışma alanı geçici dizinde tutulur.
-`Core/Inc/build_time.h` her derlemede İstanbul saatiyle güncellenir.
+`Core/Inc/build_time.h` her derlemede İstanbul saatiyle güncellenir; yalnız tarih ayarı taslağının başlangıç
+değeridir, RTC'ye otomatik olarak gerçek saat diye yazılmaz.
 IDE konumu için `-IdeRoot`, farklı kart için Flash.ps1'de `-SerialNumber` parametresi kullanılır.
 
 Kartın açılışı doğrulama sırasında flash uygulamasını seçecek şekilde ayarlandı: `nSWBOOT0=0`, `nBOOT0=1`,
@@ -84,7 +118,7 @@ Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da
 
 ## Doğrulama
 
-- Son Debug derlemesi: **0 hata, 0 uyarı**. Flash (text + data): **560.676 bayt**; statik RAM: **1.094.520 bayt**.
+- Son Debug derlemesi: **0 hata, 0 uyarı**. Güncel boyutlar `output/build-clock.log` içinde bulunur.
 - Bağlı kartta yükleme doğrulaması geçti; uygulama çalıştırıldı (`smartwatch_status=4`).
 - Önceki sürümün `output/verify-features.log` kaydı: gerçek hedefte **29 kontrol geçti, 0 başarısızlık**.
   Su miktarı/sınırları/gün değişimi, hatırlatmalar, alarm/tekrar/erteleme, hesap hataları,
@@ -97,6 +131,13 @@ Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da
 - `output/watch-faces-preview.png` ve `output/face-picker.png`: gerçek GFXMMU görüntü belleğinden okunan
   üç kadranın ve seçim sayfasının görüntüleri;
   panel fotoğrafı değildir. UI olayları hedefte işlendi. Fiziksel parmak dokunuşları ayrıca denenebilir.
+- `output/verify-clock.log`: bağlı hedefte **33 kontrol geçti, 0 başarısızlık**. Saat kaybında ayar ekranı,
+  geçersiz tarih reddi, artık yıl, gün sınırlaması, RTC'ye kaydetme, alarm sürelerinin düzeltilmesi,
+  su kaydının tarih düzeltmesinde korunması ve besleme açıkken sistem reseti doğrulandı.
+  RTC saat kaybı, yedek geçerlilik işareti silinerek simüle edildi; fiziksel güç kesintisi uygulanmadı.
+  Test öncesi/sonrası 916 baytlık kalıcı kullanıcı verisi birebir aynı kaldı.
+- `output/sync-clock.log`: bilgisayardan ST-LINK üzerinden güncel saat aktarıldı.
+- `output/clock-setup.png`, `output/clock-settings.png`: yeni sayfaların hedef görüntü belleği yakalamaları.
 
 ## Dosyalar
 
@@ -106,6 +147,8 @@ Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da
 - `App/watch_model.c`: alarm, su takibi ve hesap mantığı.
 - `App/watch_storage.c`: flash kayıt günlüğü.
 - `Core/Src/main.c`: RTC, ekran/dokunmatik portu ve ana döngü.
+- `App/watch_clock.h`: tarih/saat doğrulamalı donanım RTC ayarı arayüzü.
+- `Sync-Time.ps1`: bilgisayardan isteğe bağlı İstanbul saati aktarımı.
 - `Middlewares/lv_conf.h`: LVGL yapılandırması ve 256 KB havuz.
 - `Backup/before-features-flash.bin`: bu sürümden önceki 4 MB dahili flash yedeği.
 - `Backup/before-faces-flash.bin`: arayüz sürümünden önceki firmware ve kalıcı kayıt yedeği.

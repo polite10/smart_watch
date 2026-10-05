@@ -2,6 +2,25 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## MVVM düzeni ve analog kadran — 5 Ekim 2026
+
+Uygulama Model–View–ViewModel düzenine taşındı. Her özelliğin ekranı ve ViewModel'i
+ayrı dosyalardadır; RTC, flash, ekran/dokunmatik bağlantıları donanım modüllerindedir.
+ViewModel'ler LVGL veya HAL başlatmadan test edilebilir. Mevcut **916 baytlık**
+kayıt formatı ve ana döngü korunmuştur. Dosya eşleşmeleri ve geliştirme kuralları
+[ARCHITECTURE.md](ARCHITECTURE.md) içindedir.
+
+Analog kadranın dijital saniye etiketi kaldırıldı. Saniye ibresi korunur;
+rakamlar ve ibre merkezi ekranın tam merkezine hizalanır. Tarih üstte, su bilgisi
+altta simetrik yerleşir. [Güncel analog önizleme](output/round-classic.png).
+
+Güncel yazılım sonuçları: [ARM/LVGL arayüz testleri](output/verify-round-ui.json)
+**105 geçti**, [ekransız Model/ViewModel testleri](output/verify-viewmodels.json)
+**43 geçti**; toplam **148 kontrol, 0 başarısızlık**.
+Derleme **0 hata, 0 uyarı** ile tamamlandı.
+Bu sürüm için hazır binary yeniden üretilmiştir; eski kart doğrulama günlükleri
+önceki firmware sürümlerine aittir.
+
 ## Ekran görüntüleri ve hazır firmware
 
 - [Yeni yuvarlak arayüzün önizlemesi](output/round-ui-preview.png)
@@ -182,6 +201,8 @@ Yerinde kullanmak için “Copy projects into workspace” kapalı olsun. Projec
 Run/Debug için ST-LINK ve `Debug/Smartwatch.elf` seçilir.
 
 PowerShell'den `./Build.ps1`, ardından `./Flash.ps1` çalıştırılabilir.
+Derleme `Firmware/Smartwatch.bin` dosyasını da günceller. Baştan temiz derleme
+için `./Build.ps1 -Clean` kullanın.
 Betikler Türkçe klasör yollarını destekler; Eclipse çalışma alanı geçici dizinde tutulur.
 `Core/Inc/build_time.h` her derlemede İstanbul saatiyle güncellenir; yalnız tarih ayarı taslağının başlangıç
 değeridir, RTC'ye otomatik olarak gerçek saat diye yazılmaz.
@@ -223,13 +244,14 @@ Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da
 
 ## Dosyalar
 
-- `App/watch_ui.c`: ekranlar ve kullanıcı etkileşimleri.
-- `App/watch_faces.c`: üç kadran, canlı saat/veri güncellemeleri ve görünüm/renk seçimi.
-- `App/watch_font_clock.c`: saat için büyük rakam fontu.
-- `App/watch_model.c`: alarm, su takibi ve hesap mantığı.
-- `App/watch_storage.c`: flash kayıt günlüğü.
-- `Core/Src/main.c`: RTC, ekran/dokunmatik portu ve ana döngü.
-- `App/watch_clock.h`: tarih/saat doğrulamalı donanım RTC ayarı arayüzü.
+- `App/views/`: ekranlar, dört kadran, ortak widgetlar ve ikon/font varlıkları.
+- `App/viewmodels/`: ekran durumları, düzenleme taslakları ve kullanıcı komutları.
+- `App/models/`: alarm/su kuralları, veri yapısı, tarih ve hesaplama mantığı.
+- `App/services/`: kayıt ve saat servisleri ile donanım sözleşmeleri.
+- `App/platform/`: STM32 RTC, flash günlüğü ve LVGL ekran/dokunmatik bağlantısı.
+- `App/navigation/`: ekran geçişleri ve dokunma/kilit davranışı.
+- `Core/Src/main.c`: donanım başlangıcı ve ana döngü.
+- `App/watch_clock.h`: mevcut araçlar için saat servisi uyumluluk başlığı.
 - `Sync-Time.ps1`: bilgisayardan isteğe bağlı İstanbul saati aktarımı.
 - `Middlewares/lv_conf.h`: LVGL yapılandırması ve 256 KB havuz.
 - `Backup/before-features-flash.bin`: bu sürümden önceki 4 MB dahili flash yedeği.

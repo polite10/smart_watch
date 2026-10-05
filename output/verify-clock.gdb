@@ -21,7 +21,7 @@ define check
 end
 check (smartwatch_status==4) "Application running"
 check (sizeof(watch_data)==916) "Existing flash format retained"
-check (!clock_valid&&!ui_clock_valid) "Untrusted RTC does not use build timestamp as actual time"
+check (!clock_valid&&!watch_app_vm_state()->clock_valid) "Untrusted RTC does not use build timestamp as actual time"
 check (lv_screen_active()==screens[CLOCK_EDIT]) "Lost time opens manual editor"
 dump binary memory ../output/settings-before-clock-test.bin &watch_data (&watch_data+1)
 check (current_date==0) "Unknown time does not advance water history"
@@ -59,7 +59,7 @@ set watch_data.alarms[0].fired_day=0
 set pending_alarms=1
 set snooze_until[0]=1
 set $ok=watch_clock_set_datetime(2026,10,4,12,34,56)
-check ($ok&&clock_valid&&ui_clock_valid) "Manual clock apply updates hardware and UI"
+check ($ok&&clock_valid&&watch_app_vm_state()->clock_valid) "Manual clock apply updates hardware and UI"
 check (!pending_alarms&&!snooze_until[0]) "Clock correction clears obsolete alarm deadlines"
 check (watch_data.alarms[0].fired_day==20261004&&watch_data.alarms[0].enabled) "Matching minute does not immediately ring or disable alarm"
 check (!lv_obj_has_flag(hour_hand,LV_OBJ_FLAG_HIDDEN)) "Valid time restores analog hands"
@@ -89,7 +89,7 @@ check ($ok) "Original persistent records restored"
 monitor reset
 tbreak refresh_rtc
 continue
-check (clock_valid&&ui_clock_valid&&smartwatch_status==4) "Powered reset retains trusted RTC"
+check (clock_valid&&watch_app_vm_state()->clock_valid&&smartwatch_status==4) "Powered reset retains trusted RTC"
 check (lv_screen_active()==screens[HOME]) "Powered reset opens saved clock face"
 call lv_screen_load(screens[SETTINGS])
 call lv_display_refr_timer(0)
@@ -98,7 +98,7 @@ call HAL_RTCEx_BKUPWrite(&rtc,1,0)
 monitor reset
 tbreak refresh_rtc
 continue
-check (!clock_valid&&!ui_clock_valid&&current_date==0) "Simulated backup-marker loss leaves clock untrusted"
+check (!clock_valid&&!watch_app_vm_state()->clock_valid&&current_date==0) "Simulated backup-marker loss leaves clock untrusted"
 check (lv_screen_active()==screens[CLOCK_EDIT]) "Simulated time loss asks for manual date and time"
 dump binary memory ../output/settings-after-clock-test.bin &watch_data (&watch_data+1)
 printf "TOTAL FAILURES: %d\n", $failures

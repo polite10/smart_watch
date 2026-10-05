@@ -92,7 +92,7 @@ call lv_display_refr_timer(0)
 printf "KEYBOARD FRAME: %u ms\n", smartwatch_frame_ms
 set $fb=front_buffer?hlcd_gfxmmu.Init.Buffers.Buf1Address:hlcd_gfxmmu.Init.Buffers.Buf0Address
 dump binary memory ../output/device-keyboard-framebuffer.bin $fb ($fb+0xb4000)
-check (note_mode==0) "Alphabet keyboard opens in letters mode"
+check (watch_notes_vm_state()->mode==0) "Alphabet keyboard opens in letters mode"
 check (lv_label_get_text(note_keys[25])[0]==122) "Last alphabet letter visible on same keyboard"
 call watch_faces_open()
 call lv_display_refr_timer(0)

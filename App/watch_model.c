@@ -23,7 +23,7 @@ void watch_model_init(void)
         }
     }
     if(watch_data.water_goal < 200 || watch_data.water_goal > 6000) watch_data.water_goal = 2000;
-    if(watch_data.face_style >= 3) watch_data.face_style = 0;
+    if(watch_data.face_style >= WATCH_FACE_COUNT) watch_data.face_style = 0;
     if(watch_data.face_color >= 3) watch_data.face_color = 0;
     if(watch_data.reminder_minutes != 0 && watch_data.reminder_minutes != 30 &&
        watch_data.reminder_minutes != 60 && watch_data.reminder_minutes != 120) watch_data.reminder_minutes = 0;

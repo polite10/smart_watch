@@ -7,6 +7,7 @@
 #define WATCH_NOTE_SIZE 192
 #define WATCH_HISTORY 14
 #define WATCH_GLASS_ML 200U
+#define WATCH_FACE_COUNT 4
 typedef struct { uint8_t hour, minute, enabled, daily; uint32_t fired_day; } watch_alarm_t;
 typedef struct { uint32_t day; uint16_t ml, goal; } watch_water_day_t;
 typedef struct {

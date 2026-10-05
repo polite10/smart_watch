@@ -146,6 +146,7 @@ static void theme_clicked(lv_event_t *e)
     settings_refresh();
     calendar_refresh();
     watch_data.light_theme = light_theme;
+    watch_faces_apply_saved();
     save_data();
 }
 static lv_obj_t *settings_row(unsigned index, const char *title, const char *symbol,

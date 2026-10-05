@@ -1,0 +1,33 @@
+{
+  "checks": {
+    "data_size_916": true,
+    "notes_preserved": true,
+    "alarms_preserved": true,
+    "water_history_preserved": true,
+    "goal_reminder_format_theme_preserved": true,
+    "current_face_loaded_from_valid_flash_record": true,
+    "uploaded_firmware_matches_build": true,
+    "hardware_checks_passed": true
+  },
+  "hardware_passed": 32,
+  "frame_ms": {
+    "MENU": 61,
+    "CALENDAR": 80,
+    "KEYBOARD": 70,
+    "FACES": 110,
+    "SETTINGS": 70,
+    "CALCULATOR": 63,
+    "WATER": 71,
+    "ALARMS": 60,
+    "NEON": 112,
+    "CLASSIC": 78,
+    "ORBIT": 132,
+    "HOME": 83
+  },
+  "pre_upload_settings_sequence": 135,
+  "current_settings_sequence": 138,
+  "face_changed_since_backup": true,
+  "elf_sha256": "42ae809a8c2e3c803370f5d10b845bd1a2e8a349d29aba3e4aaa165fe35c7ea6",
+  "firmware_sha256": "7c1e580e0006e9f262863237395918b9ad7b5e196ed9fc8ea36bf5981bbfb9b4",
+  "scope": "Actual STM32 framebuffer captures and injected touch samples via ST-LINK. Not panel photographs or physical finger tests. Times cover first flush through presentation and buffer synchronization, excluding the initial draw strip and gesture recognition delay."
+}

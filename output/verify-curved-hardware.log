@@ -1,0 +1,56 @@
+HAL_Delay (Delay=Delay@entry=5) at ../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c:419
+419	  while ((HAL_GetTick() - tickstart) < wait)
+INITIAL STATUS: 4 FRAMES: 160
+Temporary breakpoint 1 at 0x80079e0: file ../Core/Src/main.c, line 175.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Temporary breakpoint 1, refresh_rtc () at ../Core/Src/main.c:175
+175	    if(!clock_valid) return;
+PASS: UI running on real STM32
+PASS: Persistent data format unchanged
+PASS: Second physical GFXMMU buffer configured
+PASS: Real display has presented completed frames
+PASS: Renderer is idle at UI boundary
+MENU FRAME: 61 ms
+BUFFERS: 200c8ca0 20001480 FRONT 1 GFX 200c8ca0 20001480 DMA FG 20001480 OUT 200c8ca0 CR 0
+PASS: Menu rendered and presented within 100ms
+PASS: Menu has title and eight icons without back button
+PASS: App title centered on real display
+PASS: Single tap turns physical panel off
+PASS: Wake tap keeps clock visible
+PASS: Swipe unlocks to menu on device
+CALENDAR FRAME: 80 ms
+PASS: Circular calendar created on device
+PASS: Left-edge swipe returns to menu on device
+$1 = LV_RESULT_OK
+KEYBOARD FRAME: 70 ms
+PASS: Alphabet keyboard opens in letters mode
+PASS: Last alphabet letter visible on same keyboard
+FACES FRAME: 110 ms
+PASS: Circular face preview size verified
+PASS: Four face gallery has no color controls
+PASS: Face confirmation is a 64px round button
+SETTINGS FRAME: 70 ms
+PASS: Settings use large capsule targets
+PASS: Theme switch visible on device
+CALCULATOR FRAME: 63 ms
+PASS: First calculator row is straight
+PASS: Last calculator row is straight
+WATER FRAME: 71 ms
+ALARMS FRAME: 60 ms
+PASS: Alarm time cards have large targets
+NEON FRAME: 112 ms
+PASS: Neon alarm status moved inside ring
+CLASSIC FRAME: 78 ms
+PASS: Analog numeric seconds are visible
+ORBIT FRAME: 132 ms
+PASS: New Orbit face renders on device
+HOME FRAME: 83 ms MAX: 132 FRAMES: 172
+PASS: No display timeout or hardware error
+PASS: No GFXMMU mapping errors
+PASS: No DMA2D transfer errors
+PASS: DMA2D performed buffer transfers
+PASS: Instruction cache enabled on device
+PASS: Full-screen rendering stays below the 150ms regression limit
+HARDWARE FAILURES: 0
+[Inferior 1 (Remote target) detached]

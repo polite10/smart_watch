@@ -1,0 +1,509 @@
+PASS: Home starts with clock
+PASS: Single tap turns the panel off
+PASS: Wake tap shows clock and is consumed
+PASS: Moving 40px unlocks directly to menu
+PASS: Menu has a centered title, eight icons and no back button
+PASS: Persistent user-data structure retains its 916-byte format
+PASS: Icon 0 has a large target wholly inside the circle
+PASS: Icon 1 has a large target wholly inside the circle
+PASS: Icon 2 has a large target wholly inside the circle
+PASS: Icon 3 has a large target wholly inside the circle
+PASS: Icon 4 has a large target wholly inside the circle
+PASS: Icon 5 has a large target wholly inside the circle
+PASS: Icon 6 has a large target wholly inside the circle
+PASS: Icon 7 has a large target wholly inside the circle
+PASS: Calculator icon opens calculator
+PASS: All sixteen calculator keys are 68px and stay inside the round display
+PASS: Calculator uses four straight aligned rows
+PASS: Large keys evaluate 7 + 8 = 15
+PASS: Double tap locks without activating either key
+PASS: Water icon opens tracker
+PASS: Large plus adds exactly one glass
+PASS: Large minus undoes one glass
+PASS: Double tap on water plus locks without adding water
+PASS: Notes icon opens notes
+PASS: Note card opens large keyboard
+PASS: All 26 alphabet letters are visible together
+PASS: Every visible letter inserts the expected character
+PASS: Backspace works
+PASS: Case button switches uppercase without hiding any letters
+PASS: Number mode exposes digits
+PASS: Symbols include a visible newline key
+PASS: Save returns to notes
+PASS: Edited note stored in unchanged model layout
+PASS: Edge-back cancels uncommitted note edits
+PASS: Calendar opens from its menu destination
+PASS: Calendar has circular day slots and weekday headings
+PASS: Circular calendar date can be selected
+PASS: Calendar month advances
+PASS: Calendar month goes back
+PASS: Page 1 title stays horizontally centered
+PASS: Page 1 edge-swipe returns to its parent
+PASS: Page 2 title stays horizontally centered
+PASS: Page 2 edge-swipe returns to its parent
+PASS: Page 3 title stays horizontally centered
+PASS: Page 3 edge-swipe returns to its parent
+PASS: Page 4 title stays horizontally centered
+PASS: Page 4 edge-swipe returns to its parent
+PASS: Page 5 title stays horizontally centered
+PASS: Page 5 edge-swipe returns to its parent
+PASS: Page 6 title stays horizontally centered
+PASS: Page 6 edge-swipe returns to its parent
+PASS: Page 7 title stays horizontally centered
+PASS: Page 7 edge-swipe returns to its parent
+PASS: Page 8 title stays horizontally centered
+PASS: Page 8 edge-swipe returns to its parent
+PASS: Page 9 title stays horizontally centered
+PASS: Page 9 edge-swipe returns to its parent
+PASS: Page 10 title stays horizontally centered
+PASS: Page 10 edge-swipe returns to its parent
+PASS: Page 11 title stays horizontally centered
+PASS: Page 11 edge-swipe returns to its parent
+PASS: Page 12 title stays horizontally centered
+PASS: Page 12 edge-swipe returns to its parent
+PASS: Page 13 title stays horizontally centered
+PASS: Page 13 edge-swipe returns to its parent
+PASS: A drag starting in the middle does not navigate back
+PASS: Face confirmation is a 64px circular target
+PASS: Face confirmation shows only a checkmark
+PASS: Gallery contains four faces and no color controls
+PASS: Face 0 preview stays inside round panel
+PASS: Face 1 preview stays inside round panel
+PASS: Face 2 preview stays inside round panel
+PASS: Face 3 preview stays inside round panel
+PASS: Checkmark saves face without changing legacy color byte
+PASS: Failed face save retains prior selection and leaves picker open
+PASS: Failed face save shows retry icon and error hint
+PASS: Retry checkmark commits selection
+PASS: New Orbit face can be selected and saved
+PASS: Alarm switch enables alarm without opening editor
+PASS: Alarm switch disables alarm
+PASS: Large alarm time opens matching editor
+PASS: Tapping settings value changes clock format directly
+PASS: Clock format row toggles back to 24 hours
+PASS: Clock settings capsule opens date and time editor
+PASS: Face settings capsule opens picker
+PASS: Digital face 0 clock is centered
+PASS: Digital face 1 clock is centered
+PASS: Digital face 3 clock is centered
+PASS: Classic face is dark in dark theme
+PASS: Classic hour numerals are white in dark theme
+PASS: Analog face has a numeric seconds indicator
+PASS: Neon alarm status fits wholly inside progress ring
+PASS: Face colors remain fixed regardless of legacy customization byte
+PASS: Light theme remains selectable
+PASS: Theme capsule updates its value and switch together
+PASS: Classic face follows light theme too
+PASS: Invalid RTC displays unavailable time
+PASS: Water reminder wakes an off panel automatically
+PASS: Reminder alert remains visible until acted on
+PASS: Notification buttons bypass double-tap delay and add one glass
+{
+  "passed": 100,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Home starts with clock"
+    ],
+    [
+      true,
+      "Single tap turns the panel off"
+    ],
+    [
+      true,
+      "Wake tap shows clock and is consumed"
+    ],
+    [
+      true,
+      "Moving 40px unlocks directly to menu"
+    ],
+    [
+      true,
+      "Menu has a centered title, eight icons and no back button"
+    ],
+    [
+      true,
+      "Persistent user-data structure retains its 916-byte format"
+    ],
+    [
+      true,
+      "Icon 0 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 1 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 2 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 3 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 4 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 5 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 6 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 7 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Calculator icon opens calculator"
+    ],
+    [
+      true,
+      "All sixteen calculator keys are 68px and stay inside the round display"
+    ],
+    [
+      true,
+      "Calculator uses four straight aligned rows"
+    ],
+    [
+      true,
+      "Large keys evaluate 7 + 8 = 15"
+    ],
+    [
+      true,
+      "Double tap locks without activating either key"
+    ],
+    [
+      true,
+      "Water icon opens tracker"
+    ],
+    [
+      true,
+      "Large plus adds exactly one glass"
+    ],
+    [
+      true,
+      "Large minus undoes one glass"
+    ],
+    [
+      true,
+      "Double tap on water plus locks without adding water"
+    ],
+    [
+      true,
+      "Notes icon opens notes"
+    ],
+    [
+      true,
+      "Note card opens large keyboard"
+    ],
+    [
+      true,
+      "All 26 alphabet letters are visible together"
+    ],
+    [
+      true,
+      "Every visible letter inserts the expected character"
+    ],
+    [
+      true,
+      "Backspace works"
+    ],
+    [
+      true,
+      "Case button switches uppercase without hiding any letters"
+    ],
+    [
+      true,
+      "Number mode exposes digits"
+    ],
+    [
+      true,
+      "Symbols include a visible newline key"
+    ],
+    [
+      true,
+      "Save returns to notes"
+    ],
+    [
+      true,
+      "Edited note stored in unchanged model layout"
+    ],
+    [
+      true,
+      "Edge-back cancels uncommitted note edits"
+    ],
+    [
+      true,
+      "Calendar opens from its menu destination"
+    ],
+    [
+      true,
+      "Calendar has circular day slots and weekday headings"
+    ],
+    [
+      true,
+      "Circular calendar date can be selected"
+    ],
+    [
+      true,
+      "Calendar month advances"
+    ],
+    [
+      true,
+      "Calendar month goes back"
+    ],
+    [
+      true,
+      "Page 1 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 1 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 2 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 2 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 3 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 3 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 4 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 4 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 5 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 5 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 6 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 6 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 7 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 7 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 8 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 8 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 9 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 9 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 10 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 10 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 11 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 11 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 12 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 12 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "Page 13 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 13 edge-swipe returns to its parent"
+    ],
+    [
+      true,
+      "A drag starting in the middle does not navigate back"
+    ],
+    [
+      true,
+      "Face confirmation is a 64px circular target"
+    ],
+    [
+      true,
+      "Face confirmation shows only a checkmark"
+    ],
+    [
+      true,
+      "Gallery contains four faces and no color controls"
+    ],
+    [
+      true,
+      "Face 0 preview stays inside round panel"
+    ],
+    [
+      true,
+      "Face 1 preview stays inside round panel"
+    ],
+    [
+      true,
+      "Face 2 preview stays inside round panel"
+    ],
+    [
+      true,
+      "Face 3 preview stays inside round panel"
+    ],
+    [
+      true,
+      "Checkmark saves face without changing legacy color byte"
+    ],
+    [
+      true,
+      "Failed face save retains prior selection and leaves picker open"
+    ],
+    [
+      true,
+      "Failed face save shows retry icon and error hint"
+    ],
+    [
+      true,
+      "Retry checkmark commits selection"
+    ],
+    [
+      true,
+      "New Orbit face can be selected and saved"
+    ],
+    [
+      true,
+      "Alarm switch enables alarm without opening editor"
+    ],
+    [
+      true,
+      "Alarm switch disables alarm"
+    ],
+    [
+      true,
+      "Large alarm time opens matching editor"
+    ],
+    [
+      true,
+      "Tapping settings value changes clock format directly"
+    ],
+    [
+      true,
+      "Clock format row toggles back to 24 hours"
+    ],
+    [
+      true,
+      "Clock settings capsule opens date and time editor"
+    ],
+    [
+      true,
+      "Face settings capsule opens picker"
+    ],
+    [
+      true,
+      "Digital face 0 clock is centered"
+    ],
+    [
+      true,
+      "Digital face 1 clock is centered"
+    ],
+    [
+      true,
+      "Digital face 3 clock is centered"
+    ],
+    [
+      true,
+      "Classic face is dark in dark theme"
+    ],
+    [
+      true,
+      "Classic hour numerals are white in dark theme"
+    ],
+    [
+      true,
+      "Analog face has a numeric seconds indicator"
+    ],
+    [
+      true,
+      "Neon alarm status fits wholly inside progress ring"
+    ],
+    [
+      true,
+      "Face colors remain fixed regardless of legacy customization byte"
+    ],
+    [
+      true,
+      "Light theme remains selectable"
+    ],
+    [
+      true,
+      "Theme capsule updates its value and switch together"
+    ],
+    [
+      true,
+      "Classic face follows light theme too"
+    ],
+    [
+      true,
+      "Invalid RTC displays unavailable time"
+    ],
+    [
+      true,
+      "Water reminder wakes an off panel automatically"
+    ],
+    [
+      true,
+      "Reminder alert remains visible until acted on"
+    ],
+    [
+      true,
+      "Notification buttons bypass double-tap delay and add one glass"
+    ]
+  ],
+  "elf_sha256": "42ae809a8c2e3c803370f5d10b845bd1a2e8a349d29aba3e4aaa165fe35c7ea6",
+  "firmware_sha256": "7c1e580e0006e9f262863237395918b9ad7b5e196ed9fc8ea36bf5981bbfb9b4",
+  "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
+}

@@ -4,8 +4,10 @@ STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekme
 
 ## Ekran görüntüleri ve hazır firmware
 
-- [Üç saat arayüzünün görünümü](output/watch-faces-preview.png)
-- [Arayüz seçim sayfası](output/face-picker.png)
+- [Yeni yuvarlak arayüzün önizlemesi](output/round-ui-preview.png)
+- [Düz hesap tuşları, kapsül ayarlar ve yuvarlak onay düğmesi](output/controls-preview.png)
+- [Sabit renkli kadran galerisi ve yeni alarm kartları](output/gallery-preview.png)
+- [Saat ve tarih ayarı](output/round-clock-editor.png)
 - `Firmware/Smartwatch.bin`: mevcut başarılı Debug derlemesinden üretilen ham firmware;
   yükleme başlangıç adresi `0x08000000` olmalıdır. ELF ile geliştirme için aşağıdaki derleme akışını kullanın.
 
@@ -14,7 +16,84 @@ ilgili doğrulama günlüklerini içerir. PDF rehberleri ve belge üretim betikl
 `Debug/`, `Backup/`, geçici PDF render dosyaları ve kullanıcı ayarlarını içeren `.bin` yakalamaları
 yerel tutulur. README'deki `Backup/` yolları geliştirme bilgisayarındaki yedekleri anlatır.
 
-## Yeni sürüm — 4 Ekim 2026
+## Yuvarlak arayüz ve performans — 5 Ekim 2026
+
+- Menü: sekiz adet **92 px** renkli, özgün ikon; yazısız, yuvarlak ekrana göre kavisli düzen.
+  Üst üçlünün kenarları aşağıda, alt üçlünün kenarları yukarıdadır; ortada iki ikon bulunur.
+  Bütün ikonların dokunma alanı 480 px yuvarlak ekranın içinde kalır.
+- Saat: dijital saat tam merkezde, analog kadranın merkezi (240, 240); menü düğmesi kaldırıldı.
+  Saat üzerindeki parmak hareketi **24 px** eşiğini aşınca kilit açılır ve menü gelir.
+- Saat görünürken tek kısa dokunma paneli kapatır; kapalıyken tek dokunma paneli açar.
+  Uyandıran dokunma başka bir işlem çalıştırmaz. Dokunmatik ve RTC açık kalır; bu MCU uyku modu değildir.
+- Menüde veya uygulamalarda aynı bölgede **260 ms** içinde çift dokunma saati gösterip kilitler.
+  İlk bırakma olayı bu kısa aralıkta bekletilir, basma geri bildirimi hemen görünür.
+  Böylece çift dokunma bir hesap tuşunu veya su ekleme işlemini çalıştırmaz.
+  Bildirim düğmeleri bu beklemeyi kullanmaz; alarm/su uyarısı kapalı paneli uyandırır.
+- Her sayfada aynı transparan başlık alanı vardır; başlık ekranın tam ortasına hizalanır.
+  Geri düğmesi kaldırıldı. **Sol 64 px kenardan başlayıp sağa en az 64 px kaydırmak** üst sayfayı açar.
+  Ekranın ortasından sürükleme geri dönmez; menüden geri kaydırma saati gösterir.
+  Hesap makinesi **68 px** tuşlar, su takibi **88 px** ekleme ve **72 px** geri alma alanları kullanır.
+  Alarmlar, notlar, takvim, ayarlar, su geçmişi, saat ayarı ve kadran seçimi de düzenlendi.
+- Notlar: **46 px** yuvarlak harf tuşlarıyla A–Z'nin tamamı aynı ekranda, kavisli 6/7/7/6 düzenindedir.
+  `A/a` büyük/küçük harfi değiştirir; `123` ve `#+=` rakam/noktalama/satır sonu modlarını açar.
+  Kaydetme, boşluk, karakter silme ve iki dokunuşla not silme ayrı kontrollerdir.
+- Takvim: yuvarlak gün düğmeleri, ay değiştirme, bugün işareti ve seçilen tarih;
+  arayüz seçimi: **140 px** dairesel dört kadran önizlemesi, sabit renkler ve ikiye iki galeri.
+  Renk seçici kaldırıldı; eski renk baytı veri uyumluluğu için korunur ve görünüme etki etmez.
+  Klasik kadran koyu temada koyu zemin ve beyaz rakam/ibreler kullanır; mavi saniye ibresi ve
+  sayısal saniye göstergesi vardır. Neon'un alarm satırı halkanın içinde kalır; AM/PM ve tarih ayrıldı.
+  Yeni **Orbit** kadranı saniye halkası, büyük dijital saat ve su kartı içerir.
+  Hesap makinesinin **68 px** tuşları dört sütun ve dört düz satırda hizalanır.
+  Ayarlar **64 px** yüksekliğinde kapsül satırlar kullanır: ikon, başlık, mevcut değer veya tema anahtarı.
+  Saat biçimi ve tema satırın tamamına dokunarak değişir; tarih/saat ve arayüz satırları alt sayfayı açar.
+  Arayüz seçimi alt ortadaki **64 px mint ✓** düğmesiyle kaydedilir ve saat ekranına dönülür.
+  Kayıt başarısızsa önceki seçim korunur, yeniden deneme simgesi ve hata metni gösterilir.
+  Alarm/not listeleri ve su geçmişi ekran çemberine göre hizalanır.
+  Alarm listesi **88 px** yüksekliğinde üç kart, **32 px** saat yazısı, tekrar bilgisi ve ayrı aç/kapat alanı kullanır.
+  Menüde alarm simgesi zil biçimindedir; saat simgesinden ayrılır.
+
+Eski görüntü yolu, görünen tamponu 40 satırlık parçalarla değiştiriyordu; bu yüzden sayfa yüklenmesi
+yukarıdan aşağı açılıyormuş gibi görünüyordu. Yeni yol iki fiziksel GFXMMU tamponu kullanır:
+LVGL gizli tampona çizer; son parça tamamlanınca **LTDC dikey boşlukta** tamamlanmış görüntüyü gösterir.
+Gizli tampon sonraki kısmi çizim için eşitlenir. Sayfalar animasyonsuz geçer.
+Çizim parçalarının ve fiziksel tamponun kopyalanması **DMA2D** ile yapılır; işlem tamamlanmadan
+LVGL tamponu yeniden kullanmaz. **ICACHE** etkinleştirildi; flash kaydından sonra önbellek temizlenir.
+Debug derlemesi `-O2` kullanır; çizim ve giriş zamanlayıcıları 16 ms'dir.
+Değişmeyen metinler yeniden yazılmaz, gizli sayfalardaki saat çizimleri sınırlandırılır.
+16 ms zamanlayıcı gerçek 60 FPS garantisi değildir.
+`smartwatch_frame_ms`, `smartwatch_frame_max_ms` ve `smartwatch_frame_count` cihaz ölçümü için hazırdır.
+
+**Doğrulama:** derleme hatasız/uyarısız; [ARM/LVGL yazılım testleri](output/verify-round-ui.json)
+**100 geçti, 0 başarısızlık**. Önizlemeler yeni derlemenin gerçek LVGL çizimleriyle yerel ARM
+emülatöründe üretildi; panel fotoğrafı değildir. Panel komutları ve flash I/O emülatörde taklit edilir;
+bu yazılım sonuçları fiziksel LTDC/DSI zamanlamasını doğrulamaz.
+
+Firmware USB/ST-LINK üzerinden karta yüklendi; yükleme doğrulaması başarılı ve uygulama çalışıyor.
+[Gerçek kart doğrulaması](output/verify-curved-hardware.json): **32 kontrol geçti**; ekran tamponları
+görsel olarak incelendi, karttaki firmware hazır binary ile birebir karşılaştırıldı.
+Son koşuda çizim süreleri: alarmlar **60 ms**, menü **61 ms**, hesap **63 ms**, ayarlar/klavye **70 ms**,
+su **71 ms**, Klasik **78 ms**, takvim **80 ms**, galeri **110 ms**, Neon **112 ms**, Orbit **132 ms**.
+Dikey boşluk ve önbellek durumu süreyi değiştirir. Tam ekran regresyon kontrolü **150 ms** sınırı kullanır.
+Süre ilk flush'tan dikey boşlukta gösterim ve tampon eşitlemenin sonuna kadardır;
+ilk çizim parçasını veya hareket tanıma süresini içermez. Testler ST-LINK ile dokunma örnekleri enjekte eder;
+parmakla kullanım testi veya panel fotoğrafı değildir. Gerçek tampon yakalamaları kullanıcı notlarını
+içerebildiği için yerel tutulur. Aynı arayüzde önbellek/DMA2D iyileştirmesi öncesinde menü **235 ms** idi.
+
+Kalıcı kullanıcı yapısı 916 bayt olarak korundu; notlar, alarmlar, su geçmişi, hedef, hatırlatma ve tema
+güncelleme öncesi yedekle karşılaştırıldı. Seçili kadran mevcut geçerli flash kaydıyla eşleşiyor.
+Son güncelleme öncesi 4 MB yedek `Backup/before-gallery-flash.bin` dosyasındadır.
+
+Yerel testi tekrarlamak için Python ortamına `unicorn`, `pyelftools` ve `Pillow` yükleyin;
+`output/verify-round-ui.py` betiği `Debug/Smartwatch.elf` dosyasını çalıştırır.
+Gerçek kart kontrolleri `./output/Verify-Curved-Hardware.ps1` ile, yakalamaları inceleme ve veri
+karşılaştırması `python output/check-device-captures.py --backup Backup/before-gallery-flash.bin` ile tekrarlanabilir.
+Aktif IDE Debug oturumu kapalı olmalıdır.
+İkonlar `output/generate-menu-icons.py` ile tekrar üretilebilir; harici ikon fontu/SVG yorumlayıcısı kullanılmaz.
+Görsel yaklaşım için [Apple Watch uygulama ızgarası](https://support.apple.com/en-ie/guide/watch/apd3cd8641c2/watchos)
+ve [Phosphor iki tonlu ikon ailesi](https://phosphoricons.com/?size=64&weight=duotone) incelendi;
+projede kullanılan ikonlar bu proje için çizildi.
+
+## Önceki özellik sürümü — 4 Ekim 2026
 
 Menüde saat, alarm, hesap makinesi, not defteri, arayüzler, su takibi, takvim ve ayarlar bulunur.
 Metinler mevcut Montserrat fontuyla uyumlu ASCII Türkçedir. Panel 480 × 480 piksel ve dokunmatiktir.
@@ -38,20 +117,23 @@ Metinler mevcut Montserrat fontuyla uyumlu ASCII Türkçedir. Panel 480 × 480 p
   Sıfıra bölme, eksik işlem ve taşma reddedilir; sonuç en fazla altı ondalık basamakla gösterilir.
 - Dört not, her biri en fazla 191 ASCII karakter. Dokunmatik klavye, kaydetme, iptal ve iki dokunuşla silme.
 
-### Özelleştirilebilir saat arayüzleri
+### Sabit renkli saat arayüzleri
 
-Pusula kaldırıldı; yerine üç saat görünümü ve renk seçimi eklendi:
+Pusula kaldırıldı; yerine dört saat görünümü bulunur:
 
 - **Pastel:** yumuşak renkler, büyük dijital saat ve su hedefi kartı.
 - **Neon:** dijital saat, canlı saniye ve gerçek su hedefi ilerlemesini gösteren dış halka.
-- **Klasik:** krem kadran, saat/dakika/saniye ibreleri, tarih ve su miktarı.
+- **Klasik:** uygulama temasına göre koyu veya krem kadran, saat/dakika/saniye ibreleri,
+  sayısal saniye, tarih ve su miktarı.
+- **Orbit:** amber saniye halkası, beyaz dijital saat, tarih, su kartı ve alarm durumu.
 
-Menü → Arayüzler veya Ayarlar → Saat arayüzleri sayfasını açın. Saat ekranına basılı tutmak da
-aynı sayfayı açar. Üç küçük önizlemeden birini, ardından Pembe / Mint / Mavi vurgu rengini seçin.
-**Uygula** seçimi kaydeder ve saat ekranına döner. Uygulamadan geri çıkmak mevcut seçimi korur.
-Seçim yeniden başlatmada korunur. Uygulamaların açık/koyu teması saat kadranlarının renklerinden ayrıdır.
-Yeni seçim için eski ayar yapısının iki ayrılmış baytı kullanıldığı için mevcut notlar, alarmlar ve su
-kayıtları korunur. Saat fontu mevcut Montserrat bitmaplerinden türetilmiş 72 px rakam/iki nokta fontudur.
+Menü → Arayüzler veya Ayarlar → Saat arayüzleri sayfasını açın.
+Dört dairesel önizlemeden birini seçin. Paletler sabittir; renk seçimi bulunmaz.
+Alttaki **✓** seçimi kaydeder ve saat ekranına döner. Uygulamadan geri çıkmak mevcut seçimi korur.
+Seçim yeniden başlatmada korunur. Klasik kadran açık/koyu uygulama temasını takip eder.
+Kadran seçimi mevcut ayar yapısındaki baytta saklanır; eski renk baytı korunup görsel olarak yok sayılır.
+Mevcut notlar, alarmlar ve su kayıtları korunur. Saat fontu mevcut Montserrat bitmaplerinden türetilmiş
+72 px rakam/iki nokta fontudur.
 
 ### RTC
 
@@ -116,9 +198,9 @@ Son iki 8 KB flash sayfası (0x083FC000–0x083FFFFF) ayarlar günlüğüne ayr�
 geçerli kayıt korunur. Değişmeyen veri yeniden yazılmaz. Kayıt hatası ekranda gösterilir.
 Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da siler.
 
-## Doğrulama
+## Önceki sürümlerin cihaz doğrulaması
 
-- Son Debug derlemesi: **0 hata, 0 uyarı**. Güncel boyutlar `output/build-clock.log` içinde bulunur.
+- Önceki saat ayarı derlemesi: **0 hata, 0 uyarı**. O sürümün boyutları `output/build-clock.log` içinde bulunur.
 - Bağlı kartta yükleme doğrulaması geçti; uygulama çalıştırıldı (`smartwatch_status=4`).
 - Önceki sürümün `output/verify-features.log` kaydı: gerçek hedefte **29 kontrol geçti, 0 başarısızlık**.
   Su miktarı/sınırları/gün değişimi, hatırlatmalar, alarm/tekrar/erteleme, hesap hataları,

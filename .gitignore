@@ -16,6 +16,7 @@
 # Local flash backups and captured user settings
 /Backup/
 /output/*.bin
+/output/device-*.png
 
 # Development logs, running-process state and PDF render intermediates
 /tmp/
@@ -33,6 +34,10 @@
 !/output/flash-clock.log
 !/output/verify-clock.log
 !/output/sync-clock.log
+!/output/verify-round-ui.log
+!/output/verify-curved-hardware.log
+!/output/build-gallery.log
+!/output/flash-gallery.log
 /output/*.pid
 __pycache__/
 *.pyc

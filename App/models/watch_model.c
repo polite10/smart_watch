@@ -1,8 +1,5 @@
-#include "watch_model.h"
+#include "models/watch_model.h"
 #include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
 
 watch_data_t watch_data;
 static uint32_t now_seconds, current_date, next_water;
@@ -10,10 +7,11 @@ static uint32_t snooze_until[WATCH_ALARMS];
 static uint8_t pending_alarms;
 static bool water_due;
 
-void watch_model_init(void)
+void watch_model_reset(const watch_data_t *saved)
 {
     memset(&watch_data, 0, sizeof watch_data);
-    if(!watch_storage_load(&watch_data) || watch_data.version != 1) {
+    if(saved) watch_data = *saved;
+    if(!saved || watch_data.version != 1) {
         memset(&watch_data, 0, sizeof watch_data);
         watch_data.version = 1;
         watch_data.water_goal = 2000;
@@ -36,30 +34,7 @@ void watch_model_init(void)
     current_date = now_seconds = next_water = pending_alarms = 0;
     water_due = false;
 }
-bool watch_model_save(void) { return watch_storage_save(&watch_data); }
-uint8_t watch_days_in_month(uint16_t year, uint8_t month)
-{
-    static const uint8_t days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    if(year < 2000 || year > 2099 || month < 1 || month > 12) return 0;
-    return days[month - 1] + (month == 2 && year % 4 == 0);
-}
-bool watch_datetime_valid(uint16_t year, uint8_t month, uint8_t day,
-                          uint8_t hour, uint8_t minute, uint8_t second)
-{
-    return day >= 1 && day <= watch_days_in_month(year, month) &&
-           hour < 24 && minute < 60 && second < 60;
-}
-uint32_t watch_day_key(uint16_t year, uint8_t month, uint8_t day)
-{ return (uint32_t)year * 10000 + (uint32_t)month * 100 + day; }
-uint32_t watch_epoch(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second)
-{
-    static const uint16_t before[] = {0,31,59,90,120,151,181,212,243,273,304,334};
-    uint32_t days = 0;
-    for(unsigned y = 2000; y < year; ++y) days += 365 + (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0));
-    days += before[month - 1] + day - 1;
-    if(month > 2 && year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ++days;
-    return days * 86400 + (uint32_t)hour * 3600 + (uint32_t)minute * 60 + second;
-}
+
 static void reset_reminder(void)
 {
     water_due = false;
@@ -157,39 +132,31 @@ void watch_alarm_changed(int index)
     uint32_t minute_of_day = (now_seconds % 86400) / 60;
     a->fired_day = minute_of_day == a->hour * 60U + a->minute ? current_date : 0;
 }
-static double number(const char **p, bool *valid)
+
+const watch_data_t *watch_model_data(void) { return &watch_data; }
+bool watch_model_alarm_toggle(unsigned index)
 {
-    char *end;
-    double value = strtod(*p, &end);
-    if(end == *p || !isfinite(value)) { *valid = false; return 0; }
-    *p = end;
-    return value;
+    if(index >= WATCH_ALARMS) return false;
+    watch_data.alarms[index].enabled = !watch_data.alarms[index].enabled;
+    watch_alarm_changed(index); return true;
 }
-static double term(const char **p, bool *valid)
+bool watch_model_alarm_set(unsigned index, uint8_t hour, uint8_t minute, bool daily)
 {
-    double v = number(p, valid);
-    while(*valid && (**p == '*' || **p == '/')) {
-        char op = *(*p)++;
-        double rhs = number(p, valid);
-        if(op == '/' && rhs == 0) { *valid = false; return 0; }
-        v = op == '*' ? v * rhs : v / rhs;
-    }
-    return v;
+    if(index >= WATCH_ALARMS || hour > 23 || minute > 59) return false;
+    watch_alarm_t *a = &watch_data.alarms[index];
+    a->hour = hour; a->minute = minute; a->daily = daily; a->enabled = 1;
+    watch_alarm_changed(index); return true;
 }
-bool watch_calculate(const char *expression, double *result)
+bool watch_model_note_set(unsigned index, const char *text)
 {
-    /* Keypad inputs are decimal numbers only, not C's hex/NaN notation. */
-    for(const char *s = expression; *s; ++s)
-        if(!isdigit((unsigned char)*s) && !strchr(".+-*/", *s)) return false;
-    bool valid = true;
-    const char *p = expression;
-    double value = term(&p, &valid);
-    while(valid && (*p == '+' || *p == '-')) {
-        char op = *p++;
-        double rhs = term(&p, &valid);
-        value = op == '+' ? value + rhs : value - rhs;
-    }
-    if(!valid || *p || !isfinite(value) || fabs(value) > 1e12) return false;
-    *result = value;
-    return true;
+    if(index >= WATCH_NOTES || !text || strlen(text) >= WATCH_NOTE_SIZE) return false;
+    memcpy(watch_data.notes[index], text, strlen(text) + 1); return true;
 }
+void watch_model_set_format(bool twelve) { watch_data.twelve_hour = twelve; }
+void watch_model_set_theme(bool light) { watch_data.light_theme = light; }
+bool watch_model_set_face(unsigned style)
+{
+    if(style >= WATCH_FACE_COUNT) return false;
+    watch_data.face_style = style; return true;
+}
+_Static_assert(sizeof(watch_data_t) == 916, "Keep the version-1 user-data layout");

@@ -1,5 +1,5 @@
 #include "watch_faces.h"
-#include "watch_model.h"
+#include "viewmodels/watch_viewmodels.h"
 #include "watch_ui.h"
 #include <stdio.h>
 #include <math.h>
@@ -20,15 +20,9 @@ static lv_point_precise_t hand_points[3][2], tick_points[60][2], mini_hand_point
 static lv_obj_t *picker_screen, *style_buttons[FACE_COUNT], *apply_button;
 static lv_obj_t *mini_clocks[FACE_COUNT], *mini_water, *mini_ring, *mini_hands[3], *mini_pin, *picker_hint;
 static lv_obj_t *classic_ticks[60], *classic_numbers[4], *mini_numbers[2], *mini_dial;
-static unsigned draft_style;
-static uint16_t face_year = 2026;
-static uint8_t face_month = 10, face_day = 4, face_hour, face_minute, face_second;
-static bool face_twelve;
-static bool face_clock_valid = true;
+
 static const uint32_t accents[] = {0xFFA9C6, 0x94E8C5, 0x92CFFF, 0xFFD18B};
 static const char *style_names[] = {"Pastel", "Neon", "Klasik", "Orbit"};
-static const char *months[] = {"OCAK", "SUBAT", "MART", "NISAN", "MAYIS", "HAZIRAN",
-                              "TEMMUZ", "AGUSTOS", "EYLUL", "EKIM", "KASIM", "ARALIK"};
 
 static lv_obj_t *text(lv_obj_t *parent, const char *value, int y, const lv_font_t *font, uint32_t color)
 {
@@ -89,7 +83,7 @@ static void update_hand(lv_obj_t *obj, lv_point_precise_t *points, float angle, 
 }
 static void colors_apply(void)
 {
-    bool light=watch_data.light_theme;
+    bool light=watch_settings_vm_light();
     uint32_t background=light ? 0xF6EFE4 : 0x0C1422;
     uint32_t ink=light ? 0x493B35 : 0xF0F4FC;
     uint32_t muted=light ? 0x7B6C62 : 0xA8B9D2;
@@ -113,20 +107,21 @@ static void colors_apply(void)
 }
 void watch_faces_apply_saved(void)
 {
-    unsigned style = watch_data.face_style < FACE_COUNT ? watch_data.face_style : 0;
+    unsigned style = watch_faces_vm_style();
     for(unsigned i = 0; i < FACE_COUNT; ++i) {
         if(i == style) lv_obj_remove_flag(face_roots[i], LV_OBJ_FLAG_HIDDEN);
         else lv_obj_add_flag(face_roots[i], LV_OBJ_FLAG_HIDDEN);
     }
     colors_apply();
-    watch_faces_set_datetime(face_year,face_month,face_day,face_hour,face_minute,face_second,face_twelve);
+    watch_datetime_t t=watch_faces_vm_state()->datetime;
+    watch_faces_set_datetime(t.year,t.month,t.day,t.hour,t.minute,t.second,watch_faces_vm_state()->twelve);
     watch_faces_refresh();
 }
 static void picker_refresh(void)
 {
     for(unsigned i = 0; i < FACE_COUNT; ++i) {
-        lv_obj_set_style_border_width(style_buttons[i], i == draft_style ? 3 : 1, 0);
-        lv_obj_set_style_border_color(style_buttons[i], lv_color_hex(i == draft_style ? accents[i] : 0x33435C), 0);
+        lv_obj_set_style_border_width(style_buttons[i], i == watch_faces_vm_state()->draft_style ? 3 : 1, 0);
+        lv_obj_set_style_border_color(style_buttons[i], lv_color_hex(i == watch_faces_vm_state()->draft_style ? accents[i] : 0x33435C), 0);
     }
     colors_apply();
     set_label(picker_hint,"Bir gorunum secin");
@@ -134,23 +129,15 @@ static void picker_refresh(void)
 }
 void watch_faces_open(void)
 {
-    draft_style = watch_data.face_style;
+    watch_faces_vm_open();
     picker_refresh(); lv_screen_load(picker_screen);
 }
-static void choose_style(lv_event_t *e)
-{
-    draft_style = (unsigned)(uintptr_t)lv_event_get_user_data(e); picker_refresh();
-}
+static void choose_style(lv_event_t *e) { watch_faces_vm_choose((unsigned)(uintptr_t)lv_event_get_user_data(e)); picker_refresh(); }
 static void apply(lv_event_t *e)
 {
     (void)e;
-    uint8_t old_style = watch_data.face_style;
-    watch_data.face_style = draft_style;
-    if(!watch_model_save()) {
-        watch_data.face_style = old_style;
-        set_label(lv_obj_get_child(apply_button, 0), LV_SYMBOL_REFRESH);
-        set_label(picker_hint, "Kayit basarisiz");
-        return;
+    if(!watch_faces_vm_apply()) {
+        set_label(lv_obj_get_child(apply_button,0),LV_SYMBOL_REFRESH); set_label(picker_hint,"Kayit basarisiz"); return;
     }
     watch_faces_apply_saved(); lv_screen_load(lv_obj_get_parent(face_roots[0]));
 }
@@ -159,87 +146,61 @@ static void set_label(lv_obj_t *label, const char *value)
     if(strcmp(lv_label_get_text(label), value)) lv_label_set_text(label,value);
 }
 
-void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
-                              uint8_t hour, uint8_t minute, uint8_t second, bool twelve_hour)
+void watch_faces_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t hour,uint8_t minute,uint8_t second,bool twelve_hour)
 {
-    face_year = year; face_month = month; face_day = day;
-    face_hour = hour; face_minute = minute; face_second = second; face_twelve = twelve_hour;
+    watch_faces_vm_refresh((watch_datetime_t){year,month,day,hour,minute,second},twelve_hour,watch_faces_vm_state()->clock_valid);
     if(lv_screen_active() != picker_screen && lv_screen_active() != lv_obj_get_parent(face_roots[0])) return;
-    if(!face_clock_valid) {
-        for(unsigned i = 0; i < FACE_COUNT; ++i) if(face_clock[i]) {
-            set_label(face_clock[i], "--:--");
-            set_label(mini_clocks[i], "--:--");
-            set_label(period_labels[i], "");
-        }
-        set_label(seconds_label, "--");
-        set_label(orbit_seconds,"-- sn");
-        for(unsigned i = 0; i < FACE_COUNT; ++i) set_label(face_date[i], "SAATI AYARLAYIN");
-        return;
+    const watch_faces_state_t *state=watch_faces_vm_state();
+    for(unsigned i=0;i<FACE_COUNT;++i) {
+        if(face_clock[i]) { set_label(face_clock[i],state->time); set_label(mini_clocks[i],state->time); set_label(period_labels[i],state->period); }
+        set_label(face_date[i],state->date);
     }
-    unsigned h = twelve_hour ? (hour % 12 ? hour % 12 : 12) : hour;
-    char value[40]; snprintf(value, sizeof value, "%02u:%02u", h, minute);
-    for(unsigned i = 0; i < FACE_COUNT; ++i) if(face_clock[i]) {
-        set_label(face_clock[i], value); set_label(mini_clocks[i], value);
-        set_label(period_labels[i], twelve_hour ? (hour < 12 ? "AM" : "PM") : "");
-    }
-    snprintf(value, sizeof value, "%02u", second); set_label(seconds_label, value);
-    snprintf(value,sizeof value,"%02u sn",second); set_label(orbit_seconds,value);
+    set_label(seconds_label,state->seconds); set_label(orbit_seconds,state->orbit_seconds);
+    if(!state->clock_valid) return;
     lv_arc_set_value(orbit_ring,second);
-    snprintf(value, sizeof value, "%u %s %u", day, months[month - 1], year);
-    for(unsigned i = 0; i < FACE_COUNT; ++i) set_label(face_date[i], value);
-    if(watch_data.face_style == CLASSIC && lv_screen_active() != picker_screen) {
-        update_hand(hour_hand, hand_points[0], (hour % 12) * 30 + minute * .5f, DIAL_CENTER, DIAL_CENTER, 85, 12);
-        update_hand(minute_hand, hand_points[1], minute * 6 + second * .1f, DIAL_CENTER, DIAL_CENTER, 120, 16);
-        update_hand(second_hand, hand_points[2], second * 6, DIAL_CENTER, DIAL_CENTER, 134, 24);
+    if(watch_faces_vm_style() == CLASSIC && lv_screen_active() != picker_screen) {
+        update_hand(hour_hand, hand_points[0], state->hour_angle, DIAL_CENTER, DIAL_CENTER, 85, 12);
+        update_hand(minute_hand, hand_points[1], state->minute_angle, DIAL_CENTER, DIAL_CENTER, 120, 16);
+        update_hand(second_hand, hand_points[2], state->second_angle, DIAL_CENTER, DIAL_CENTER, 134, 24);
     }
     if(lv_screen_active() == picker_screen) {
-        update_hand(mini_hands[0], mini_hand_points[0], (hour % 12) * 30 + minute * .5f, 50, 50, 21, 0);
+        update_hand(mini_hands[0], mini_hand_points[0], state->hour_angle, 50, 50, 21, 0);
         update_hand(mini_hands[1], mini_hand_points[1], minute * 6, 50, 50, 34, 0);
-        update_hand(mini_hands[2], mini_hand_points[2], second * 6, 50, 50, 40, 8);
+        update_hand(mini_hands[2], mini_hand_points[2], state->second_angle, 50, 50, 40, 8);
     }
 }
 void watch_faces_set_clock_valid(bool valid)
 {
-    face_clock_valid = valid;
+    watch_datetime_t t=watch_faces_vm_state()->datetime;
+    watch_faces_vm_refresh(t,watch_faces_vm_state()->twelve,valid);
     lv_obj_t *hands[] = {hour_hand, minute_hand, second_hand, mini_hands[0], mini_hands[1],mini_hands[2]};
     for(unsigned i = 0; i < sizeof hands / sizeof hands[0]; ++i) {
         if(valid) lv_obj_remove_flag(hands[i], LV_OBJ_FLAG_HIDDEN);
         else lv_obj_add_flag(hands[i], LV_OBJ_FLAG_HIDDEN);
     }
-    watch_faces_set_datetime(face_year, face_month, face_day, face_hour, face_minute, face_second, face_twelve);
+    watch_faces_set_datetime(t.year,t.month,t.day,t.hour,t.minute,t.second,watch_faces_vm_state()->twelve);
     watch_faces_refresh();
 }
 void watch_faces_set_battery(uint8_t percent, bool valid)
 {
-    char value[24];
-    if(valid) snprintf(value, sizeof value, "Pil %u%%", percent > 100 ? 100 : percent);
-    else snprintf(value, sizeof value, "Pil --");
-    for(unsigned i = 0; i < FACE_COUNT; ++i) {
-        set_label(face_battery[i], value);
-        if(valid) lv_obj_remove_flag(face_battery[i], LV_OBJ_FLAG_HIDDEN);
-        else lv_obj_add_flag(face_battery[i], LV_OBJ_FLAG_HIDDEN);
+    watch_faces_vm_set_battery(percent,valid);
+    for(unsigned i=0;i<FACE_COUNT;++i) {
+        set_label(face_battery[i],watch_faces_vm_state()->battery);
+        if(valid) lv_obj_remove_flag(face_battery[i],LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_add_flag(face_battery[i],LV_OBJ_FLAG_HIDDEN);
     }
 }
 void watch_faces_refresh(void)
 {
     if(!neon_ring) return;
-    unsigned ml = watch_data.water[0].ml, goal = watch_data.water_goal;
-    unsigned progress = !face_clock_valid ? 0 : ml >= goal ? 100 : ml * 100 / goal;
-    char value[48]; snprintf(value, sizeof value, "%u / %u ml", ml, goal);
-    if(!face_clock_valid) snprintf(value, sizeof value, "Saat ayari gerekli");
-    for(unsigned i = 0; i < FACE_COUNT; ++i) set_label(face_water[i], value);
-    lv_obj_set_width(pastel_progress, progress ? progress * 226 / 100 : 1);
-    lv_arc_set_value(neon_ring, progress); lv_arc_set_value(mini_ring, progress);
-    int next_alarm = -1; unsigned closest = 1441;
-    for(unsigned i = 0; i < WATCH_ALARMS; ++i) if(watch_data.alarms[i].enabled) {
-        unsigned target = watch_data.alarms[i].hour * 60 + watch_data.alarms[i].minute;
-        unsigned distance = (target + 1440 - face_hour * 60 - face_minute) % 1440;
-        if(distance < closest) { closest = distance; next_alarm = i; }
+    watch_water_state_t water=watch_water_vm_state();
+    watch_faces_vm_refresh(watch_faces_vm_state()->datetime,watch_faces_vm_state()->twelve,watch_faces_vm_state()->clock_valid);
+    for(unsigned i=0;i<FACE_COUNT;++i) {
+        set_label(face_water[i],water.summary);
+        if(face_alarm[i]) set_label(face_alarm[i],watch_faces_vm_state()->alarm);
     }
-    if(!face_clock_valid) snprintf(value, sizeof value, "Alarm icin saati ayarlayin");
-    else if(next_alarm >= 0) snprintf(value, sizeof value, "Alarm  %02u:%02u", watch_data.alarms[next_alarm].hour, watch_data.alarms[next_alarm].minute);
-    else snprintf(value, sizeof value, "Alarm kapali");
-    for(unsigned i = 0; i < FACE_COUNT; ++i) if(face_alarm[i]) set_label(face_alarm[i], value);
+    lv_obj_set_width(pastel_progress,water.progress ? water.progress*226/100 : 1);
+    lv_arc_set_value(neon_ring,water.progress); lv_arc_set_value(mini_ring,water.progress);
 }
 void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, void *menu)
 {
@@ -368,7 +329,8 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
     lv_obj_set_style_text_color(apply_button,lv_color_hex(0x182C2D),0);
     lv_obj_set_style_text_font(lv_obj_get_child(apply_button,0),&lv_font_montserrat_28,0);
 
-    watch_faces_set_datetime(face_year, face_month, face_day, face_hour, face_minute, face_second, face_twelve);
+    watch_datetime_t t=watch_faces_vm_state()->datetime;
+    watch_faces_set_datetime(t.year,t.month,t.day,t.hour,t.minute,t.second,watch_faces_vm_state()->twelve);
     watch_faces_set_battery(0, false);
     watch_faces_apply_saved();
 }

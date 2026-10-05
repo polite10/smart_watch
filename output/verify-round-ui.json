@@ -1,5 +1,5 @@
 {
-  "passed": 100,
+  "passed": 105,
   "failed": 0,
   "checks": [
     [
@@ -364,7 +364,27 @@
     ],
     [
       true,
-      "Analog face has a numeric seconds indicator"
+      "Analog face omits the redundant digital seconds label"
+    ],
+    [
+      true,
+      "Analog seconds hand remains visible with valid RTC"
+    ],
+    [
+      true,
+      "Analog hands pivot exactly at the screen center"
+    ],
+    [
+      true,
+      "Analog numerals sit symmetrically around the screen center"
+    ],
+    [
+      true,
+      "Analog date and water information balance above and below the dial"
+    ],
+    [
+      true,
+      "Analog seconds hand continues moving after digital seconds removal"
     ],
     [
       true,
@@ -403,7 +423,7 @@
       "Notification buttons bypass double-tap delay and add one glass"
     ]
   ],
-  "elf_sha256": "42ae809a8c2e3c803370f5d10b845bd1a2e8a349d29aba3e4aaa165fe35c7ea6",
-  "firmware_sha256": "7c1e580e0006e9f262863237395918b9ad7b5e196ed9fc8ea36bf5981bbfb9b4",
+  "elf_sha256": "3ef0573961600c978b24f62801fa80445550c2a9ce0ebd2f3b2f7a34df1c59dd",
+  "firmware_sha256": "358b136190577f10d05db8e45210e7ea73856985230717e25ed328cf3a31e588",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

@@ -1,0 +1,180 @@
+{
+  "passed": 43,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "models preserves dependency boundaries: []"
+    ],
+    [
+      true,
+      "viewmodels preserves dependency boundaries: []"
+    ],
+    [
+      true,
+      "services preserves dependency boundaries: []"
+    ],
+    [
+      true,
+      "platform preserves dependency boundaries: []"
+    ],
+    [
+      true,
+      "Views do not mutate persistent state or call the repository"
+    ],
+    [
+      true,
+      "Headless startup supplies defaults"
+    ],
+    [
+      true,
+      "Unknown RTC blocks water commands"
+    ],
+    [
+      true,
+      "Headless water command adds one glass"
+    ],
+    [
+      true,
+      "Water cannot fall below zero"
+    ],
+    [
+      true,
+      "Water upper limit remains 20000 ml"
+    ],
+    [
+      true,
+      "Water goal has a 200 ml lower limit"
+    ],
+    [
+      true,
+      "Water goal has a 6000 ml upper limit"
+    ],
+    [
+      true,
+      "Reminder cycles to 30 minutes"
+    ],
+    [
+      true,
+      "Reminder cycles to 60 minutes"
+    ],
+    [
+      true,
+      "Reminder cycles to 120 minutes"
+    ],
+    [
+      true,
+      "Reminder cycles to 0 minutes"
+    ],
+    [
+      true,
+      "Headless calculator preserves operator precedence"
+    ],
+    [
+      true,
+      "Calculator continues with the previous result"
+    ],
+    [
+      true,
+      "Division by zero yields displayable error state"
+    ],
+    [
+      true,
+      "Calculator recovers from an invalid expression"
+    ],
+    [
+      true,
+      "Editing a note leaves the model unchanged"
+    ],
+    [
+      true,
+      "Reopening discards an uncommitted draft"
+    ],
+    [
+      true,
+      "Save commits a note through the repository"
+    ],
+    [
+      true,
+      "First delete command asks for confirmation"
+    ],
+    [
+      true,
+      "Changing the draft clears delete confirmation"
+    ],
+    [
+      true,
+      "Confirmed delete commits an empty note"
+    ],
+    [
+      true,
+      "Calendar cannot move before January 2000"
+    ],
+    [
+      true,
+      "Calendar cannot move past December 2099"
+    ],
+    [
+      true,
+      "Clock editor clamps leap-year February to 29 days"
+    ],
+    [
+      true,
+      "Clock editor clamps ordinary February to 28 days"
+    ],
+    [
+      true,
+      "Invalid dates never reach the RTC port"
+    ],
+    [
+      true,
+      "Clock editor exposes hardware write failure"
+    ],
+    [
+      true,
+      "RTC write failure marks time unknown"
+    ],
+    [
+      true,
+      "Clock save retries successfully and resets seconds to zero"
+    ],
+    [
+      true,
+      "Successful clock service updates the app ViewModel"
+    ],
+    [
+      true,
+      "Alarm command triggers through headless time updates"
+    ],
+    [
+      true,
+      "Snooze clears the current alarm notification"
+    ],
+    [
+      true,
+      "Snoozed alarm returns after five minutes"
+    ],
+    [
+      true,
+      "Stop command clears alarm output state"
+    ],
+    [
+      true,
+      "Failed face save rolls back the active model selection"
+    ],
+    [
+      true,
+      "Storage failure is exposed in app state"
+    ],
+    [
+      true,
+      "Retry commits the retained face draft"
+    ],
+    [
+      true,
+      "Reinitialization reloads the unchanged 916-byte persistent layout"
+    ]
+  ],
+  "elf_sha256": "3ef0573961600c978b24f62801fa80445550c2a9ce0ebd2f3b2f7a34df1c59dd",
+  "scope": "Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes."
+}

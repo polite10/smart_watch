@@ -1,0 +1,64 @@
+      -------------------------------------------------------------------
+                       STM32CubeProgrammer v2.23.0
+      -------------------------------------------------------------------
+
+ST-LINK SN  : 001D000E4D4B500620373831
+ST-LINK FW  : V3J17M11
+Board       : STM32U5A9J-DK
+Voltage     : 1.80V
+SWD freq    : 8000 KHz
+Connect mode: Under Reset
+Reset mode  : Hardware reset
+Device ID   : 0x481
+Revision ID : Rev C
+Device name : STM32U5xx
+NVM size    : 4 MBytes
+Device type : MCU
+Device CPU  : Cortex-M33
+BL Version  : 0x92
+Debug in Low Power mode enabled
+
+      -------------------------------------------------------------------
+        Choose flashing speed for Cortex M33 series.(default speed=Reliable)
+      -------------------------------------------------------------------
+
+
+
+Opening and parsing file: Smartwatch.elf
+
+
+Memory Programming ...
+  File          : Smartwatch.elf
+  Size          : 656.71 KB
+  Address       : 0x08000000
+
+
+Erasing memory corresponding to segment 0:
+Erasing internal memory sectors [0 82]
+Download in Progress:
+�������������������������������������������������� 0%
+�������������������������������������������������� 100%
+
+File download complete
+Time elapsed during download operation: 00:00:07.707
+
+
+
+Verifying...
+
+
+Read progress:
+�������������������������������������������������� 50%
+�������������������������������������������������� 100%
+
+Time elapsed during verifying operation: 00:00:02.061
+
+
+Download verified successfully
+
+
+
+RUNNING Program ...
+  Address:      : 0x8000000
+Application is running, Please Hold on...
+Start operation achieved successfully

@@ -79,6 +79,8 @@ bool watch_storage_save(const watch_data_t *data)
         status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, address + offset, (uint32_t)(record + offset));
     if(status == HAL_OK) status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, address, (uint32_t)record);
     HAL_FLASH_Lock();
+    /* ICACHE also caches flash data reads; refresh journal reads after writes. */
+    if(HAL_ICACHE_Invalidate() != HAL_OK) return false;
     if(status != HAL_OK || !valid_record(address)) return false;
     latest_address = address; latest_sequence = h.sequence;
     return true;

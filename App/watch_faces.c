@@ -10,10 +10,11 @@ static void set_label(lv_obj_t *label, const char *value);
 static const lv_style_prop_t no_transition_properties[] = {0};
 static const lv_style_transition_dsc_t no_transition = {.props = no_transition_properties};
 enum { PASTEL, NEON, CLASSIC, ORBIT, FACE_COUNT };
+enum { DIAL_CENTER = 240, DIAL_RADIUS = 166, NUMERAL_RADIUS = 136, INFO_OFFSET = 190 };
 _Static_assert(FACE_COUNT==WATCH_FACE_COUNT,"Face count must match persistent model validation");
 static lv_obj_t *face_roots[FACE_COUNT], *face_clock[FACE_COUNT], *face_date[FACE_COUNT];
 static lv_obj_t *face_water[FACE_COUNT], *face_battery[FACE_COUNT], *face_alarm[FACE_COUNT];
-static lv_obj_t *pastel_card, *pastel_progress, *neon_ring, *orbit_ring, *seconds_label, *classic_seconds, *orbit_seconds, *period_labels[FACE_COUNT];
+static lv_obj_t *pastel_card, *pastel_progress, *neon_ring, *orbit_ring, *seconds_label, *orbit_seconds, *period_labels[FACE_COUNT];
 static lv_obj_t *hour_hand, *minute_hand, *second_hand, *center_pin;
 static lv_point_precise_t hand_points[3][2], tick_points[60][2], mini_hand_points[3][2];
 static lv_obj_t *picker_screen, *style_buttons[FACE_COUNT], *apply_button;
@@ -106,7 +107,6 @@ static void colors_apply(void)
     lv_obj_set_style_line_color(minute_hand,lv_color_hex(ink),0);
     lv_obj_set_style_line_color(second_hand,lv_color_hex(0x73BEFF),0);
     lv_obj_set_style_bg_color(center_pin,lv_color_hex(0x73BEFF),0);
-    lv_obj_set_style_text_color(classic_seconds,lv_color_hex(ink),0);
     lv_obj_set_style_text_color(face_date[CLASSIC],lv_color_hex(ink),0);
     lv_obj_set_style_text_color(face_water[CLASSIC],lv_color_hex(muted),0);
     lv_obj_set_style_text_color(face_battery[CLASSIC],lv_color_hex(muted),0);
@@ -172,7 +172,7 @@ void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
             set_label(period_labels[i], "");
         }
         set_label(seconds_label, "--");
-        set_label(classic_seconds,"-- sn"); set_label(orbit_seconds,"-- sn");
+        set_label(orbit_seconds,"-- sn");
         for(unsigned i = 0; i < FACE_COUNT; ++i) set_label(face_date[i], "SAATI AYARLAYIN");
         return;
     }
@@ -183,14 +183,14 @@ void watch_faces_set_datetime(uint16_t year, uint8_t month, uint8_t day,
         set_label(period_labels[i], twelve_hour ? (hour < 12 ? "AM" : "PM") : "");
     }
     snprintf(value, sizeof value, "%02u", second); set_label(seconds_label, value);
-    snprintf(value,sizeof value,"%02u sn",second); set_label(classic_seconds,value); set_label(orbit_seconds,value);
+    snprintf(value,sizeof value,"%02u sn",second); set_label(orbit_seconds,value);
     lv_arc_set_value(orbit_ring,second);
     snprintf(value, sizeof value, "%u %s %u", day, months[month - 1], year);
     for(unsigned i = 0; i < FACE_COUNT; ++i) set_label(face_date[i], value);
     if(watch_data.face_style == CLASSIC && lv_screen_active() != picker_screen) {
-        update_hand(hour_hand, hand_points[0], (hour % 12) * 30 + minute * .5f, 240, 240, 85, 12);
-        update_hand(minute_hand, hand_points[1], minute * 6 + second * .1f, 240, 240, 120, 16);
-        update_hand(second_hand, hand_points[2], second * 6, 240, 240, 134, 24);
+        update_hand(hour_hand, hand_points[0], (hour % 12) * 30 + minute * .5f, DIAL_CENTER, DIAL_CENTER, 85, 12);
+        update_hand(minute_hand, hand_points[1], minute * 6 + second * .1f, DIAL_CENTER, DIAL_CENTER, 120, 16);
+        update_hand(second_hand, hand_points[2], second * 6, DIAL_CENTER, DIAL_CENTER, 134, 24);
     }
     if(lv_screen_active() == picker_screen) {
         update_hand(mini_hands[0], mini_hand_points[0], (hour % 12) * 30 + minute * .5f, 50, 50, 21, 0);
@@ -289,24 +289,28 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
     for(unsigned i = 0; i < 60; ++i) {
         float angle = i * .10471975512f;
         float inner = i % 5 ? 158 : 149;
-        tick_points[i][0] = (lv_point_precise_t){240 + inner * sinf(angle), 240 - inner * cosf(angle)};
-        tick_points[i][1] = (lv_point_precise_t){240 + 166 * sinf(angle), 240 - 166 * cosf(angle)};
+        tick_points[i][0] = (lv_point_precise_t){DIAL_CENTER + inner * sinf(angle), DIAL_CENTER - inner * cosf(angle)};
+        tick_points[i][1] = (lv_point_precise_t){DIAL_CENTER + DIAL_RADIUS * sinf(angle), DIAL_CENTER - DIAL_RADIUS * cosf(angle)};
         classic_ticks[i]=line(root, tick_points[i], i % 5 ? 2 : 4, i % 5 ? 0xA8B9D2 : 0xF0F4FC);
     }
-    classic_numbers[0]=text(root, "12", 98, &lv_font_montserrat_24, 0xF0F4FC);
-    lv_obj_t *number = text(root, "3", 226, &lv_font_montserrat_24, 0x493B35); lv_obj_align(number, LV_ALIGN_TOP_MID, 136, 226);
-    classic_numbers[1]=number;
-    number = text(root, "9", 226, &lv_font_montserrat_24, 0xF0F4FC); lv_obj_align(number, LV_ALIGN_TOP_MID, -136, 226);
-    classic_numbers[2]=number;
-    classic_numbers[3]=text(root, "6", 359, &lv_font_montserrat_24, 0xF0F4FC);
-    classic_seconds=text(root,"00 sn",46,&lv_font_montserrat_20,0xF0F4FC);
-    face_date[CLASSIC] = text(root, "", 417, &lv_font_montserrat_14, 0xF0F4FC);
-    face_water[CLASSIC] = text(root, "", 440, &lv_font_montserrat_14, 0xA8B9D2);
+    /* Center the actual label boxes so font metrics cannot shift the dial. */
+    const char *numerals[] = {"12", "3", "9", "6"};
+    const int numeral_x[] = {0, NUMERAL_RADIUS, -NUMERAL_RADIUS, 0};
+    const int numeral_y[] = {-NUMERAL_RADIUS, 0, 0, NUMERAL_RADIUS};
+    for(unsigned i=0;i<4;++i) {
+        classic_numbers[i]=text(root,numerals[i],0,&lv_font_montserrat_24,0xF0F4FC);
+        lv_obj_align(classic_numbers[i],LV_ALIGN_CENTER,numeral_x[i],numeral_y[i]);
+    }
+    face_date[CLASSIC] = text(root, "", 0, &lv_font_montserrat_14, 0xF0F4FC);
+    lv_obj_align(face_date[CLASSIC],LV_ALIGN_CENTER,0,-INFO_OFFSET);
+    face_water[CLASSIC] = text(root, "", 0, &lv_font_montserrat_14, 0xA8B9D2);
+    lv_obj_align(face_water[CLASSIC],LV_ALIGN_CENTER,0,INFO_OFFSET);
     face_battery[CLASSIC] = text(root, "Pil --", 22, &lv_font_montserrat_14, 0xA8B9D2);
     hour_hand = line(root, hand_points[0], 10, 0x493B35);
     minute_hand = line(root, hand_points[1], 6, 0x493B35);
     second_hand = line(root, hand_points[2], 3, 0x73BEFF);
-    center_pin = shape(root, 233, 233, 14, 14, LV_RADIUS_CIRCLE, 0x73BEFF);
+    center_pin = shape(root, 0, 0, 14, 14, LV_RADIUS_CIRCLE, 0x73BEFF);
+    lv_obj_center(center_pin);
 
     root=face_roots[ORBIT];
     orbit_ring=arc(root,408,36,6,0x293A51); lv_arc_set_range(orbit_ring,0,59);

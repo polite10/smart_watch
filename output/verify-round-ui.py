@@ -272,7 +272,27 @@ for i in [0,1,3]:
     check(abs(x+w/2-240)<=1 and abs(y+h/2-240)<=1,'Digital face %d clock is centered'%i)
 check((call('lv_obj_get_style_prop',pointer('face_roots',2),0,28)&0xffffff)==0x0c1422,'Classic face is dark in dark theme')
 check((call('lv_obj_get_style_prop',pointer('classic_numbers',0),0,88)&0xffffff)==0xf0f4fc,'Classic hour numerals are white in dark theme')
-check(text('classic_seconds')=='12 sn','Analog face has a numeric seconds indicator')
+classic=pointer('face_roots',2)
+check('classic_seconds' not in symbols and call('lv_obj_get_child_count',classic)==71,
+      'Analog face omits the redundant digital seconds label')
+check(not call('lv_obj_has_flag',pointer('second_hand'),1),
+      'Analog seconds hand remains visible with valid RTC')
+def object_center(obj):
+    return (call('lv_obj_get_x',obj)+call('lv_obj_get_width',obj)/2,
+            call('lv_obj_get_y',obj)+call('lv_obj_get_height',obj)/2)
+check(object_center(pointer('center_pin'))==(240,240),'Analog hands pivot exactly at the screen center')
+expected_centers=[(240,104),(376,240),(104,240),(240,376)]
+check(all(all(abs(a-b)<=1 for a,b in zip(object_center(pointer('classic_numbers',i)),expected_centers[i])) for i in range(4)),
+      'Analog numerals sit symmetrically around the screen center')
+top=object_center(pointer('face_date',2)); bottom=object_center(pointer('face_water',2))
+check(abs(top[0]-240)<=1 and abs(bottom[0]-240)<=1 and abs(top[1]+bottom[1]-480)<=1,
+      'Analog date and water information balance above and below the dial')
+before_hand=bytes(u.mem_read(symbols['hand_points']+32,16))
+u.mem_write(symbols['watch_data']+914,b'\x02'); call('watch_faces_apply_saved'); load(0)
+call('watch_ui_set_datetime',2026,10,5,10,8,15)
+check(bytes(u.mem_read(symbols['hand_points']+32,16))!=before_hand,
+      'Analog seconds hand continues moving after digital seconds removal')
+call('watch_ui_set_datetime',2026,10,5,10,8,12)
 neon_alarm=pointer('face_alarm',1)
 x=call('lv_obj_get_x',neon_alarm);y=call('lv_obj_get_y',neon_alarm)
 w=call('lv_obj_get_width',neon_alarm);h=call('lv_obj_get_height',neon_alarm)

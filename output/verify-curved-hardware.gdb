@@ -141,7 +141,9 @@ call lv_display_refr_timer(0)
 printf "CLASSIC FRAME: %u ms\n", smartwatch_frame_ms
 set $fb=front_buffer?hlcd_gfxmmu.Init.Buffers.Buf1Address:hlcd_gfxmmu.Init.Buffers.Buf0Address
 dump binary memory ../output/device-classic-framebuffer.bin $fb ($fb+0xb4000)
-check (lv_label_get_text(classic_seconds)[0]!=0) "Analog numeric seconds are visible"
+check (lv_obj_get_child_count(face_roots[CLASSIC])==71) "Analog dial omits the redundant digital seconds label"
+check (lv_obj_get_x(center_pin)+lv_obj_get_width(center_pin)/2==240&&lv_obj_get_y(center_pin)+lv_obj_get_height(center_pin)/2==240) "Analog hands pivot at the exact screen center"
+check (lv_obj_get_y(classic_numbers[0])+lv_obj_get_height(classic_numbers[0])/2==104&&lv_obj_get_y(classic_numbers[3])+lv_obj_get_height(classic_numbers[3])/2==376) "Analog vertical numerals have equal spacing from center"
 set watch_data.face_style=ORBIT
 call watch_faces_apply_saved()
 call lv_display_refr_timer(0)

@@ -99,6 +99,7 @@ static void read_touch(lv_indev_t *input, lv_indev_data_t *data)
         data->point.y=(int16_t)state.TouchY;
         data->state=LV_INDEV_STATE_PRESSED;
     } else data->state=LV_INDEV_STATE_RELEASED;
+    watch_ui_touch(data, HAL_GetTick());
 }
 static void RTC_Init(void)
 {

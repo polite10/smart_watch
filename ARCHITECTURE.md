@@ -32,12 +32,15 @@ adaptörü, LVGL'nin donanım bağlantısı olduğundan LVGL arayüzlerini kulla
 | Hesap makinesi | `watch_calculator_view.c` | `watch_calculator_vm.c` |
 | Takvim | `watch_calendar_view.c` | `watch_calendar_vm.c` |
 | 15 Bulmaca | `watch_puzzle_view.c` | `watch_puzzle_vm.c` |
+| Flappy Bird ve Yılan | `watch_arcade_view.c` | `watch_arcade_vm.c` |
+| Statik İDA konsolu | `watch_ida_view.c` | `watch_ida_vm.c` |
 | Ayarlar | `watch_settings_view.c` | `watch_settings_vm.c` |
 | Saat/tarih düzenleme | `watch_clock_view.c` | `watch_clock_vm.c` |
 | Alarm/su bildirimleri | `watch_notification_view.c` | `watch_notification_vm.c` |
 | Uygulama zamanı ve kayıt durumu | `watch_ui.c` | `watch_app_vm.c` |
 
-ViewModel sözleşmeleri `App/viewmodels/watch_viewmodels.h` içindedir. Ekranlar,
+Mevcut ViewModel sözleşmeleri `App/viewmodels/watch_viewmodels.h`, yeni oyun ve
+İDA sözleşmeleri `watch_arcade_vm.h` ve `watch_ida_vm.h` içindedir. Ekranlar,
 salt okunur durum getter'larını ve komut fonksiyonlarını kullanır. Widget
 adresleri ViewModel'e verilmez. Modelin verisi de salt okunur getter ile sunulur;
 değişiklikler model fonksiyonları üzerinden yapılır. `watch_data` sembolü mevcut
@@ -84,7 +87,8 @@ yapısını veya kullanıcı notlarını değiştirmez.
 - `watch_ui_*`, `watch_clock_set_datetime`, `refresh_rtc` ve donanım/debug sembolleri
   mevcut testler ve `Sync-Time.ps1` için korunur. Kökteki küçük başlıklar uyumluluk
   girişleridir; yeni kod ilgili katmanın başlığını kullanmalıdır.
-- Ana döngü, ekran zamanlaması, dokunma eşikleri ve bildirim öncelikleri korunur.
+- Ana döngü ve bildirim öncelikleri korunur. Menü/oyunlar dokunma beklemesini
+  atlar; diğer uygulamalardaki çift dokunma penceresi 120 ms'dir.
 - İkon bitmapleri ortak bir `.c` dosyasından sunulur; menü ve ayarlar aynı
   bitmapleri kullanır.
 
@@ -93,16 +97,46 @@ merkezleri eşit yarıçapta hizalanır. Tarih ve su bilgisi merkezin üstüne/a
 simetrik yerleşir. Analog kadranda dijital saniye etiketi yoktur; saniye ibresi
 ve diğer dijital kadranların saniye göstergeleri çalışmaya devam eder.
 
+## Oyun klasörü ve yeni ekranlar
+
+`watch_menu_view.c` dokuz uygulamayı dış çembere, üç oyunu merkezdeki yuvarlak
+klasöre yerleştirir. 180 ms büyüme sırasında oyun hedefleri tıklanamaz; hareket
+bittiğinde etkinleşir. Navigasyon menüden ayrılırken klasörü sıfırlar. Appbar
+etiketleri gizli metadata olarak tutulur; mevcut sayfa çocuk indeksleri ve geri
+hedefleri korunur.
+
+`watch_arcade.c` saf C oyun kurallarını, `watch_arcade_vm.c` RAM durumlarını
+barındırır. Oyun View'i 20 ms LVGL timer'ından geçen zamanı toplar. Flappy 20 ms,
+Yılan puana bağlı 160–80 ms sabit adımla ilerler; render her timer çağrısında en
+çok bir kez yapılır. Debugger duruşundan dönüşte yakalama süresi 160 ms ile
+sınırlıdır. Dokunma sırasında oyun saati yalnız başlatma/yeniden başlatmada
+sıfırlanır. Yılan her adımda tek dönüş alır; baskın sürükleme yönü modele iletilir.
+Menüye çıkış oyunu duraklatır. Bildirim, kapalı panel ve görünmeyen oyun ekranı
+fiziği ilerletmez.
+
+`watch_ida_vm.c` salt okunur statik örnek veri sunar. Radar, rota ve harita da
+statik görseldir; SIM etiketi gerçek telemetri olmadığı bilgisini verir.
+`watch_art.c` flash RGB565 arka planları ve ARGB8888 kuş içerir;
+`output/generate-arcade-art.py` ve `output/generate-menu-icons.py` varlıkları üretir.
+GPU2D/NemaGFX sürücüsü eklenmedi; var olan yazılım çizimi/DMA2D kopyası kullanılır.
+
 ## Doğrulama
 
 `Build.ps1` CubeIDE ile tüm alt klasörleri derler ve eşleşen `.bin` dosyasını ARM
 objcopy ile `Debug/Smartwatch.elf` dosyasından otomatik üretir. `-Clean` seçeneği
-temiz derleme yapar. Testler aynı ELF'i çalıştırır:
+temiz derleme yapar. macOS'ta `python3 output/build-macos.py --clean` kurulu
+CubeIDE ARM GCC'sini ve `.cproject` kaynak listelerini kullanır. Artımlı derlemede
+GCC dependency dosyaları ve derleme seçenekleri izlenir. Testler aynı ELF'i çalıştırır:
 
 - `output/verify-round-ui.py`: gerçek derlenmiş ARM kodu ve LVGL ile dokunma,
-  ekran geçişi, kayıt hatası, kadran ve analog hizalama kontrolleri; PNG önizlemeler.
+  ekran geçişi, kayıt hatası, kadran, analog hizalama, klasör animasyonu, 120/70 ms
+  süreler, gerçek oyun dokunmaları/sürüklemeleri ve statik İDA; PNG önizlemeler.
 - `output/verify-viewmodels.py`: LVGL başlatmadan Model/ViewModel komutları, taslaklar,
   sınırlar, saat servisi hataları, alarm erteleme ve 916 baytlık kayıt uyumluluğu.
+
+- `output/test-arcade.c`: 512 Yılan başlangıcı, dört yön, ters/çift dönüş engeli,
+  gövde/duvar çarpışması, büyüme, dolu tahta, duraklatma, Flappy fizik/puan/yeniden
+  başlatma ve statik İDA için bağımsız C modeli/VM testi.
 
 Testler yerel `unicorn`, `pyelftools` ve UI görselleri için `Pillow` kullanır.
 RTC, panel ve flash portları yazılım testlerinde taklit edilir. Bu sonuçlar

@@ -1,0 +1,9 @@
+{
+  "compiler": "/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.14.3.rel1.macosaarch64_1.0.0.202602081740/tools/bin/arm-none-eabi-gcc",
+  "sources": 495,
+  "compiled": 0,
+  "warnings": "",
+  "size": "   text\t   data\t    bss\t    dec\t    hex\tfilename\n2239184\t    812\t1999552\t4239548\t 40b0bc\t/Users/polite/Development/STM32/smart_watch-main/Debug/Smartwatch.elf\n",
+  "elf_sha256": "48014c57fbdb90485ecbba44222fbe22c9bccff4aabde6cf1e6d7db69a82f1fa",
+  "firmware_sha256": "e61acf9abb68f284007c6308bb0d8a0258b1f15adf82570f4bf927d2d9bc90d8"
+}

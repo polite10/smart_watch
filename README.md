@@ -2,61 +2,72 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
-## 15 Bulmaca, dokuz uygulama ve animasyonlar — 6 Ekim 2026
+## Yuvarlak oyun klasörü, Flappy Bird, Yılan ve İDA — 6 Ekim 2026
 
-Menü artık **dokuz adet 92 px ikon** içerir. Ortadaki amber ikon yeni **15 Bulmaca**
-oyununu açar. Üç sıra soldan sağa ve merkez sıra etrafında üstten alta simetriktir;
-üst sıranın yan ikonları aşağıda, alt sıranın yan ikonları yukarıdadır. Bütün
-dokunma alanları 480 px yuvarlak panelin içinde kalır.
+Menüde **12 uygulama** bulunur: alarm, hesap makinesi, notlar, kadranlar, takvim,
+ayarlar, saat, su ve İDA dış çemberde; 15 Bulmaca, Flappy Bird ve Yılan ortadaki
+**yuvarlak yarı saydam klasördedir**. Dış ikonların dokunma çapı 80 px, merkezleri
+178 px yarıçapındadır. Menüde uygulama adı veya appbar görünmez; diğer ekranların
+appbarları da gizlidir. Soldaki kenardan sağa kaydırmak önce klasörü kapatır,
+ardından bir üst ekrana döner.
 
-Oyun, **4 × 4** karede 1–15 sayıları ve tek boş hücre kullanır. Yalnız boş hücrenin
-yatay veya dikey komşusuna dokunmak taşı hareket ettirir. Hedef soldan sağa,
-yukarıdan aşağı 1–15 sırası ve sağ altta boş hücredir. Her açılışta ve **Yeni oyun**
-düğmesinde yeni, çözülebilir ve henüz tamamlanmamış bir tahta hazırlanır.
-Fisher–Yates karıştırması ve çift genişlikli tahtanın parite düzeltmesi kullanılır;
-zamana ve açılış sayacına dayanan sözde rastgelelik oyun içindir.
+Klasöre dokununca çapı **190 → 300 px**, oyun ikonları **64 → 88 px** olur.
+**180 ms** büyüme tamamlandıktan sonra oyunlar seçilebilir. Açık klasörün dışındaki
+ikonlar soluklaşır ve geçici olarak tıklanamaz. Boş alana veya klasöre dokunmak
+kapatır; bir oyun açıldığında menü eski boyutuna döner.
 
-Taşlar **62 px**, aralıklar **8 px**; oyun tahtası ve yeni oyun düğmesi çemberin
-içindedir. Doğru hücredeki taşlar mint rengiyle vurgulanır. Her geçerli hareket
-hamle sayısını bir artırır. Son hareket tamamlanınca **Tebrikler!** ve toplam hamle
-sayısı görünür; yeni oyun başlatılana kadar taşlar sabit kalır. Oyun RAM'de tutulur;
-menüden yeniden açılması eski oyunu sürdürmez ve flash kayıt formatını değiştirmez.
+- **Flappy Bird:** dokunma başladığında kuş yükselir. Boruların arasından geçmek
+  puan kazandırır; boruya veya üst/alt sınıra çarpmak oyunu bitirir. Tekrar dokunmak
+  yeni oyun başlatır. Fizik hesabı 20 ms adımlıdır; art arda dokunuşlar zamanı
+  sıfırlamaz. Üstte puan ve duraklat/devam düğmesi vardır.
+- **Yılan:** parmağı ekranda yukarı, aşağı, sağa veya sola sürüklemek baskın yönde
+  döndürür. 12 px altındaki hareketler süzülür; anlık ters dönüş ve aynı hücre
+  adımındaki ikinci dönüş engellenir. Yön bir sonraki hücre adımında uygulanır.
+  18 × 18 tahta, yemle büyüme, duvar/gövde çarpışması, puan ve duraklatma bulunur.
+  İlk dokunuş oyunu başlatır; oyun bitince tekrar dokunmak yeniden başlatır.
+- **15 Bulmaca:** mevcut çözülebilir 4 × 4 tahta, hamle sayacı, 140 ms taş kayması
+  ve yeni oyun işlevleri korunur.
+- **İDA:** pusula, menzil halkaları, rota/hedef, radar izi ve alt telemetri içeren
+  konsoldur. **SIM** işareti görünür. Saat, yön, hız, hedef mesafesi, pil, menzil,
+  bağlantı ve radar görüntüsü tamamen statik örneklerdir; sensör veya canlı veri
+  bağlantısı kullanılmaz.
 
-Animasyonlar:
+Oyunlar menüden her açıldığında yeni başlar. Oyun ekranından çıkmak çalışan oyunu
+duraklatır; kapalı ekranda veya bildirim üzerinde fizik ilerlemez. Oyun durumu
+RAM'dedir; **916 baytlık** kalıcı kullanıcı kaydı değişmez.
 
-- Saatten kaydırarak menüyü açınca ikonlar **12 px** yukarı hareket ederek yerleşir;
-  **160 ms** hareket ve ikon başına **12 ms** gecikme kullanılır.
-- Uygulama ve düzenleme sayfaları açılırken içerik **18 px** sağdan yerine gelir,
-  hareket **140 ms** sürer. Başlık yerinde kalır; saate kilitleme anında uygulanır.
-- Küçük butonlar basılınca yaklaşık **%5** küçülür ve bırakılınca geri gelir;
-  renk ve ölçek geçişi **90 ms** sürer. Büyük kartlarda renk geçişi kullanılır.
-  Alarm ve tema anahtarları **120 ms** içinde hareket eder.
-- Bulmaca taşı boş hücreye **140 ms** içinde kayar. Hareket sırasında ikinci taş
-  komutu engellenir; yeni oyun hareketi iptal edip yeni tahtayı doğru konumlandırır.
-- Hızlı sayfa değişimleri eski giriş hareketlerini temizler; ikon konumları birikmez.
-  Tam ekran opacity tamponu kullanılmaz. Gerçek panelde FPS/akıcılık ayrıca ölçülmelidir.
+Dokunma ve geçiş süreleri:
 
-Yeni dosyalar `App/models/watch_puzzle.[ch]`, `App/viewmodels/watch_puzzle_vm.c`
-ve `App/views/watch_puzzle_view.c` dosyalarıdır. Menü ve ikon varlıkları,
-`watch_viewmodels.h`, `watch_view_internal.h`, ortak widgetlar, navigasyon ve
-mevcut ekranların geçiş çağrıları güncellendi. Mevcut uygulamaları baştan yazmak
-gerekmedi. İkonları `output/generate-menu-icons.py` yeniden üretir.
-`Build.ps1` ELF'i, `Firmware/Smartwatch.bin` dosyasını ve derleme zamanı başlığını
-yeniler; doğrulama betikleri raporları ve ekran görüntülerini üretir.
+| Davranış | Önce | Şimdi |
+|---|---:|---:|
+| Menü, oyun klasörü ve oyun düğmelerinde ek bırakma beklemesi | 260 ms | 0 ms |
+| Flappy yükselme / Yılan ilk temas | Bırakma akışı | Dokunma başlangıcı |
+| Diğer uygulamalarda çift dokunma ayırt etme | 260 ms | 120 ms |
+| Genel içerik giriş hareketi | 140 ms / 18 px | 70 ms / 10 px |
+| Küçük buton/kart geçişi | 90 ms | 50 ms |
+| Menü, Flappy, Yılan ve İDA giriş hareketi | Genel geçiş | Anında yükleme |
 
-[Dokuz uygulamalı menü](output/round-menu.png), [oyun](output/round-puzzle.png) ve
-[kazanılmış oyun](output/round-puzzle-won.png) derlenmiş ARM/LVGL çizimleridir.
-Yeni sürüm için `output/verify-round-ui.json` ve `output/verify-viewmodels.json`
-raporları geçerlidir; aşağıdaki 5 Ekim test sayıları geçmiş sürümü anlatır.
-Derleme **0 hata, 0 uyarı**; ARM/LVGL ekran ve dokunma testlerinde **125**,
-ekransız Model/ViewModel testlerinde **54** kontrol geçti: toplam **179**, başarısız **0**.
-Bulmaca testleri 512 farklı çözülebilir başlangıç, 1024 geçerli hareket, geçersiz
-dokunma, kazanma, yeniden başlatma ve mevcut 916 baytlık kayıtların korunmasını kapsar.
-Bu sürümde fiziksel karta yükleme yapılmadı.
+0 ms burada **ek yazılım beklemesi olmaması** anlamındadır; dokunmatik örnekleme,
+LVGL çizimi ve panel taraması yine süre alır. Menü ve oyunlarda çift dokunarak
+kilitleme uygulanmaz; diğer uygulamalarda 120 ms penceresiyle korunur. Saatten
+kaydırarak menüyü açma ve tek dokunarak paneli kapatma davranışları sürer.
 
-Sonraki uygulama fikri: **kronometre ve geri sayım**. Büyük başlat/duraklat düğmesi,
-tur süreleri ve yuvarlak ilerleme halkası mevcut donanımla uyumludur. Alternatifler
-nefes egzersizi veya Pomodoro sayacıdır; bu sürümde uygulama sayısı dokuzdur.
+Sabit arka planlar flash'ta RGB565, kuş ARGB8888 tutulur. Yılanın 288 × 288 RGB565
+çizim tamponu statik RAM'dedir. Var olan LVGL yazılım çizimi ve **DMA2D kopyalama**
+yolu kullanılır. GPU2D/NemaGFX entegrasyonu eklenmedi; bu depoda gerekli NemaGFX
+SDK/kütüphanesi bulunmuyor. Bu sürüm için kartta FPS veya uçtan uca gecikme ölçülmedi.
+
+[Gerçek ARM/LVGL ekran önizlemesi](output/arcade-preview.png),
+[Flappy Bird](output/round-flappy.png), [Yılan](output/round-snake.png) ve
+[İDA](output/round-ida.png) derlenmiş firmware'in emülatörde çizdiği ekranlardır.
+`output/verify-round-ui.json` ve `output/verify-viewmodels.json` güncel doğrulama
+raporlarıdır. macOS'ta `python3 output/build-macos.py --clean`, Windows'ta
+`./Build.ps1 -Clean` derler ve eşleşen `Firmware/Smartwatch.bin` üretir.
+Temiz ARM derlemesi **0 hata, 0 uyarı** ile tamamlandı. Aynı ELF üzerinde
+**167 arayüz/dokunma**, **54 Model/ViewModel** kontrolü geçti: toplam
+**221**, başarısız **0**. Bağımsız C oyun testi 512 başlangıç tahtasını,
+oyun kurallarını ve duraklatma/yeniden başlatmayı da doğruladı.
+Bu sürüm fiziksel karta yüklenmedi.
 
 ## MVVM düzeni ve analog kadran — 5 Ekim 2026
 

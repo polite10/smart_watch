@@ -1,14 +1,12 @@
 #include "watch_faces.h"
 #include "viewmodels/watch_viewmodels.h"
-#include "watch_ui.h"
+#include "views/watch_view_internal.h"
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 
 LV_FONT_DECLARE(watch_font_clock_72);
-static void set_label(lv_obj_t *label, const char *value);
-static const lv_style_prop_t no_transition_properties[] = {0};
-static const lv_style_transition_dsc_t no_transition = {.props = no_transition_properties};
+static void face_set_label(lv_obj_t *label, const char *value);
 enum { PASTEL, NEON, CLASSIC, ORBIT, FACE_COUNT };
 enum { DIAL_CENTER = 240, DIAL_RADIUS = 166, NUMERAL_RADIUS = 136, INFO_OFFSET = 190 };
 _Static_assert(FACE_COUNT==WATCH_FACE_COUNT,"Face count must match persistent model validation");
@@ -27,7 +25,7 @@ static const char *style_names[] = {"Pastel", "Neon", "Klasik", "Orbit"};
 static lv_obj_t *text(lv_obj_t *parent, const char *value, int y, const lv_font_t *font, uint32_t color)
 {
     lv_obj_t *label = lv_label_create(parent);
-    set_label(label, value);
+    face_set_label(label, value);
     lv_obj_set_style_text_font(label, font, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(color), 0);
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, y);
@@ -49,9 +47,8 @@ static lv_obj_t *action(lv_obj_t *parent, const char *value, int y, int width, l
     lv_obj_set_style_radius(button, 30, 0); lv_obj_set_style_bg_color(button, lv_color_hex(0x253147), 0);
     lv_obj_set_style_text_color(button, lv_color_hex(0xF0F4FC), 0);
     lv_obj_set_style_shadow_width(button,0,0);
-    lv_obj_set_style_transition(button,&no_transition,LV_STATE_DEFAULT);
-    lv_obj_set_style_transition(button,&no_transition,LV_STATE_PRESSED);
-    lv_obj_t *label = lv_label_create(button); set_label(label, value); lv_obj_center(label);
+    button_motion(button);
+    lv_obj_t *label = lv_label_create(button); face_set_label(label, value); lv_obj_center(label);
     lv_obj_add_event_cb(button, callback, LV_EVENT_CLICKED, data);
     return button;
 }
@@ -124,38 +121,38 @@ static void picker_refresh(void)
         lv_obj_set_style_border_color(style_buttons[i], lv_color_hex(i == watch_faces_vm_state()->draft_style ? accents[i] : 0x33435C), 0);
     }
     colors_apply();
-    set_label(picker_hint,"Bir gorunum secin");
-    set_label(lv_obj_get_child(apply_button, 0), LV_SYMBOL_OK);
+    face_set_label(picker_hint,"Bir gorunum secin");
+    face_set_label(lv_obj_get_child(apply_button, 0), LV_SYMBOL_OK);
 }
 void watch_faces_open(void)
 {
     watch_faces_vm_open();
-    picker_refresh(); lv_screen_load(picker_screen);
+    picker_refresh(); watch_navigation_show(FACES);
 }
 static void choose_style(lv_event_t *e) { watch_faces_vm_choose((unsigned)(uintptr_t)lv_event_get_user_data(e)); picker_refresh(); }
 static void apply(lv_event_t *e)
 {
     (void)e;
     if(!watch_faces_vm_apply()) {
-        set_label(lv_obj_get_child(apply_button,0),LV_SYMBOL_REFRESH); set_label(picker_hint,"Kayit basarisiz"); return;
+        face_set_label(lv_obj_get_child(apply_button,0),LV_SYMBOL_REFRESH); face_set_label(picker_hint,"Kayit basarisiz"); return;
     }
-    watch_faces_apply_saved(); lv_screen_load(lv_obj_get_parent(face_roots[0]));
+    watch_faces_apply_saved(); watch_navigation_show(HOME);
 }
-static void set_label(lv_obj_t *label, const char *value)
+static void face_set_label(lv_obj_t *label, const char *value)
 {
     if(strcmp(lv_label_get_text(label), value)) lv_label_set_text(label,value);
 }
 
-void watch_faces_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t hour,uint8_t minute,uint8_t second,bool twelve_hour)
+void watch_faces_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t hour,uint8_t minute,uint8_t second,bool format_twelve)
 {
-    watch_faces_vm_refresh((watch_datetime_t){year,month,day,hour,minute,second},twelve_hour,watch_faces_vm_state()->clock_valid);
+    watch_faces_vm_refresh((watch_datetime_t){year,month,day,hour,minute,second},format_twelve,watch_faces_vm_state()->clock_valid);
     if(lv_screen_active() != picker_screen && lv_screen_active() != lv_obj_get_parent(face_roots[0])) return;
     const watch_faces_state_t *state=watch_faces_vm_state();
     for(unsigned i=0;i<FACE_COUNT;++i) {
-        if(face_clock[i]) { set_label(face_clock[i],state->time); set_label(mini_clocks[i],state->time); set_label(period_labels[i],state->period); }
-        set_label(face_date[i],state->date);
+        if(face_clock[i]) { face_set_label(face_clock[i],state->time); face_set_label(mini_clocks[i],state->time); face_set_label(period_labels[i],state->period); }
+        face_set_label(face_date[i],state->date);
     }
-    set_label(seconds_label,state->seconds); set_label(orbit_seconds,state->orbit_seconds);
+    face_set_label(seconds_label,state->seconds); face_set_label(orbit_seconds,state->orbit_seconds);
     if(!state->clock_valid) return;
     lv_arc_set_value(orbit_ring,second);
     if(watch_faces_vm_style() == CLASSIC && lv_screen_active() != picker_screen) {
@@ -185,7 +182,7 @@ void watch_faces_set_battery(uint8_t percent, bool valid)
 {
     watch_faces_vm_set_battery(percent,valid);
     for(unsigned i=0;i<FACE_COUNT;++i) {
-        set_label(face_battery[i],watch_faces_vm_state()->battery);
+        face_set_label(face_battery[i],watch_faces_vm_state()->battery);
         if(valid) lv_obj_remove_flag(face_battery[i],LV_OBJ_FLAG_HIDDEN);
         else lv_obj_add_flag(face_battery[i],LV_OBJ_FLAG_HIDDEN);
     }
@@ -196,8 +193,8 @@ void watch_faces_refresh(void)
     watch_water_state_t water=watch_water_vm_state();
     watch_faces_vm_refresh(watch_faces_vm_state()->datetime,watch_faces_vm_state()->twelve,watch_faces_vm_state()->clock_valid);
     for(unsigned i=0;i<FACE_COUNT;++i) {
-        set_label(face_water[i],water.summary);
-        if(face_alarm[i]) set_label(face_alarm[i],watch_faces_vm_state()->alarm);
+        face_set_label(face_water[i],water.summary);
+        if(face_alarm[i]) face_set_label(face_alarm[i],watch_faces_vm_state()->alarm);
     }
     lv_obj_set_width(pastel_progress,water.progress ? water.progress*226/100 : 1);
     lv_arc_set_value(neon_ring,water.progress); lv_arc_set_value(mini_ring,water.progress);
@@ -297,8 +294,7 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
         lv_obj_set_size(button,140,140); lv_obj_align(button,LV_ALIGN_TOP_MID,i%2 ? 84 : -84,i<2 ? 106 : 260);
         lv_obj_set_style_pad_all(button, 0, 0); lv_obj_set_style_radius(button,LV_RADIUS_CIRCLE,0);
         lv_obj_set_style_shadow_width(button,0,0);
-        lv_obj_set_style_transition(button,&no_transition,LV_STATE_DEFAULT);
-        lv_obj_set_style_transition(button,&no_transition,LV_STATE_PRESSED);
+        button_motion(button);
         lv_obj_set_style_bg_color(button,lv_color_hex(backgrounds[i]),0);
         lv_obj_add_event_cb(button, choose_style, LV_EVENT_CLICKED, (void *)(uintptr_t)i);
         lv_obj_t *dial = shape(button, 20, 8, 100, 100, LV_RADIUS_CIRCLE, backgrounds[i]);

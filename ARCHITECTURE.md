@@ -31,6 +31,7 @@ adaptörü, LVGL'nin donanım bağlantısı olduğundan LVGL arayüzlerini kulla
 | Su, hedef, geçmiş | `watch_water_view.c` | `watch_water_vm.c` |
 | Hesap makinesi | `watch_calculator_view.c` | `watch_calculator_vm.c` |
 | Takvim | `watch_calendar_view.c` | `watch_calendar_vm.c` |
+| 15 Bulmaca | `watch_puzzle_view.c` | `watch_puzzle_vm.c` |
 | Ayarlar | `watch_settings_view.c` | `watch_settings_vm.c` |
 | Saat/tarih düzenleme | `watch_clock_view.c` | `watch_clock_vm.c` |
 | Alarm/su bildirimleri | `watch_notification_view.c` | `watch_notification_vm.c` |
@@ -67,6 +68,15 @@ kayıt hata bildirimi korunur; işlemler tüm uygulama için atomik bir transact
 olarak uygulanmaz.
 
 ## Donanım ve kayıt uyumluluğu
+
+15 Bulmaca modelinin `watch_puzzle_state_t` durumu RAM'dedir. Model, karıştırma,
+çözülebilirlik paritesi, komşuluk, hamle sayımı ve kazanma kurallarını uygular.
+ViewModel her açılışta farklı bir oyun üretir; LVGL tick bilgisi View'den sayısal
+tohum olarak gelir. ViewModel HAL veya LVGL'ye bağımlı değildir. View sayıya ait
+widget'ı yeni hücresine kaydırır ve hareket bitince durum metnini yeniler.
+`watch_navigation_show` ortak içerik giriş hareketlerini ve yarıda kalan geçişleri
+yönetir; dokunma filtrelemesi hedef ekranı hemen görür. Bu özellik flash veri
+yapısını veya kullanıcı notlarını değiştirmez.
 
 - Flash veri yapısı **916 bayt**, sürümü **1** olarak korunmuştur; derleme zamanı
   kontrolü bu boyutun değişmesini engeller.

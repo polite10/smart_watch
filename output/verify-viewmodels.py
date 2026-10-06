@@ -203,6 +203,55 @@ saved = persisted
 call('watch_app_vm_init', 0)
 check(bytes(u.mem_read(symbols['watch_data'], 916)) == saved, 'Reinitialization reloads the unchanged 916-byte persistent layout')
 
+def puzzle():
+    address=call('watch_puzzle_vm_state')
+    return list(u.mem_read(address,16)), u.mem_read(address+16,1)[0], u.mem_read(address+17,1)[0], struct.unpack('<I',u.mem_read(address+20,4))[0]
+
+def solvable(tiles):
+    inversions=sum(a>b for i,a in enumerate(tiles) if a for b in tiles[i+1:] if b)
+    return (inversions+4-tiles.index(0)//4)%2==1
+
+before_persistent=bytes(u.mem_read(symbols['watch_data'],916))
+boards=set(); valid=True
+for seed in range(512):
+    call('watch_puzzle_vm_new',seed)
+    tiles,blank,won,moves=puzzle()
+    valid &= sorted(tiles)==list(range(16)) and blank==tiles.index(0) and solvable(tiles) and not won and moves==0
+    boards.add(bytes(tiles))
+check(valid,'512 shuffled games each contain 0-15 once, are solvable, unsolved and start at zero moves')
+check(len(boards)==512,'Different seeds produce 512 distinct games')
+call('watch_puzzle_vm_new',0); old=puzzle()[0]
+call('watch_puzzle_vm_new',0)
+check(puzzle()[0]!=old,'Reopening with identical tick entropy still creates a different board')
+
+address=call('watch_puzzle_vm_state')
+def fixture(tiles,blank,moves=0):
+    u.mem_write(address,bytes(tiles)+bytes([blank,0])+b'\0\0'+struct.pack('<I',moves))
+
+fixture([1,2,3,0,5,6,7,4,9,10,11,8,13,14,15,12],3)
+before=puzzle()
+check(not call('watch_puzzle_vm_move',4) and puzzle()==before,'Row-end to next-row-start is not an adjacent move')
+check(not call('watch_puzzle_vm_move',0) and not call('watch_puzzle_vm_move',3) and not call('watch_puzzle_vm_move',16) and puzzle()==before,
+      'Non-adjacent, blank and out-of-range taps do not change state or move count')
+check(call('watch_puzzle_vm_move',7) and puzzle()[1]==7 and puzzle()[3]==1,'Vertical neighbor slides exactly one cell and counts once')
+
+fixture(list(range(1,15))+[0,15],14,7)
+check(call('watch_puzzle_vm_move',15) and puzzle()==(list(range(1,16))+[0],15,1,8),'Final horizontal move sets the win state with the correct move count')
+check(not call('watch_puzzle_vm_move',14) and puzzle()[3]==8,'Completed board stays solved until a new game')
+call('watch_puzzle_vm_new',42)
+check(not puzzle()[2] and puzzle()[3]==0,'Restart clears win state and moves')
+valid=True
+for step in range(1024):
+    tiles,blank,won,moves=puzzle()
+    if won: break
+    neighbors=[i for i in range(16) if abs(i//4-blank//4)+abs(i%4-blank%4)==1]
+    slot=neighbors[step%len(neighbors)]; value=tiles[slot]
+    accepted=call('watch_puzzle_vm_move',slot)
+    after,new_blank,new_won,new_moves=puzzle()
+    valid &= accepted and after[blank]==value and after[slot]==0 and new_blank==slot and new_moves==moves+1 and solvable(after)
+check(valid,'1024 legal moves preserve tile identity, solvability, blank position and counters')
+check(bytes(u.mem_read(symbols['watch_data'],916))==before_persistent,'Playing and restarting never change persistent notes, alarms or settings')
+
 report = {'passed': sum(v for v, _ in checks), 'failed': sum(not v for v, _ in checks), 'checks': checks,
           'elf_sha256': hashlib.sha256((ROOT/'Debug'/'Smartwatch.elf').read_bytes()).hexdigest(),
           'scope': 'Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes.'}

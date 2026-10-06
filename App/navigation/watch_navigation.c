@@ -1,12 +1,51 @@
 #include "views/watch_view_internal.h"
 bool display_awake=true;
 
+static void enter_x(void *obj, int32_t value) { lv_obj_set_style_translate_x(obj,value,0); }
+static void enter_y(void *obj, int32_t value) { lv_obj_set_style_translate_y(obj,value,0); }
+
+static void reset_motion(lv_obj_t *page)
+{
+    for(unsigned i=0; i<lv_obj_get_child_count(page); ++i) {
+        lv_obj_t *child=lv_obj_get_child(page,i);
+        lv_anim_delete(child,enter_x); lv_anim_delete(child,enter_y);
+        enter_x(child,0); enter_y(child,0);
+    }
+}
+
+void watch_navigation_show(unsigned screen)
+{
+    if(screen>=SCREEN_COUNT) return;
+    lv_obj_t *previous=lv_screen_active();
+    if(previous==screens[screen]) return;
+    if(previous) reset_motion(previous);
+    reset_motion(screens[screen]);
+    /* Load immediately so gesture arbitration sees the new page without a delay.
+       Small content translations need no full-screen opacity/compositing layer. */
+    lv_screen_load(screens[screen]);
+    if(screen==HOME) return; /* Lock and notification response remain immediate. */
+    bool menu=screen==MENU;
+    for(unsigned i=0; i<lv_obj_get_child_count(screens[screen]); ++i) {
+        lv_obj_t *child=lv_obj_get_child(screens[screen],i);
+        if(child==page_titles[screen] || lv_obj_has_flag(child,LV_OBJ_FLAG_HIDDEN)) continue;
+        lv_anim_t animation; lv_anim_init(&animation);
+        lv_anim_set_var(&animation,child);
+        lv_anim_set_exec_cb(&animation,menu ? enter_y : enter_x);
+        lv_anim_set_values(&animation,menu ? 12 : 18,0);
+        lv_anim_set_duration(&animation,menu ? 160 : 140);
+        if(menu) lv_anim_set_delay(&animation,(i-1)*12);
+        lv_anim_set_path_cb(&animation,lv_anim_path_ease_out);
+        lv_anim_start(&animation);
+    }
+}
+
 void navigate(lv_event_t *e)
 {
     unsigned screen = (unsigned)(uintptr_t)lv_event_get_user_data(e);
     if(screen == FACES) watch_faces_open();
     else if(screen == CLOCK_EDIT) clock_editor_open();
-    else lv_screen_load(screens[screen]);
+    else if(screen == PUZZLE) puzzle_open();
+    else watch_navigation_show(screen);
 }
 
 void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
@@ -28,7 +67,7 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
             /* First release is still withheld: neither tap activates an app control. */
             pending = false; consumed = true; down = true;
             lv_indev_reset(lv_indev_active(), NULL);
-            lv_screen_load(screens[HOME]);
+            watch_navigation_show(HOME);
             data->state = LV_INDEV_STATE_RELEASED;
             return;
         }
@@ -54,11 +93,11 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
         if(edge_contact && !consumed && dx >= 64 && dy*dy <= dx*dx/2) {
             consumed = moved = true; pending = false; edge_contact = false;
             lv_indev_reset(lv_indev_active(),NULL);
-            lv_screen_load(screens[back_targets[contact_screen]]);
+            watch_navigation_show(back_targets[contact_screen]);
         }
         if(dx*dx+dy*dy >= 24*24) {
             if(!moved && home_contact && lv_screen_active() == screens[HOME])
-                lv_screen_load(screens[MENU]);
+                watch_navigation_show(MENU);
             moved = true;
         }
         if(consumed) data->state = LV_INDEV_STATE_RELEASED;

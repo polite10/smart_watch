@@ -82,7 +82,14 @@ def cstring(addr):
 def text(name):return cstring(call('lv_label_get_text',pointer(name)))
 screens=lambda i:pointer('screens',i)
 def load(i):call('lv_screen_load',screens(i))
+def settle(milliseconds=400):
+    global tick
+    for _ in range(0,milliseconds,20):
+        tick+=20
+        call('anim_timer',0)
+
 def snapshot(name):
+    settle()
     call('lv_display_refr_timer',0)
     im=Image.frombytes('RGBA',(480,480),bytes(frame),'raw','BGRA').convert('RGB')
     mask=Image.new('L',(480,480));ImageDraw.Draw(mask).ellipse((0,0,479,479),fill=255)
@@ -93,11 +100,12 @@ def check(condition,label):
     checks.append((bool(condition),label));print(('PASS' if condition else 'FAIL')+': '+label,flush=True)
 def sample(pressed,x=240,y=240,delta=16):
     global tick,raw
-    tick+=delta;raw=(pressed,x,y);call('lv_indev_read_timer_cb',read_timer)
+    tick+=delta;raw=(pressed,x,y);call('anim_timer',0);call('lv_indev_read_timer_cb',read_timer)
 def tap(x,y):
     sample(True,x,y);sample(False,x,y,48);sample(False,x,y,280)
     call('lv_display_refr_timer',0)
     sample(False,x,y,16)
+    settle(180)
 def tap_object(obj):
     x=call('lv_obj_get_x',obj);y=call('lv_obj_get_y',obj)
     w=call('lv_obj_get_width',obj);h=call('lv_obj_get_height',obj)
@@ -106,6 +114,7 @@ def tap_object(obj):
 def swipe_back():
     sample(True,24,240);sample(True,108,242,64);sample(False,108,242,16)
     call('lv_display_refr_timer',0);sample(False,108,242,16)
+    settle()
 def active():return call('lv_screen_active')
 
 call('lv_init');call('lv_tick_set_cb',symbols['HAL_GetTick'])
@@ -130,14 +139,87 @@ sample(True);sample(True,280,240)
 check(active()==screens(1),'Moving 40px unlocks directly to menu')
 sample(False,280,240)
 snapshot('menu')
-check(call('lv_obj_get_child_count',screens(1))==9,'Menu has a centered title, eight icons and no back button')
+check(call('lv_obj_get_child_count',screens(1))==10,'Menu has a centered title, nine icons and no back button')
 check(sizes['watch_data']==916,'Persistent user-data structure retains its 916-byte format')
-for i in range(8):
+for i in range(9):
     button=call('lv_obj_get_child',screens(1),i+1)
     x=call('lv_obj_get_x',button);y=call('lv_obj_get_y',button);w=call('lv_obj_get_width',button)
     check(w==92 and ((x+w/2-240)**2+(y+w/2-240)**2)**.5+w/2<=240,'Icon %d has a large target wholly inside the circle'%i)
+# Mirror symmetry and curved rows remain deliberate with an odd app count.
+centers=[]
+for i in range(9):
+    button=call('lv_obj_get_child',screens(1),i+1)
+    centers.append((call('lv_obj_get_x',button)+46,call('lv_obj_get_y',button)+46))
+check(all(centers[a][0]+centers[b][0]==480 and centers[a][1]==centers[b][1] for a,b in [(0,2),(3,5),(6,8)]),
+      'All three menu rows are left-right symmetric')
+check(all(centers[a][1]+centers[b][1]==2*centers[4][1] for a,b in [(0,6),(1,7),(2,8)]),
+      'Top and bottom curved rows mirror around the central puzzle icon')
+
+# The ninth app is exercised through actual raw input and animated LVGL objects.
+tap(240,269)
+check(active()==screens(14),'Center puzzle icon opens the ninth app')
+snapshot('puzzle')
+puzzle_state=call('watch_puzzle_vm_state')
+def board():return list(u.mem_read(puzzle_state,16))
+def moves():return read32(puzzle_state+20)
+before=board(); blank=before.index(0)
+safe=True
+for value in range(1,16):
+    obj=pointer('puzzle_tiles',value)
+    x=call('lv_obj_get_x',obj);y=call('lv_obj_get_y',obj)
+    safe &= call('lv_obj_get_width',obj)==62 and call('lv_obj_get_height',obj)==62
+    safe &= all((px-240)**2+(py-240)**2<=240**2 for px in (x,x+62) for py in (y,y+62))
+check(safe,'All fifteen 62px square targets lie inside the round display')
+invalid=next(i for i in range(16) if before[i] and abs(i//4-blank//4)+abs(i%4-blank%4)>1)
+tap_object(pointer('puzzle_tiles',before[invalid]))
+check(board()==before and moves()==0,'Tapping a non-adjacent tile leaves the board unchanged')
+slot=next(i for i in range(16) if abs(i//4-blank//4)+abs(i%4-blank%4)==1)
+value=before[slot]; tile=pointer('puzzle_tiles',value)
+x=call('lv_obj_get_x',tile);y=call('lv_obj_get_y',tile)
+sample(True,x+31,y+31);settle(60)
+check(call('lv_obj_get_style_prop',tile,0,110)<256,'Pressed tile visibly compresses before the delayed click')
+sample(False,x+31,y+31,48);sample(False,x+31,y+31,280)
+check(moves()==1 and board()[blank]==value and u.mem_read(symbols['puzzle_moving'],1)[0],
+      'Adjacent tap updates one move and starts a tile animation')
+settle(60);call('lv_obj_update_layout',screens(14))
+position=(call('lv_obj_get_x',tile),call('lv_obj_get_y',tile))
+destination=(104+(blank%4)*70,118+(blank//4)*70)
+check(position!=(x,y) and position!=destination,'Tile occupies an intermediate position while sliding')
+# Extra callbacks during a move cannot start an overlapping move.
+current=board(); current_blank=current.index(0)
+other=next(current[i] for i in range(16) if current[i]!=value and abs(i//4-current_blank//4)+abs(i%4-current_blank%4)==1)
+call('lv_obj_send_event',pointer('puzzle_tiles',other),10,0) # LV_EVENT_CLICKED
+check(moves()==1,'Additional clicks during the tile slide are ignored')
+settle(180);call('lv_obj_update_layout',screens(14))
+check((call('lv_obj_get_x',tile),call('lv_obj_get_y',tile))==destination and not u.mem_read(symbols['puzzle_moving'],1)[0],
+      'Tile finishes exactly at the empty-cell destination and releases the input guard')
+old=board();tap(240,428)
+check(board()!=old and moves()==0,'New game button reshuffles and clears the move count')
+old=board()
+swipe_back();tap(240,269)
+check(board()!=old and moves()==0,'Opening the puzzle from the menu starts a new game')
+snapshot('puzzle')
+
+# A reachable board one move from completion verifies the winning UI.
+fixture=list(range(1,15))+[0,15]
+u.mem_write(puzzle_state,bytes(fixture)+b'\x0e\0\0\0'+struct.pack('<I',7))
+for slot,value in enumerate(fixture):
+    if value:call('lv_obj_set_pos',pointer('puzzle_tiles',value),104+(slot%4)*70,118+(slot//4)*70)
+call('puzzle_refresh');call('lv_obj_update_layout',screens(14))
+tap_object(pointer('puzzle_tiles',15));snapshot('puzzle-won')
+check(board()==list(range(1,16))+[0] and text('puzzle_status')=='Tebrikler! / 8 hamle','Last tile slide displays congratulations and final moves')
+tap_object(pointer('puzzle_tiles',15))
+check(moves()==8,'Completed puzzle ignores tile taps')
+tap(240,428)
+check(not u.mem_read(puzzle_state+17,1)[0] and moves()==0 and 'Tebrikler' not in text('puzzle_status'),'Restart dismisses the win state')
+
+swipe_back()
+# Interrupt menu motion by entering and immediately leaving an app.
+call('watch_navigation_show',6);call('watch_navigation_show',1);settle();call('lv_obj_update_layout',screens(1))
+check(all(call('lv_obj_get_y',call('lv_obj_get_child',screens(1),i+1))==y for i,y in enumerate([123,89,123,223,223,223,323,357,323])),
+      'Interrupted navigation restores all menu icons to their intended positions')
 # Real taps go through raw gesture arbitration and the LVGL event dispatcher.
-tap(346,185)
+tap(346,169)
 check(active()==screens(6),'Calculator icon opens calculator')
 snapshot('calculator')
 safe=True
@@ -156,7 +238,7 @@ before=text('calc_label')
 sample(True,126,178);sample(False,126,178,40);sample(True,126,178,100);sample(False,126,178,40)
 check(active()==screens(0) and text('calc_label')==before,'Double tap locks without activating either key')
 sample(True);sample(True,280,240);sample(False,280,240)
-tap(134,353)
+tap(134,369)
 check(active()==screens(10),'Water icon opens tracker')
 snapshot('water')
 water_offset=symbols['watch_data']+4+3*8+4*192+4
@@ -167,9 +249,9 @@ tap(92,211)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Large minus undoes one glass')
 sample(True,388,211);sample(False,388,211,40);sample(True,388,211,100);sample(False,388,211,40)
 check(active()==screens(0) and struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Double tap on water plus locks without adding water')
-sample(True);sample(True,280,240);sample(False,280,240);snapshot('menu');tap(134,353)
+sample(True);sample(True,280,240);sample(False,280,240);snapshot('menu');tap(134,369)
 tap(388,211);snapshot('water-filled')
-swipe_back();tap(187,269)
+swipe_back();tap(128,269)
 check(active()==screens(7),'Notes icon opens notes')
 tap(240,138)
 check(active()==screens(8),'Note card opens large keyboard')
@@ -210,7 +292,7 @@ tap_object(pointer('calendar_arrows',1))
 check(text('calendar_month_label')=='Kasim 2026','Calendar month advances')
 tap_object(pointer('calendar_arrows',0))
 check(text('calendar_month_label')=='Ekim 2026','Calendar month goes back')
-for page,parent in [(1,0),(2,1),(3,1),(4,1),(5,4),(6,1),(7,1),(8,7),(9,1),(10,1),(11,10),(12,10),(13,1)]:
+for page,parent in [(1,0),(2,1),(3,1),(4,1),(5,4),(6,1),(7,1),(8,7),(9,1),(10,1),(11,10),(12,10),(13,1),(14,1)]:
     load(page);call('lv_display_refr_timer',0)
     header=pointer('page_titles',page)
     x=call('lv_obj_get_x',header);w=call('lv_obj_get_width',header)
@@ -303,6 +385,8 @@ check((call('lv_obj_get_style_prop',pointer('face_clock',1),0,88)&0xffffff)==min
 load(3);tap(365,287);snapshot('settings-light')
 check(bytes(u.mem_read(symbols['watch_data']+913,1))==b'\x01','Light theme remains selectable')
 check(text('theme_button_label')=='Acik' and call('lv_obj_has_state',pointer('settings_switch'),1),'Theme capsule updates its value and switch together')
+load(14);snapshot('puzzle-light')
+check((call('lv_obj_get_style_prop',screens(14),0,28)&0xffffff)==0xeaf0f8,'Puzzle follows the selected light theme')
 u.mem_write(symbols['watch_data']+914,b'\x02');call('watch_faces_apply_saved');load(0);snapshot('classic-light')
 check((call('lv_obj_get_style_prop',pointer('face_roots',2),0,28)&0xffffff)==0xf6efe4,'Classic face follows light theme too')
 call('watch_ui_set_clock_valid',0);load(0);snapshot('clock-unset')
@@ -317,10 +401,13 @@ check(read32(symbols['displayed_notification'])==0xffffffff,'Reminder alert rema
 before=struct.unpack('<H',u.mem_read(water_offset,2))[0]
 tap(240,280)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==before+200,'Notification buttons bypass double-tap delay and add one glass')
-names=['menu','note-editor','calendar','faces','calculator','water-filled']
+names=['menu','puzzle','note-editor','faces','calculator','water-filled']
 sheet=Image.new('RGB',(1440,960),'#171e2c')
 for i,n in enumerate(names):sheet.paste(Image.open(ROOT/'output'/('round-'+n+'.png')),((i%3)*480,(i//3)*480))
 sheet.save(ROOT/'output'/'round-ui-preview.png')
+puzzles=Image.new('RGB',(1440,480),'#171e2c')
+for i,n in enumerate(['menu','puzzle','puzzle-won']):puzzles.paste(Image.open(ROOT/'output'/('round-'+n+'.png')),(i*480,0))
+puzzles.save(ROOT/'output'/'puzzle-preview.png')
 controls=Image.new('RGB',(1440,480),'#171e2c')
 for i,n in enumerate(['calculator','settings','faces']):controls.paste(Image.open(ROOT/'output'/('round-'+n+'.png')),(i*480,0))
 controls.save(ROOT/'output'/'controls-preview.png')

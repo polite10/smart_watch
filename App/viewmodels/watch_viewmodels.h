@@ -1,6 +1,11 @@
 #ifndef WATCH_VIEWMODELS_H
 #define WATCH_VIEWMODELS_H
 #include "models/watch_datetime.h"
+#include "models/watch_puzzle.h"
+
+const watch_puzzle_state_t *watch_puzzle_vm_state(void);
+void watch_puzzle_vm_new(uint32_t entropy);
+bool watch_puzzle_vm_move(unsigned slot);
 typedef struct { watch_datetime_t time; bool clock_valid, storage_ok, rtc_crystal; } watch_app_state_t;
 typedef enum { WATCH_VM_TIME, WATCH_VM_CLOCK, WATCH_VM_TIME_CHANGED } watch_vm_event_t;
 typedef void (*watch_vm_observer_t)(watch_vm_event_t event);

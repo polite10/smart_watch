@@ -39,12 +39,12 @@ static void note_edit(lv_event_t *e)
     watch_notes_vm_open((unsigned)(uintptr_t)lv_event_get_user_data(e));
     /* LVGL copies text and emits VALUE_CHANGED synchronously. Avoid overlapping draft copy. */
     char draft[WATCH_NOTE_SIZE]; snprintf(draft,sizeof draft,"%s",watch_notes_vm_state()->draft);
-    lv_textarea_set_text(note_text,draft); note_changed(NULL); note_keyboard_refresh(); lv_screen_load(screens[NOTE_EDIT]);
+    lv_textarea_set_text(note_text,draft); note_changed(NULL); note_keyboard_refresh(); watch_navigation_show(NOTE_EDIT);
 }
 static void note_save(lv_event_t *e)
 {
     (void)e; watch_notes_vm_change(lv_textarea_get_text(note_text));
-    if(watch_notes_vm_save()) { apps_refresh(); lv_screen_load(screens[NOTES]); }
+    if(watch_notes_vm_save()) { apps_refresh(); watch_navigation_show(NOTES); }
     storage_refresh();
 }
 static void note_delete(lv_event_t *e)
@@ -52,7 +52,7 @@ static void note_delete(lv_event_t *e)
     (void)e; bool deleted=watch_notes_vm_delete();
     set_label(note_delete_label,watch_notes_vm_state()->confirm_delete ? "?" : LV_SYMBOL_TRASH);
     set_label(note_hint,watch_notes_vm_state()->hint); storage_refresh();
-    if(deleted) { apps_refresh(); lv_screen_load(screens[NOTES]); }
+    if(deleted) { apps_refresh(); watch_navigation_show(NOTES); }
 }
 void notes_refresh(void)
 {

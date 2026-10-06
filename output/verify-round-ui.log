@@ -2,7 +2,7 @@ PASS: Home starts with clock
 PASS: Single tap turns the panel off
 PASS: Wake tap shows clock and is consumed
 PASS: Moving 40px unlocks directly to menu
-PASS: Menu has a centered title, eight icons and no back button
+PASS: Menu has a centered title, nine icons and no back button
 PASS: Persistent user-data structure retains its 916-byte format
 PASS: Icon 0 has a large target wholly inside the circle
 PASS: Icon 1 has a large target wholly inside the circle
@@ -12,6 +12,23 @@ PASS: Icon 4 has a large target wholly inside the circle
 PASS: Icon 5 has a large target wholly inside the circle
 PASS: Icon 6 has a large target wholly inside the circle
 PASS: Icon 7 has a large target wholly inside the circle
+PASS: Icon 8 has a large target wholly inside the circle
+PASS: All three menu rows are left-right symmetric
+PASS: Top and bottom curved rows mirror around the central puzzle icon
+PASS: Center puzzle icon opens the ninth app
+PASS: All fifteen 62px square targets lie inside the round display
+PASS: Tapping a non-adjacent tile leaves the board unchanged
+PASS: Pressed tile visibly compresses before the delayed click
+PASS: Adjacent tap updates one move and starts a tile animation
+PASS: Tile occupies an intermediate position while sliding
+PASS: Additional clicks during the tile slide are ignored
+PASS: Tile finishes exactly at the empty-cell destination and releases the input guard
+PASS: New game button reshuffles and clears the move count
+PASS: Opening the puzzle from the menu starts a new game
+PASS: Last tile slide displays congratulations and final moves
+PASS: Completed puzzle ignores tile taps
+PASS: Restart dismisses the win state
+PASS: Interrupted navigation restores all menu icons to their intended positions
 PASS: Calculator icon opens calculator
 PASS: All sixteen calculator keys are 68px and stay inside the round display
 PASS: Calculator uses four straight aligned rows
@@ -63,6 +80,8 @@ PASS: Page 12 title stays horizontally centered
 PASS: Page 12 edge-swipe returns to its parent
 PASS: Page 13 title stays horizontally centered
 PASS: Page 13 edge-swipe returns to its parent
+PASS: Page 14 title stays horizontally centered
+PASS: Page 14 edge-swipe returns to its parent
 PASS: A drag starting in the middle does not navigate back
 PASS: Face confirmation is a 64px circular target
 PASS: Face confirmation shows only a checkmark
@@ -98,13 +117,14 @@ PASS: Neon alarm status fits wholly inside progress ring
 PASS: Face colors remain fixed regardless of legacy customization byte
 PASS: Light theme remains selectable
 PASS: Theme capsule updates its value and switch together
+PASS: Puzzle follows the selected light theme
 PASS: Classic face follows light theme too
 PASS: Invalid RTC displays unavailable time
 PASS: Water reminder wakes an off panel automatically
 PASS: Reminder alert remains visible until acted on
 PASS: Notification buttons bypass double-tap delay and add one glass
 {
-  "passed": 105,
+  "passed": 125,
   "failed": 0,
   "checks": [
     [
@@ -125,7 +145,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Menu has a centered title, eight icons and no back button"
+      "Menu has a centered title, nine icons and no back button"
     ],
     [
       true,
@@ -162,6 +182,74 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     [
       true,
       "Icon 7 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 8 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "All three menu rows are left-right symmetric"
+    ],
+    [
+      true,
+      "Top and bottom curved rows mirror around the central puzzle icon"
+    ],
+    [
+      true,
+      "Center puzzle icon opens the ninth app"
+    ],
+    [
+      true,
+      "All fifteen 62px square targets lie inside the round display"
+    ],
+    [
+      true,
+      "Tapping a non-adjacent tile leaves the board unchanged"
+    ],
+    [
+      true,
+      "Pressed tile visibly compresses before the delayed click"
+    ],
+    [
+      true,
+      "Adjacent tap updates one move and starts a tile animation"
+    ],
+    [
+      true,
+      "Tile occupies an intermediate position while sliding"
+    ],
+    [
+      true,
+      "Additional clicks during the tile slide are ignored"
+    ],
+    [
+      true,
+      "Tile finishes exactly at the empty-cell destination and releases the input guard"
+    ],
+    [
+      true,
+      "New game button reshuffles and clears the move count"
+    ],
+    [
+      true,
+      "Opening the puzzle from the menu starts a new game"
+    ],
+    [
+      true,
+      "Last tile slide displays congratulations and final moves"
+    ],
+    [
+      true,
+      "Completed puzzle ignores tile taps"
+    ],
+    [
+      true,
+      "Restart dismisses the win state"
+    ],
+    [
+      true,
+      "Interrupted navigation restores all menu icons to their intended positions"
     ],
     [
       true,
@@ -369,6 +457,14 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
+      "Page 14 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 14 edge-swipe returns to its parent"
+    ],
+    [
+      true,
       "A drag starting in the middle does not navigate back"
     ],
     [
@@ -509,6 +605,10 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
+      "Puzzle follows the selected light theme"
+    ],
+    [
+      true,
       "Classic face follows light theme too"
     ],
     [
@@ -528,7 +628,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
       "Notification buttons bypass double-tap delay and add one glass"
     ]
   ],
-  "elf_sha256": "3ef0573961600c978b24f62801fa80445550c2a9ce0ebd2f3b2f7a34df1c59dd",
-  "firmware_sha256": "358b136190577f10d05db8e45210e7ea73856985230717e25ed328cf3a31e588",
+  "elf_sha256": "beba4d3099a17d9cb7eff71e2964cfed1a92a05b73c8f9cca433040dc596ef04",
+  "firmware_sha256": "d749cfa899fcbcf8ef9b760f6310702a4207cc5c43a1da476bf532c4f17fc6c3",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

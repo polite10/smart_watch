@@ -9,4 +9,5 @@ extern const lv_image_dsc_t icon_faces;
 extern const lv_image_dsc_t icon_water;
 extern const lv_image_dsc_t icon_calendar;
 extern const lv_image_dsc_t icon_settings;
+extern const lv_image_dsc_t icon_puzzle;
 #endif

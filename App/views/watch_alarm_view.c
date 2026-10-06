@@ -7,13 +7,13 @@ static void alarm_edit(lv_event_t *e)
     watch_alarm_vm_open((unsigned)(uintptr_t)lv_event_get_user_data(e));
     const watch_alarm_editor_t *editor=watch_alarm_vm_editor();
     lv_roller_set_selected(alarm_hour,editor->hour,LV_ANIM_OFF); lv_roller_set_selected(alarm_minute,editor->minute,LV_ANIM_OFF);
-    set_label(alarm_repeat_label,editor->repeat); lv_screen_load(screens[ALARM_EDIT]);
+    set_label(alarm_repeat_label,editor->repeat); watch_navigation_show(ALARM_EDIT);
 }
 static void alarm_repeat(lv_event_t *e) { (void)e; watch_alarm_vm_repeat(); set_label(alarm_repeat_label,watch_alarm_vm_editor()->repeat); }
 static void alarm_save(lv_event_t *e)
 {
     (void)e; watch_alarm_vm_save(lv_roller_get_selected(alarm_hour),lv_roller_get_selected(alarm_minute));
-    storage_refresh(); apps_refresh(); lv_screen_load(screens[ALARMS]);
+    storage_refresh(); apps_refresh(); watch_navigation_show(ALARMS);
 }
 
 void alarms_refresh(void)
@@ -53,7 +53,7 @@ void alarms_init(void)
         alarm_switches[i]=lv_switch_create(toggle); lv_obj_set_size(alarm_switches[i],36,18);
         lv_obj_align(alarm_switches[i],LV_ALIGN_TOP_MID,0,8);
         lv_obj_remove_flag(alarm_switches[i],LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_anim_duration(alarm_switches[i],0,0);
+        lv_obj_set_style_anim_duration(alarm_switches[i],120,0);
         lv_obj_set_style_bg_color(alarm_switches[i],lv_color_hex(0x96E1C2),LV_PART_INDICATOR|LV_STATE_CHECKED);
     }
     label_at(screens[ALARMS], "Saate dokunarak duzenleyin", 429, &lv_font_montserrat_14);

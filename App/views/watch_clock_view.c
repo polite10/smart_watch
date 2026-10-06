@@ -30,13 +30,13 @@ void clock_editor_open(void)
     lv_roller_set_selected(clock_hour,state->draft.hour,LV_ANIM_OFF);
     lv_roller_set_selected(clock_minute,state->draft.minute,LV_ANIM_OFF);
     set_label(clock_hint,state->hint); set_label(clock_result,state->result);
-    lv_screen_load(screens[CLOCK_EDIT]);
+    watch_navigation_show(CLOCK_EDIT);
 }
 
 static void clock_save(lv_event_t *e)
 {
     (void)e; watch_datetime_t time={2000+lv_roller_get_selected(clock_year),1+lv_roller_get_selected(clock_month),1+lv_roller_get_selected(clock_day),lv_roller_get_selected(clock_hour),lv_roller_get_selected(clock_minute),0};
-    if(watch_clock_vm_save(time)) lv_screen_load(screens[HOME]);
+    if(watch_clock_vm_save(time)) watch_navigation_show(HOME);
     else set_label(clock_result,watch_clock_vm_state()->result);
 }
 

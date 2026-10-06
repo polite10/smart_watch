@@ -61,6 +61,7 @@ void theme_apply(void)
         lv_obj_set_style_text_color(screens[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
         if(page_titles[i]) lv_obj_set_style_text_color(page_titles[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
     }
+    puzzle_refresh();
 }
 
 void settings_init(void)
@@ -81,7 +82,7 @@ void settings_init(void)
     settings_switch=lv_switch_create(row); lv_obj_set_size(settings_switch,46,26);
     lv_obj_align(settings_switch,LV_ALIGN_RIGHT_MID,-16,0);
     lv_obj_remove_flag(settings_switch,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_anim_duration(settings_switch,0,0);
+    lv_obj_set_style_anim_duration(settings_switch,120,0);
     lv_obj_set_style_bg_color(settings_switch,lv_color_hex(0x435675),LV_PART_MAIN);
     lv_obj_set_style_bg_color(settings_switch,lv_color_hex(0x96E1C2),LV_PART_INDICATOR|LV_STATE_CHECKED);
     row=settings_row(3,"Saat arayuzleri",NULL,&icon_faces,0xD7AFF7,328,300,navigate,(void *)(uintptr_t)FACES);

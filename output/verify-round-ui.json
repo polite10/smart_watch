@@ -1,5 +1,5 @@
 {
-  "passed": 105,
+  "passed": 125,
   "failed": 0,
   "checks": [
     [
@@ -20,7 +20,7 @@
     ],
     [
       true,
-      "Menu has a centered title, eight icons and no back button"
+      "Menu has a centered title, nine icons and no back button"
     ],
     [
       true,
@@ -57,6 +57,74 @@
     [
       true,
       "Icon 7 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "Icon 8 has a large target wholly inside the circle"
+    ],
+    [
+      true,
+      "All three menu rows are left-right symmetric"
+    ],
+    [
+      true,
+      "Top and bottom curved rows mirror around the central puzzle icon"
+    ],
+    [
+      true,
+      "Center puzzle icon opens the ninth app"
+    ],
+    [
+      true,
+      "All fifteen 62px square targets lie inside the round display"
+    ],
+    [
+      true,
+      "Tapping a non-adjacent tile leaves the board unchanged"
+    ],
+    [
+      true,
+      "Pressed tile visibly compresses before the delayed click"
+    ],
+    [
+      true,
+      "Adjacent tap updates one move and starts a tile animation"
+    ],
+    [
+      true,
+      "Tile occupies an intermediate position while sliding"
+    ],
+    [
+      true,
+      "Additional clicks during the tile slide are ignored"
+    ],
+    [
+      true,
+      "Tile finishes exactly at the empty-cell destination and releases the input guard"
+    ],
+    [
+      true,
+      "New game button reshuffles and clears the move count"
+    ],
+    [
+      true,
+      "Opening the puzzle from the menu starts a new game"
+    ],
+    [
+      true,
+      "Last tile slide displays congratulations and final moves"
+    ],
+    [
+      true,
+      "Completed puzzle ignores tile taps"
+    ],
+    [
+      true,
+      "Restart dismisses the win state"
+    ],
+    [
+      true,
+      "Interrupted navigation restores all menu icons to their intended positions"
     ],
     [
       true,
@@ -264,6 +332,14 @@
     ],
     [
       true,
+      "Page 14 title stays horizontally centered"
+    ],
+    [
+      true,
+      "Page 14 edge-swipe returns to its parent"
+    ],
+    [
+      true,
       "A drag starting in the middle does not navigate back"
     ],
     [
@@ -404,6 +480,10 @@
     ],
     [
       true,
+      "Puzzle follows the selected light theme"
+    ],
+    [
+      true,
       "Classic face follows light theme too"
     ],
     [
@@ -423,7 +503,7 @@
       "Notification buttons bypass double-tap delay and add one glass"
     ]
   ],
-  "elf_sha256": "3ef0573961600c978b24f62801fa80445550c2a9ce0ebd2f3b2f7a34df1c59dd",
-  "firmware_sha256": "358b136190577f10d05db8e45210e7ea73856985230717e25ed328cf3a31e588",
+  "elf_sha256": "beba4d3099a17d9cb7eff71e2964cfed1a92a05b73c8f9cca433040dc596ef04",
+  "firmware_sha256": "d749cfa899fcbcf8ef9b760f6310702a4207cc5c43a1da476bf532c4f17fc6c3",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

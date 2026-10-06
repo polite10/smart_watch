@@ -2,6 +2,62 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## 15 Bulmaca, dokuz uygulama ve animasyonlar — 6 Ekim 2026
+
+Menü artık **dokuz adet 92 px ikon** içerir. Ortadaki amber ikon yeni **15 Bulmaca**
+oyununu açar. Üç sıra soldan sağa ve merkez sıra etrafında üstten alta simetriktir;
+üst sıranın yan ikonları aşağıda, alt sıranın yan ikonları yukarıdadır. Bütün
+dokunma alanları 480 px yuvarlak panelin içinde kalır.
+
+Oyun, **4 × 4** karede 1–15 sayıları ve tek boş hücre kullanır. Yalnız boş hücrenin
+yatay veya dikey komşusuna dokunmak taşı hareket ettirir. Hedef soldan sağa,
+yukarıdan aşağı 1–15 sırası ve sağ altta boş hücredir. Her açılışta ve **Yeni oyun**
+düğmesinde yeni, çözülebilir ve henüz tamamlanmamış bir tahta hazırlanır.
+Fisher–Yates karıştırması ve çift genişlikli tahtanın parite düzeltmesi kullanılır;
+zamana ve açılış sayacına dayanan sözde rastgelelik oyun içindir.
+
+Taşlar **62 px**, aralıklar **8 px**; oyun tahtası ve yeni oyun düğmesi çemberin
+içindedir. Doğru hücredeki taşlar mint rengiyle vurgulanır. Her geçerli hareket
+hamle sayısını bir artırır. Son hareket tamamlanınca **Tebrikler!** ve toplam hamle
+sayısı görünür; yeni oyun başlatılana kadar taşlar sabit kalır. Oyun RAM'de tutulur;
+menüden yeniden açılması eski oyunu sürdürmez ve flash kayıt formatını değiştirmez.
+
+Animasyonlar:
+
+- Saatten kaydırarak menüyü açınca ikonlar **12 px** yukarı hareket ederek yerleşir;
+  **160 ms** hareket ve ikon başına **12 ms** gecikme kullanılır.
+- Uygulama ve düzenleme sayfaları açılırken içerik **18 px** sağdan yerine gelir,
+  hareket **140 ms** sürer. Başlık yerinde kalır; saate kilitleme anında uygulanır.
+- Küçük butonlar basılınca yaklaşık **%5** küçülür ve bırakılınca geri gelir;
+  renk ve ölçek geçişi **90 ms** sürer. Büyük kartlarda renk geçişi kullanılır.
+  Alarm ve tema anahtarları **120 ms** içinde hareket eder.
+- Bulmaca taşı boş hücreye **140 ms** içinde kayar. Hareket sırasında ikinci taş
+  komutu engellenir; yeni oyun hareketi iptal edip yeni tahtayı doğru konumlandırır.
+- Hızlı sayfa değişimleri eski giriş hareketlerini temizler; ikon konumları birikmez.
+  Tam ekran opacity tamponu kullanılmaz. Gerçek panelde FPS/akıcılık ayrıca ölçülmelidir.
+
+Yeni dosyalar `App/models/watch_puzzle.[ch]`, `App/viewmodels/watch_puzzle_vm.c`
+ve `App/views/watch_puzzle_view.c` dosyalarıdır. Menü ve ikon varlıkları,
+`watch_viewmodels.h`, `watch_view_internal.h`, ortak widgetlar, navigasyon ve
+mevcut ekranların geçiş çağrıları güncellendi. Mevcut uygulamaları baştan yazmak
+gerekmedi. İkonları `output/generate-menu-icons.py` yeniden üretir.
+`Build.ps1` ELF'i, `Firmware/Smartwatch.bin` dosyasını ve derleme zamanı başlığını
+yeniler; doğrulama betikleri raporları ve ekran görüntülerini üretir.
+
+[Dokuz uygulamalı menü](output/round-menu.png), [oyun](output/round-puzzle.png) ve
+[kazanılmış oyun](output/round-puzzle-won.png) derlenmiş ARM/LVGL çizimleridir.
+Yeni sürüm için `output/verify-round-ui.json` ve `output/verify-viewmodels.json`
+raporları geçerlidir; aşağıdaki 5 Ekim test sayıları geçmiş sürümü anlatır.
+Derleme **0 hata, 0 uyarı**; ARM/LVGL ekran ve dokunma testlerinde **125**,
+ekransız Model/ViewModel testlerinde **54** kontrol geçti: toplam **179**, başarısız **0**.
+Bulmaca testleri 512 farklı çözülebilir başlangıç, 1024 geçerli hareket, geçersiz
+dokunma, kazanma, yeniden başlatma ve mevcut 916 baytlık kayıtların korunmasını kapsar.
+Bu sürümde fiziksel karta yükleme yapılmadı.
+
+Sonraki uygulama fikri: **kronometre ve geri sayım**. Büyük başlat/duraklat düğmesi,
+tur süreleri ve yuvarlak ilerleme halkası mevcut donanımla uyumludur. Alternatifler
+nefes egzersizi veya Pomodoro sayacıdır; bu sürümde uygulama sayısı dokuzdur.
+
 ## MVVM düzeni ve analog kadran — 5 Ekim 2026
 
 Uygulama Model–View–ViewModel düzenine taşındı. Her özelliğin ekranı ve ViewModel'i
@@ -74,7 +130,8 @@ yerel tutulur. README'deki `Backup/` yolları geliştirme bilgisayarındaki yede
 Eski görüntü yolu, görünen tamponu 40 satırlık parçalarla değiştiriyordu; bu yüzden sayfa yüklenmesi
 yukarıdan aşağı açılıyormuş gibi görünüyordu. Yeni yol iki fiziksel GFXMMU tamponu kullanır:
 LVGL gizli tampona çizer; son parça tamamlanınca **LTDC dikey boşlukta** tamamlanmış görüntüyü gösterir.
-Gizli tampon sonraki kısmi çizim için eşitlenir. Sayfalar animasyonsuz geçer.
+Gizli tampon sonraki kısmi çizim için eşitlenir. Bu 5 Ekim sürümünde sayfalar animasyonsuz geçer;
+6 Ekim sürümünün içerik hareketleri yukarıda açıklanmıştır.
 Çizim parçalarının ve fiziksel tamponun kopyalanması **DMA2D** ile yapılır; işlem tamamlanmadan
 LVGL tamponu yeniden kullanmaz. **ICACHE** etkinleştirildi; flash kaydından sonra önbellek temizlenir.
 Debug derlemesi `-O2` kullanır; çizim ve giriş zamanlayıcıları 16 ms'dir.

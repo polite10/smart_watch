@@ -41,8 +41,19 @@ PASS: Failed face save rolls back the active model selection
 PASS: Storage failure is exposed in app state
 PASS: Retry commits the retained face draft
 PASS: Reinitialization reloads the unchanged 916-byte persistent layout
+PASS: 512 shuffled games each contain 0-15 once, are solvable, unsolved and start at zero moves
+PASS: Different seeds produce 512 distinct games
+PASS: Reopening with identical tick entropy still creates a different board
+PASS: Row-end to next-row-start is not an adjacent move
+PASS: Non-adjacent, blank and out-of-range taps do not change state or move count
+PASS: Vertical neighbor slides exactly one cell and counts once
+PASS: Final horizontal move sets the win state with the correct move count
+PASS: Completed board stays solved until a new game
+PASS: Restart clears win state and moves
+PASS: 1024 legal moves preserve tile identity, solvability, blank position and counters
+PASS: Playing and restarting never change persistent notes, alarms or settings
 {
-  "passed": 43,
+  "passed": 54,
   "failed": 0,
   "checks": [
     [
@@ -216,8 +227,52 @@ PASS: Reinitialization reloads the unchanged 916-byte persistent layout
     [
       true,
       "Reinitialization reloads the unchanged 916-byte persistent layout"
+    ],
+    [
+      true,
+      "512 shuffled games each contain 0-15 once, are solvable, unsolved and start at zero moves"
+    ],
+    [
+      true,
+      "Different seeds produce 512 distinct games"
+    ],
+    [
+      true,
+      "Reopening with identical tick entropy still creates a different board"
+    ],
+    [
+      true,
+      "Row-end to next-row-start is not an adjacent move"
+    ],
+    [
+      true,
+      "Non-adjacent, blank and out-of-range taps do not change state or move count"
+    ],
+    [
+      true,
+      "Vertical neighbor slides exactly one cell and counts once"
+    ],
+    [
+      true,
+      "Final horizontal move sets the win state with the correct move count"
+    ],
+    [
+      true,
+      "Completed board stays solved until a new game"
+    ],
+    [
+      true,
+      "Restart clears win state and moves"
+    ],
+    [
+      true,
+      "1024 legal moves preserve tile identity, solvability, blank position and counters"
+    ],
+    [
+      true,
+      "Playing and restarting never change persistent notes, alarms or settings"
     ]
   ],
-  "elf_sha256": "3ef0573961600c978b24f62801fa80445550c2a9ce0ebd2f3b2f7a34df1c59dd",
+  "elf_sha256": "beba4d3099a17d9cb7eff71e2964cfed1a92a05b73c8f9cca433040dc596ef04",
   "scope": "Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes."
 }

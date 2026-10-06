@@ -1,5 +1,31 @@
 #include "views/watch_view_internal.h"
 
+static const lv_style_prop_t button_motion_properties[]={LV_STYLE_TRANSFORM_SCALE_X,LV_STYLE_TRANSFORM_SCALE_Y,LV_STYLE_BG_COLOR,0};
+static const lv_style_transition_dsc_t button_transition={
+    .props=button_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=90
+};
+static const lv_style_prop_t card_motion_properties[]={LV_STYLE_BG_COLOR,LV_STYLE_BORDER_COLOR,0};
+static const lv_style_transition_dsc_t card_transition={
+    .props=card_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=90
+};
+
+void button_motion(lv_obj_t *button)
+{
+    /* Scaling a large card would allocate an expensive offscreen draw layer. */
+    if(lv_obj_get_style_width(button,LV_PART_MAIN)>96) {
+        lv_obj_set_style_transition(button,&card_transition,LV_STATE_DEFAULT);
+        lv_obj_set_style_transition(button,&card_transition,LV_STATE_PRESSED);
+        return;
+    }
+    lv_obj_set_style_transition(button,&button_transition,LV_STATE_DEFAULT);
+    lv_obj_set_style_transition(button,&button_transition,LV_STATE_PRESSED);
+    lv_obj_set_style_transform_scale_x(button,256,0);
+    lv_obj_set_style_transform_scale_y(button,256,0);
+    lv_obj_set_style_transform_scale_x(button,244,LV_STATE_PRESSED);
+    lv_obj_set_style_transform_scale_y(button,244,LV_STATE_PRESSED);
+    lv_obj_set_style_transform_pivot_x(button,lv_pct(50),0);
+    lv_obj_set_style_transform_pivot_y(button,lv_pct(50),0);
+}
 
 void set_label(lv_obj_t *label, const char *value)
 {
@@ -29,8 +55,7 @@ lv_obj_t *button_at(lv_obj_t *parent, const char *text, int x, int y,
     lv_obj_set_style_shadow_width(b, 0, 0);
     lv_obj_set_style_border_width(b, 0, 0);
     lv_obj_set_style_pad_all(b, 0, 0);
-    lv_obj_set_style_transition(b, &no_transition, LV_STATE_DEFAULT);
-    lv_obj_set_style_transition(b, &no_transition, LV_STATE_PRESSED);
+    button_motion(b);
     lv_obj_set_style_bg_color(b, lv_color_hex(0x435675), LV_STATE_PRESSED);
     lv_obj_t *l = lv_label_create(b);
     set_label(l, text);

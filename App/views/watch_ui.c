@@ -2,8 +2,6 @@
 #include "watch_icons.h"
 lv_obj_t *screens[SCREEN_COUNT],*page_titles[SCREEN_COUNT];
 unsigned back_targets[SCREEN_COUNT];
-static const lv_style_prop_t no_transition_properties[]={0};
-const lv_style_transition_dsc_t no_transition={.props=no_transition_properties};
 
 void refresh_time(void)
 {
@@ -43,13 +41,13 @@ void watch_ui_init(void)
     }
     watch_faces_init(screens[HOME], screens[FACES], navigate, (void *)(uintptr_t)MENU);
     page_header(MENU, "Uygulamalar", HOME);
-    const unsigned targets[] = {HOME, ALARMS, CALCULATOR, NOTES, FACES, WATER, CALENDAR, SETTINGS};
+    const unsigned targets[] = {HOME, ALARMS, CALCULATOR, NOTES, PUZZLE, FACES, WATER, CALENDAR, SETTINGS};
     const lv_image_dsc_t *icons[] = {&icon_clock, &icon_alarm, &icon_calculator, &icon_notes,
-                                   &icon_faces, &icon_water, &icon_calendar, &icon_settings};
-    const uint32_t colors[] = {0x9CAFFF,0xFF9B9E,0x96E1C2,0xE5C191,0xD7AFF7,0x82D9F4,0xFFC5A2,0xADC4D6};
-    const int xs[] = {-106,0,106,-53,53,-106,0,106};
-    const int ys[] = {139,105,139,223,223,307,341,307};
-    for(unsigned i = 0; i < 8; ++i) {
+                                   &icon_puzzle, &icon_faces, &icon_water, &icon_calendar, &icon_settings};
+    const uint32_t colors[] = {0x9CAFFF,0xFF9B9E,0x96E1C2,0xE5C191,0xFFD18B,0xD7AFF7,0x82D9F4,0xFFC5A2,0xADC4D6};
+    const int xs[] = {-106,0,106,-112,0,112,-106,0,106};
+    const int ys[] = {123,89,123,223,223,223,323,357,323};
+    for(unsigned i = 0; i < sizeof targets / sizeof targets[0]; ++i) {
         lv_obj_t *label = round_action(screens[MENU], "", xs[i], ys[i], 92, colors[i], navigate, (void *)(uintptr_t)targets[i]);
         lv_obj_t *image = lv_image_create(lv_obj_get_parent(label));
         lv_image_set_src(image, icons[i]); lv_obj_center(image);
@@ -58,7 +56,7 @@ void watch_ui_init(void)
 
 
     page_header(CALENDAR,"Takvim",MENU); calendar_init(); settings_init();
-    alarms_init(); calculator_init(); notes_init(); water_init(); notifications_init(); clock_editor_init();
+    alarms_init(); calculator_init(); notes_init(); water_init(); puzzle_init(); notifications_init(); clock_editor_init();
     apps_refresh(); refresh_time(); lv_screen_load(screens[HOME]);
 }
 void watch_ui_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t hour,uint8_t minute,uint8_t second)

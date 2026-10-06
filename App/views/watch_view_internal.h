@@ -6,10 +6,11 @@
 #include "services/watch_display_service.h"
 #include <stdio.h>
 #include <string.h>
-enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, SCREEN_COUNT };
+enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, PUZZLE, SCREEN_COUNT };
 extern lv_obj_t *screens[SCREEN_COUNT], *page_titles[SCREEN_COUNT];
 extern unsigned back_targets[SCREEN_COUNT];
-extern const lv_style_transition_dsc_t no_transition;
+void button_motion(lv_obj_t *button);
+void watch_navigation_show(unsigned screen);
 extern bool display_awake;
 extern int displayed_notification;
 #define ui_clock_valid (watch_app_vm_state()->clock_valid)
@@ -50,4 +51,7 @@ void water_refresh(void);
 void notifications_init(void);
 void notifications_refresh(void);
 void watch_navigation_init(void);
+void puzzle_init(void);
+void puzzle_open(void);
+void puzzle_refresh(void);
 #endif

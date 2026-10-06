@@ -1,5 +1,5 @@
 {
-  "passed": 125,
+  "passed": 167,
   "failed": 0,
   "checks": [
     [
@@ -20,7 +20,11 @@
     ],
     [
       true,
-      "Menu has a centered title, nine icons and no back button"
+      "Menu has wallpaper, nine outer apps, a circular folder and three game icons"
+    ],
+    [
+      true,
+      "Menu appbar is hidden"
     ],
     [
       true,
@@ -28,47 +32,59 @@
     ],
     [
       true,
-      "Icon 0 has a large target wholly inside the circle"
+      "Outer app 0 has an 80px safe target"
     ],
     [
       true,
-      "Icon 1 has a large target wholly inside the circle"
+      "Outer app 1 has an 80px safe target"
     ],
     [
       true,
-      "Icon 2 has a large target wholly inside the circle"
+      "Outer app 2 has an 80px safe target"
     ],
     [
       true,
-      "Icon 3 has a large target wholly inside the circle"
+      "Outer app 3 has an 80px safe target"
     ],
     [
       true,
-      "Icon 4 has a large target wholly inside the circle"
+      "Outer app 4 has an 80px safe target"
     ],
     [
       true,
-      "Icon 5 has a large target wholly inside the circle"
+      "Outer app 5 has an 80px safe target"
     ],
     [
       true,
-      "Icon 6 has a large target wholly inside the circle"
+      "Outer app 6 has an 80px safe target"
     ],
     [
       true,
-      "Icon 7 has a large target wholly inside the circle"
+      "Outer app 7 has an 80px safe target"
     ],
     [
       true,
-      "Icon 8 has a large target wholly inside the circle"
+      "Outer app 8 has an 80px safe target"
     ],
     [
       true,
-      "All three menu rows are left-right symmetric"
+      "Nine outer apps share a circular orbit"
     ],
     [
       true,
-      "Top and bottom curved rows mirror around the central puzzle icon"
+      "Folder opens on release without a 260ms wait"
+    ],
+    [
+      true,
+      "Game selection is disabled during expansion"
+    ],
+    [
+      true,
+      "Game icons grow at an intermediate animation frame"
+    ],
+    [
+      true,
+      "Folder finishes with selectable 88px game icons"
     ],
     [
       true,
@@ -124,7 +140,7 @@
     ],
     [
       true,
-      "Interrupted navigation restores all menu icons to their intended positions"
+      "Interrupted navigation restores the circular menu layout"
     ],
     [
       true,
@@ -228,7 +244,7 @@
     ],
     [
       true,
-      "Page 1 title stays horizontally centered"
+      "Page 1 has no visible appbar"
     ],
     [
       true,
@@ -236,7 +252,7 @@
     ],
     [
       true,
-      "Page 2 title stays horizontally centered"
+      "Page 2 has no visible appbar"
     ],
     [
       true,
@@ -244,7 +260,7 @@
     ],
     [
       true,
-      "Page 3 title stays horizontally centered"
+      "Page 3 has no visible appbar"
     ],
     [
       true,
@@ -252,7 +268,7 @@
     ],
     [
       true,
-      "Page 4 title stays horizontally centered"
+      "Page 4 has no visible appbar"
     ],
     [
       true,
@@ -260,7 +276,7 @@
     ],
     [
       true,
-      "Page 5 title stays horizontally centered"
+      "Page 5 has no visible appbar"
     ],
     [
       true,
@@ -268,7 +284,7 @@
     ],
     [
       true,
-      "Page 6 title stays horizontally centered"
+      "Page 6 has no visible appbar"
     ],
     [
       true,
@@ -276,7 +292,7 @@
     ],
     [
       true,
-      "Page 7 title stays horizontally centered"
+      "Page 7 has no visible appbar"
     ],
     [
       true,
@@ -284,7 +300,7 @@
     ],
     [
       true,
-      "Page 8 title stays horizontally centered"
+      "Page 8 has no visible appbar"
     ],
     [
       true,
@@ -292,7 +308,7 @@
     ],
     [
       true,
-      "Page 9 title stays horizontally centered"
+      "Page 9 has no visible appbar"
     ],
     [
       true,
@@ -300,7 +316,7 @@
     ],
     [
       true,
-      "Page 10 title stays horizontally centered"
+      "Page 10 has no visible appbar"
     ],
     [
       true,
@@ -308,7 +324,7 @@
     ],
     [
       true,
-      "Page 11 title stays horizontally centered"
+      "Page 11 has no visible appbar"
     ],
     [
       true,
@@ -316,7 +332,7 @@
     ],
     [
       true,
-      "Page 12 title stays horizontally centered"
+      "Page 12 has no visible appbar"
     ],
     [
       true,
@@ -324,7 +340,7 @@
     ],
     [
       true,
-      "Page 13 title stays horizontally centered"
+      "Page 13 has no visible appbar"
     ],
     [
       true,
@@ -332,7 +348,7 @@
     ],
     [
       true,
-      "Page 14 title stays horizontally centered"
+      "Page 14 has no visible appbar"
     ],
     [
       true,
@@ -501,9 +517,161 @@
     [
       true,
       "Notification buttons bypass double-tap delay and add one glass"
+    ],
+    [
+      true,
+      "Menu app opens at release with no added tap wait"
+    ],
+    [
+      true,
+      "Ordinary content moves through an intermediate 70ms entry frame"
+    ],
+    [
+      true,
+      "Content entry animation ends within 80ms"
+    ],
+    [
+      true,
+      "Other apps preserve double-tap arbitration for 119ms"
+    ],
+    [
+      true,
+      "Single control activates at 120ms instead of 260ms"
+    ],
+    [
+      true,
+      "Tapping a game during folder expansion cannot launch it"
+    ],
+    [
+      true,
+      "Expanded Flappy icon opens on first release"
+    ],
+    [
+      true,
+      "Flappy opens ready with a tap prompt"
+    ],
+    [
+      true,
+      "Flappy flaps on touch-down without waiting for release"
+    ],
+    [
+      true,
+      "Fixed game timer moves the bird upwards"
+    ],
+    [
+      true,
+      "Repeated taps do not freeze Flappy simulation time"
+    ],
+    [
+      true,
+      "Flappy pause button responds without double-tap wait"
+    ],
+    [
+      true,
+      "Paused Flappy retains its full state"
+    ],
+    [
+      true,
+      "Flappy resume button restarts play"
+    ],
+    [
+      true,
+      "Leaving Flappy pauses and prevents offscreen updates"
+    ],
+    [
+      true,
+      "Flappy collision shows game over"
+    ],
+    [
+      true,
+      "Touch restarts Flappy immediately after game over"
+    ],
+    [
+      true,
+      "Expanded Snake icon opens on first release"
+    ],
+    [
+      true,
+      "Snake starts immediately and ignores small finger jitter"
+    ],
+    [
+      true,
+      "Upward drag queues the upward turn"
+    ],
+    [
+      true,
+      "Snake applies finger direction on the next grid step"
+    ],
+    [
+      true,
+      "Opposite finger drag cannot reverse into the body"
+    ],
+    [
+      true,
+      "Dominant left drag turns left during one continuous contact"
+    ],
+    [
+      true,
+      "Downward drag turns down"
+    ],
+    [
+      true,
+      "Rightward drag turns right"
+    ],
+    [
+      true,
+      "Snake pause freezes body, direction, food and score"
+    ],
+    [
+      true,
+      "Snake resume continues its current board"
+    ],
+    [
+      true,
+      "Snake wall collision ends the game"
+    ],
+    [
+      true,
+      "Snake touch restarts after collision"
+    ],
+    [
+      true,
+      "Leaving Snake pauses and prevents offscreen updates"
+    ],
+    [
+      true,
+      "IDA lives in the outer ring and opens immediately"
+    ],
+    [
+      true,
+      "IDA is explicitly SIM and all telemetry stays static when clock/timers change"
+    ],
+    [
+      true,
+      "New page 15 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 15 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "New page 16 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 16 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "New page 17 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "beba4d3099a17d9cb7eff71e2964cfed1a92a05b73c8f9cca433040dc596ef04",
-  "firmware_sha256": "d749cfa899fcbcf8ef9b760f6310702a4207cc5c43a1da476bf532c4f17fc6c3",
+  "elf_sha256": "48014c57fbdb90485ecbba44222fbe22c9bccff4aabde6cf1e6d7db69a82f1fa",
+  "firmware_sha256": "e61acf9abb68f284007c6308bb0d8a0258b1f15adf82570f4bf927d2d9bc90d8",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

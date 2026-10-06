@@ -139,24 +139,26 @@ sample(True);sample(True,280,240)
 check(active()==screens(1),'Moving 40px unlocks directly to menu')
 sample(False,280,240)
 snapshot('menu')
-check(call('lv_obj_get_child_count',screens(1))==10,'Menu has a centered title, nine icons and no back button')
+check(call('lv_obj_get_child_count',screens(1))==15,'Menu has wallpaper, nine outer apps, a circular folder and three game icons')
+check(call('lv_obj_has_flag',pointer('page_titles',1),1)==1,'Menu appbar is hidden')
 check(sizes['watch_data']==916,'Persistent user-data structure retains its 916-byte format')
-for i in range(9):
-    button=call('lv_obj_get_child',screens(1),i+1)
-    x=call('lv_obj_get_x',button);y=call('lv_obj_get_y',button);w=call('lv_obj_get_width',button)
-    check(w==92 and ((x+w/2-240)**2+(y+w/2-240)**2)**.5+w/2<=240,'Icon %d has a large target wholly inside the circle'%i)
-# Mirror symmetry and curved rows remain deliberate with an odd app count.
 centers=[]
 for i in range(9):
-    button=call('lv_obj_get_child',screens(1),i+1)
-    centers.append((call('lv_obj_get_x',button)+46,call('lv_obj_get_y',button)+46))
-check(all(centers[a][0]+centers[b][0]==480 and centers[a][1]==centers[b][1] for a,b in [(0,2),(3,5),(6,8)]),
-      'All three menu rows are left-right symmetric')
-check(all(centers[a][1]+centers[b][1]==2*centers[4][1] for a,b in [(0,6),(1,7),(2,8)]),
-      'Top and bottom curved rows mirror around the central puzzle icon')
-
+    button=pointer('menu_buttons',i)
+    x=call('lv_obj_get_x',button);y=call('lv_obj_get_y',button);w=call('lv_obj_get_width',button)
+    check(w==80 and ((x+40-240)**2+(y+40-240)**2)**.5+40<=240,'Outer app %d has an 80px safe target'%i)
+    centers.append((x+40,y+40))
+check(all(abs(((x-240)**2+(y-240)**2)**.5-178)<1 for x,y in centers),'Nine outer apps share a circular orbit')
+# First release opens the folder immediately; games are locked during expansion.
+sample(True,240,197);sample(False,240,197,48)
+check(active()==screens(1) and u.mem_read(symbols['folder_moving'],1)[0], 'Folder opens on release without a 260ms wait')
+check(not call('lv_obj_has_flag',pointer('menu_games'),2),'Game selection is disabled during expansion')
+settle(80);call('lv_obj_update_layout',screens(1))
+check(64<call('lv_obj_get_width',pointer('menu_games'))<88,'Game icons grow at an intermediate animation frame')
+settle(180);snapshot('games-folder')
+check(call('lv_obj_get_width',pointer('menu_games'))==88 and not u.mem_read(symbols['folder_moving'],1)[0],'Folder finishes with selectable 88px game icons')
 # The ninth app is exercised through actual raw input and animated LVGL objects.
-tap(240,269)
+tap(240,165)
 check(active()==screens(14),'Center puzzle icon opens the ninth app')
 snapshot('puzzle')
 puzzle_state=call('watch_puzzle_vm_state')
@@ -196,7 +198,7 @@ check((call('lv_obj_get_x',tile),call('lv_obj_get_y',tile))==destination and not
 old=board();tap(240,428)
 check(board()!=old and moves()==0,'New game button reshuffles and clears the move count')
 old=board()
-swipe_back();tap(240,269)
+swipe_back();tap(240,197);tap(240,165)
 check(board()!=old and moves()==0,'Opening the puzzle from the menu starts a new game')
 snapshot('puzzle')
 
@@ -216,10 +218,10 @@ check(not u.mem_read(puzzle_state+17,1)[0] and moves()==0 and 'Tebrikler' not in
 swipe_back()
 # Interrupt menu motion by entering and immediately leaving an app.
 call('watch_navigation_show',6);call('watch_navigation_show',1);settle();call('lv_obj_update_layout',screens(1))
-check(all(call('lv_obj_get_y',call('lv_obj_get_child',screens(1),i+1))==y for i,y in enumerate([123,89,123,223,223,223,323,357,323])),
-      'Interrupted navigation restores all menu icons to their intended positions')
+check(all((call('lv_obj_get_x',pointer('menu_buttons',i))+40,call('lv_obj_get_y',pointer('menu_buttons',i))+40)==center for i,center in enumerate(centers)),
+      'Interrupted navigation restores the circular menu layout')
 # Real taps go through raw gesture arbitration and the LVGL event dispatcher.
-tap(346,169)
+tap(354,104)
 check(active()==screens(6),'Calculator icon opens calculator')
 snapshot('calculator')
 safe=True
@@ -238,7 +240,7 @@ before=text('calc_label')
 sample(True,126,178);sample(False,126,178,40);sample(True,126,178,100);sample(False,126,178,40)
 check(active()==screens(0) and text('calc_label')==before,'Double tap locks without activating either key')
 sample(True);sample(True,280,240);sample(False,280,240)
-tap(134,369)
+tap(65,209)
 check(active()==screens(10),'Water icon opens tracker')
 snapshot('water')
 water_offset=symbols['watch_data']+4+3*8+4*192+4
@@ -249,9 +251,9 @@ tap(92,211)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Large minus undoes one glass')
 sample(True,388,211);sample(False,388,211,40);sample(True,388,211,100);sample(False,388,211,40)
 check(active()==screens(0) and struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Double tap on water plus locks without adding water')
-sample(True);sample(True,280,240);sample(False,280,240);snapshot('menu');tap(134,369)
+sample(True);sample(True,280,240);sample(False,280,240);snapshot('menu');tap(65,209)
 tap(388,211);snapshot('water-filled')
-swipe_back();tap(128,269)
+swipe_back();tap(415,209)
 check(active()==screens(7),'Notes icon opens notes')
 tap(240,138)
 check(active()==screens(8),'Note card opens large keyboard')
@@ -295,8 +297,7 @@ check(text('calendar_month_label')=='Ekim 2026','Calendar month goes back')
 for page,parent in [(1,0),(2,1),(3,1),(4,1),(5,4),(6,1),(7,1),(8,7),(9,1),(10,1),(11,10),(12,10),(13,1),(14,1)]:
     load(page);call('lv_display_refr_timer',0)
     header=pointer('page_titles',page)
-    x=call('lv_obj_get_x',header);w=call('lv_obj_get_width',header)
-    check(abs(x+w/2-240)<=1,'Page %d title stays horizontally centered'%page)
+    check(call('lv_obj_has_flag',header,1),'Page %d has no visible appbar'%page)
     swipe_back()
     check(active()==screens(parent),'Page %d edge-swipe returns to its parent'%page)
 # Movement from the middle must not be interpreted as edge-back.
@@ -401,6 +402,116 @@ check(read32(symbols['displayed_notification'])==0xffffffff,'Reminder alert rema
 before=struct.unpack('<H',u.mem_read(water_offset,2))[0]
 tap(240,280)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==before+200,'Notification buttons bypass double-tap delay and add one glass')
+
+# Validate the shorter arbitration window separately from the page animation.
+call('watch_navigation_show',1);call('lv_display_refr_timer',0)
+sample(True,354,104);sample(False,354,104,40)
+check(active()==screens(6),'Menu app opens at release with no added tap wait')
+sample(False,354,104,36)
+translation=call('lv_obj_get_style_prop',pointer('calc_label'),0,108)
+check(0<translation<10,'Ordinary content moves through an intermediate 70ms entry frame')
+sample(False,354,104,40)
+check(call('lv_obj_get_style_prop',pointer('calc_label'),0,108)==0,'Content entry animation ends within 80ms')
+before=text('calc_label')
+sample(True,126,178);sample(False,126,178,40);sample(False,126,178,119)
+check(text('calc_label')==before,'Other apps preserve double-tap arbitration for 119ms')
+sample(False,126,178,1)
+check(text('calc_label')!=before,'Single control activates at 120ms instead of 260ms')
+
+call('watch_navigation_show',1);call('lv_display_refr_timer',0)
+sample(True,240,197);sample(False,240,197,40)
+sample(True,280,263);sample(False,280,263,40)
+check(active()==screens(1),'Tapping a game during folder expansion cannot launch it')
+settle(200);call('lv_display_refr_timer',0)
+sample(True,305,278);sample(False,305,278,40)
+check(active()==screens(15),'Expanded Flappy icon opens on first release')
+fp=call('watch_flappy_vm_state')
+def fphase():return u.mem_read(fp+46,1)[0]
+def fvalues():return struct.unpack('<ff',u.mem_read(fp,8))
+def game_tick(milliseconds):
+    global tick
+    tick+=milliseconds;call('arcade_tick',0)
+snapshot('flappy-ready')
+check(fphase()==0 and text('flappy_hint')=='Dokun ve uc','Flappy opens ready with a tap prompt')
+sample(True,240,240)
+check(fphase()==1 and fvalues()[1]<0,'Flappy flaps on touch-down without waiting for release')
+sample(False,240,240,16);game_tick(20)
+check(fvalues()[0]<235,'Fixed game timer moves the bird upwards')
+# Repeated contacts must not restart the physics clock or stall the pipes.
+oldx=struct.unpack('<f',u.mem_read(fp+8,4))[0]
+for _ in range(4):
+    sample(True,240,240,10);sample(False,240,240,10);call('arcade_tick',0)
+check(struct.unpack('<f',u.mem_read(fp+8,4))[0]<oldx-8,'Repeated taps do not freeze Flappy simulation time')
+snapshot('flappy')
+tap_object(call('lv_obj_get_parent',pointer('flappy_pause')))
+check(fphase()==2,'Flappy pause button responds without double-tap wait')
+frozen=bytes(u.mem_read(fp,52));game_tick(160)
+check(bytes(u.mem_read(fp,52))==frozen,'Paused Flappy retains its full state')
+tap_object(call('lv_obj_get_parent',pointer('flappy_pause')))
+check(fphase()==1,'Flappy resume button restarts play')
+swipe_back();frozen=bytes(u.mem_read(fp,52));game_tick(160)
+check(active()==screens(1) and fphase()==2 and bytes(u.mem_read(fp,52))==frozen,'Leaving Flappy pauses and prevents offscreen updates')
+call('flappy_open');sample(True,240,240);sample(False,240,240,16)
+for _ in range(16):game_tick(160)
+check(fphase()==3 and 'Oyun bitti' in text('flappy_hint'),'Flappy collision shows game over')
+sample(True,240,240)
+check(fphase()==1 and fvalues()[0]==235 and struct.unpack('<H',u.mem_read(fp+44,2))[0]==0,'Touch restarts Flappy immediately after game over')
+sample(False,240,240,16);swipe_back()
+
+tap(240,197);sample(True,175,278);sample(False,175,278,40)
+check(active()==screens(16),'Expanded Snake icon opens on first release')
+sp=call('watch_snake_vm_state')
+def sphase():return u.mem_read(sp+657,1)[0]
+def sdir():return u.mem_read(sp+654,1)[0]
+def head():return tuple(u.mem_read(sp,2))
+snapshot('snake-ready')
+sample(True,240,240);sample(True,244,234,16)
+check(sphase()==1 and not u.mem_read(sp+656,1)[0],'Snake starts immediately and ignores small finger jitter')
+sample(True,240,190,16)
+check(u.mem_read(sp+655,1)[0]==3 and u.mem_read(sp+656,1)[0],'Upward drag queues the upward turn')
+old=head();game_tick(160)
+check(sdir()==3 and head()==(old[0],old[1]-1),'Snake applies finger direction on the next grid step')
+sample(True,240,240,16)
+check(not u.mem_read(sp+656,1)[0] and sdir()==3,'Opposite finger drag cannot reverse into the body')
+sample(True,190,235,16);game_tick(160)
+check(sdir()==2 and sphase()==1,'Dominant left drag turns left during one continuous contact')
+game_tick(160);game_tick(160)
+sample(True,190,285,16);game_tick(160)
+check(sdir()==1 and sphase()==1,'Downward drag turns down')
+sample(True,240,285,16);game_tick(160)
+check(sdir()==0 and sphase()==1,'Rightward drag turns right')
+sample(False,240,285,16);snapshot('snake')
+tap_object(call('lv_obj_get_parent',pointer('snake_pause')))
+frozen=bytes(u.mem_read(sp,664));game_tick(160)
+check(sphase()==2 and bytes(u.mem_read(sp,664))==frozen,'Snake pause freezes body, direction, food and score')
+tap_object(call('lv_obj_get_parent',pointer('snake_pause')))
+check(sphase()==1,'Snake resume continues its current board')
+for _ in range(20):game_tick(160)
+check(sphase()==3 and 'Oyun bitti' in text('snake_hint'),'Snake wall collision ends the game')
+sample(True,240,240)
+check(sphase()==1 and head()==(8,9) and struct.unpack('<H',u.mem_read(sp+652,2))[0]==0,'Snake touch restarts after collision')
+sample(False,240,240,16);swipe_back();frozen=bytes(u.mem_read(sp,664));game_tick(160)
+check(active()==screens(1) and sphase()==2 and bytes(u.mem_read(sp,664))==frozen,'Leaving Snake pauses and prevents offscreen updates')
+
+call('lv_display_refr_timer',0)
+sample(True,126,104);sample(False,126,104,40)
+check(active()==screens(17),'IDA lives in the outer ring and opens immediately')
+snapshot('ida')
+def ida_labels():
+    return [cstring(call('lv_label_get_text',call('lv_obj_get_child',screens(17),i)))
+            for i in range(2,call('lv_obj_get_child_count',screens(17)))]
+static_text=ida_labels();call('watch_ui_set_datetime',2026,10,6,22,15,0);game_tick(160);settle(1000)
+check(ida_labels()==static_text and all(v in static_text for v in ['SIM','14:32','045°','6.4 kn','420 m','78%','600 m','LINK --']),
+      'IDA is explicitly SIM and all telemetry stays static when clock/timers change')
+for page in [15,16,17]:
+    load(page);call('lv_display_refr_timer',0)
+    check(call('lv_obj_has_flag',pointer('page_titles',page),1),'New page %d has no visible appbar'%page)
+    swipe_back();check(active()==screens(1),'New page %d edge swipe returns to menu'%page)
+
+arcade=Image.new('RGB',(1440,960),'#171e2c')
+for i,n in enumerate(['menu','games-folder','ida','puzzle','flappy','snake']):
+    arcade.paste(Image.open(ROOT/'output'/('round-'+n+'.png')),((i%3)*480,(i//3)*480))
+arcade.save(ROOT/'output'/'arcade-preview.png')
 names=['menu','puzzle','note-editor','faces','calculator','water-filled']
 sheet=Image.new('RGB',(1440,960),'#171e2c')
 for i,n in enumerate(names):sheet.paste(Image.open(ROOT/'output'/('round-'+n+'.png')),((i%3)*480,(i//3)*480))

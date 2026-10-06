@@ -2,19 +2,23 @@ PASS: Home starts with clock
 PASS: Single tap turns the panel off
 PASS: Wake tap shows clock and is consumed
 PASS: Moving 40px unlocks directly to menu
-PASS: Menu has a centered title, nine icons and no back button
+PASS: Menu has wallpaper, nine outer apps, a circular folder and three game icons
+PASS: Menu appbar is hidden
 PASS: Persistent user-data structure retains its 916-byte format
-PASS: Icon 0 has a large target wholly inside the circle
-PASS: Icon 1 has a large target wholly inside the circle
-PASS: Icon 2 has a large target wholly inside the circle
-PASS: Icon 3 has a large target wholly inside the circle
-PASS: Icon 4 has a large target wholly inside the circle
-PASS: Icon 5 has a large target wholly inside the circle
-PASS: Icon 6 has a large target wholly inside the circle
-PASS: Icon 7 has a large target wholly inside the circle
-PASS: Icon 8 has a large target wholly inside the circle
-PASS: All three menu rows are left-right symmetric
-PASS: Top and bottom curved rows mirror around the central puzzle icon
+PASS: Outer app 0 has an 80px safe target
+PASS: Outer app 1 has an 80px safe target
+PASS: Outer app 2 has an 80px safe target
+PASS: Outer app 3 has an 80px safe target
+PASS: Outer app 4 has an 80px safe target
+PASS: Outer app 5 has an 80px safe target
+PASS: Outer app 6 has an 80px safe target
+PASS: Outer app 7 has an 80px safe target
+PASS: Outer app 8 has an 80px safe target
+PASS: Nine outer apps share a circular orbit
+PASS: Folder opens on release without a 260ms wait
+PASS: Game selection is disabled during expansion
+PASS: Game icons grow at an intermediate animation frame
+PASS: Folder finishes with selectable 88px game icons
 PASS: Center puzzle icon opens the ninth app
 PASS: All fifteen 62px square targets lie inside the round display
 PASS: Tapping a non-adjacent tile leaves the board unchanged
@@ -28,7 +32,7 @@ PASS: Opening the puzzle from the menu starts a new game
 PASS: Last tile slide displays congratulations and final moves
 PASS: Completed puzzle ignores tile taps
 PASS: Restart dismisses the win state
-PASS: Interrupted navigation restores all menu icons to their intended positions
+PASS: Interrupted navigation restores the circular menu layout
 PASS: Calculator icon opens calculator
 PASS: All sixteen calculator keys are 68px and stay inside the round display
 PASS: Calculator uses four straight aligned rows
@@ -54,33 +58,33 @@ PASS: Calendar has circular day slots and weekday headings
 PASS: Circular calendar date can be selected
 PASS: Calendar month advances
 PASS: Calendar month goes back
-PASS: Page 1 title stays horizontally centered
+PASS: Page 1 has no visible appbar
 PASS: Page 1 edge-swipe returns to its parent
-PASS: Page 2 title stays horizontally centered
+PASS: Page 2 has no visible appbar
 PASS: Page 2 edge-swipe returns to its parent
-PASS: Page 3 title stays horizontally centered
+PASS: Page 3 has no visible appbar
 PASS: Page 3 edge-swipe returns to its parent
-PASS: Page 4 title stays horizontally centered
+PASS: Page 4 has no visible appbar
 PASS: Page 4 edge-swipe returns to its parent
-PASS: Page 5 title stays horizontally centered
+PASS: Page 5 has no visible appbar
 PASS: Page 5 edge-swipe returns to its parent
-PASS: Page 6 title stays horizontally centered
+PASS: Page 6 has no visible appbar
 PASS: Page 6 edge-swipe returns to its parent
-PASS: Page 7 title stays horizontally centered
+PASS: Page 7 has no visible appbar
 PASS: Page 7 edge-swipe returns to its parent
-PASS: Page 8 title stays horizontally centered
+PASS: Page 8 has no visible appbar
 PASS: Page 8 edge-swipe returns to its parent
-PASS: Page 9 title stays horizontally centered
+PASS: Page 9 has no visible appbar
 PASS: Page 9 edge-swipe returns to its parent
-PASS: Page 10 title stays horizontally centered
+PASS: Page 10 has no visible appbar
 PASS: Page 10 edge-swipe returns to its parent
-PASS: Page 11 title stays horizontally centered
+PASS: Page 11 has no visible appbar
 PASS: Page 11 edge-swipe returns to its parent
-PASS: Page 12 title stays horizontally centered
+PASS: Page 12 has no visible appbar
 PASS: Page 12 edge-swipe returns to its parent
-PASS: Page 13 title stays horizontally centered
+PASS: Page 13 has no visible appbar
 PASS: Page 13 edge-swipe returns to its parent
-PASS: Page 14 title stays horizontally centered
+PASS: Page 14 has no visible appbar
 PASS: Page 14 edge-swipe returns to its parent
 PASS: A drag starting in the middle does not navigate back
 PASS: Face confirmation is a 64px circular target
@@ -123,8 +127,46 @@ PASS: Invalid RTC displays unavailable time
 PASS: Water reminder wakes an off panel automatically
 PASS: Reminder alert remains visible until acted on
 PASS: Notification buttons bypass double-tap delay and add one glass
+PASS: Menu app opens at release with no added tap wait
+PASS: Ordinary content moves through an intermediate 70ms entry frame
+PASS: Content entry animation ends within 80ms
+PASS: Other apps preserve double-tap arbitration for 119ms
+PASS: Single control activates at 120ms instead of 260ms
+PASS: Tapping a game during folder expansion cannot launch it
+PASS: Expanded Flappy icon opens on first release
+PASS: Flappy opens ready with a tap prompt
+PASS: Flappy flaps on touch-down without waiting for release
+PASS: Fixed game timer moves the bird upwards
+PASS: Repeated taps do not freeze Flappy simulation time
+PASS: Flappy pause button responds without double-tap wait
+PASS: Paused Flappy retains its full state
+PASS: Flappy resume button restarts play
+PASS: Leaving Flappy pauses and prevents offscreen updates
+PASS: Flappy collision shows game over
+PASS: Touch restarts Flappy immediately after game over
+PASS: Expanded Snake icon opens on first release
+PASS: Snake starts immediately and ignores small finger jitter
+PASS: Upward drag queues the upward turn
+PASS: Snake applies finger direction on the next grid step
+PASS: Opposite finger drag cannot reverse into the body
+PASS: Dominant left drag turns left during one continuous contact
+PASS: Downward drag turns down
+PASS: Rightward drag turns right
+PASS: Snake pause freezes body, direction, food and score
+PASS: Snake resume continues its current board
+PASS: Snake wall collision ends the game
+PASS: Snake touch restarts after collision
+PASS: Leaving Snake pauses and prevents offscreen updates
+PASS: IDA lives in the outer ring and opens immediately
+PASS: IDA is explicitly SIM and all telemetry stays static when clock/timers change
+PASS: New page 15 has no visible appbar
+PASS: New page 15 edge swipe returns to menu
+PASS: New page 16 has no visible appbar
+PASS: New page 16 edge swipe returns to menu
+PASS: New page 17 has no visible appbar
+PASS: New page 17 edge swipe returns to menu
 {
-  "passed": 125,
+  "passed": 167,
   "failed": 0,
   "checks": [
     [
@@ -145,7 +187,11 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Menu has a centered title, nine icons and no back button"
+      "Menu has wallpaper, nine outer apps, a circular folder and three game icons"
+    ],
+    [
+      true,
+      "Menu appbar is hidden"
     ],
     [
       true,
@@ -153,47 +199,59 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Icon 0 has a large target wholly inside the circle"
+      "Outer app 0 has an 80px safe target"
     ],
     [
       true,
-      "Icon 1 has a large target wholly inside the circle"
+      "Outer app 1 has an 80px safe target"
     ],
     [
       true,
-      "Icon 2 has a large target wholly inside the circle"
+      "Outer app 2 has an 80px safe target"
     ],
     [
       true,
-      "Icon 3 has a large target wholly inside the circle"
+      "Outer app 3 has an 80px safe target"
     ],
     [
       true,
-      "Icon 4 has a large target wholly inside the circle"
+      "Outer app 4 has an 80px safe target"
     ],
     [
       true,
-      "Icon 5 has a large target wholly inside the circle"
+      "Outer app 5 has an 80px safe target"
     ],
     [
       true,
-      "Icon 6 has a large target wholly inside the circle"
+      "Outer app 6 has an 80px safe target"
     ],
     [
       true,
-      "Icon 7 has a large target wholly inside the circle"
+      "Outer app 7 has an 80px safe target"
     ],
     [
       true,
-      "Icon 8 has a large target wholly inside the circle"
+      "Outer app 8 has an 80px safe target"
     ],
     [
       true,
-      "All three menu rows are left-right symmetric"
+      "Nine outer apps share a circular orbit"
     ],
     [
       true,
-      "Top and bottom curved rows mirror around the central puzzle icon"
+      "Folder opens on release without a 260ms wait"
+    ],
+    [
+      true,
+      "Game selection is disabled during expansion"
+    ],
+    [
+      true,
+      "Game icons grow at an intermediate animation frame"
+    ],
+    [
+      true,
+      "Folder finishes with selectable 88px game icons"
     ],
     [
       true,
@@ -249,7 +307,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Interrupted navigation restores all menu icons to their intended positions"
+      "Interrupted navigation restores the circular menu layout"
     ],
     [
       true,
@@ -353,7 +411,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 1 title stays horizontally centered"
+      "Page 1 has no visible appbar"
     ],
     [
       true,
@@ -361,7 +419,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 2 title stays horizontally centered"
+      "Page 2 has no visible appbar"
     ],
     [
       true,
@@ -369,7 +427,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 3 title stays horizontally centered"
+      "Page 3 has no visible appbar"
     ],
     [
       true,
@@ -377,7 +435,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 4 title stays horizontally centered"
+      "Page 4 has no visible appbar"
     ],
     [
       true,
@@ -385,7 +443,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 5 title stays horizontally centered"
+      "Page 5 has no visible appbar"
     ],
     [
       true,
@@ -393,7 +451,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 6 title stays horizontally centered"
+      "Page 6 has no visible appbar"
     ],
     [
       true,
@@ -401,7 +459,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 7 title stays horizontally centered"
+      "Page 7 has no visible appbar"
     ],
     [
       true,
@@ -409,7 +467,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 8 title stays horizontally centered"
+      "Page 8 has no visible appbar"
     ],
     [
       true,
@@ -417,7 +475,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 9 title stays horizontally centered"
+      "Page 9 has no visible appbar"
     ],
     [
       true,
@@ -425,7 +483,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 10 title stays horizontally centered"
+      "Page 10 has no visible appbar"
     ],
     [
       true,
@@ -433,7 +491,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 11 title stays horizontally centered"
+      "Page 11 has no visible appbar"
     ],
     [
       true,
@@ -441,7 +499,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 12 title stays horizontally centered"
+      "Page 12 has no visible appbar"
     ],
     [
       true,
@@ -449,7 +507,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 13 title stays horizontally centered"
+      "Page 13 has no visible appbar"
     ],
     [
       true,
@@ -457,7 +515,7 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     ],
     [
       true,
-      "Page 14 title stays horizontally centered"
+      "Page 14 has no visible appbar"
     ],
     [
       true,
@@ -626,9 +684,161 @@ PASS: Notification buttons bypass double-tap delay and add one glass
     [
       true,
       "Notification buttons bypass double-tap delay and add one glass"
+    ],
+    [
+      true,
+      "Menu app opens at release with no added tap wait"
+    ],
+    [
+      true,
+      "Ordinary content moves through an intermediate 70ms entry frame"
+    ],
+    [
+      true,
+      "Content entry animation ends within 80ms"
+    ],
+    [
+      true,
+      "Other apps preserve double-tap arbitration for 119ms"
+    ],
+    [
+      true,
+      "Single control activates at 120ms instead of 260ms"
+    ],
+    [
+      true,
+      "Tapping a game during folder expansion cannot launch it"
+    ],
+    [
+      true,
+      "Expanded Flappy icon opens on first release"
+    ],
+    [
+      true,
+      "Flappy opens ready with a tap prompt"
+    ],
+    [
+      true,
+      "Flappy flaps on touch-down without waiting for release"
+    ],
+    [
+      true,
+      "Fixed game timer moves the bird upwards"
+    ],
+    [
+      true,
+      "Repeated taps do not freeze Flappy simulation time"
+    ],
+    [
+      true,
+      "Flappy pause button responds without double-tap wait"
+    ],
+    [
+      true,
+      "Paused Flappy retains its full state"
+    ],
+    [
+      true,
+      "Flappy resume button restarts play"
+    ],
+    [
+      true,
+      "Leaving Flappy pauses and prevents offscreen updates"
+    ],
+    [
+      true,
+      "Flappy collision shows game over"
+    ],
+    [
+      true,
+      "Touch restarts Flappy immediately after game over"
+    ],
+    [
+      true,
+      "Expanded Snake icon opens on first release"
+    ],
+    [
+      true,
+      "Snake starts immediately and ignores small finger jitter"
+    ],
+    [
+      true,
+      "Upward drag queues the upward turn"
+    ],
+    [
+      true,
+      "Snake applies finger direction on the next grid step"
+    ],
+    [
+      true,
+      "Opposite finger drag cannot reverse into the body"
+    ],
+    [
+      true,
+      "Dominant left drag turns left during one continuous contact"
+    ],
+    [
+      true,
+      "Downward drag turns down"
+    ],
+    [
+      true,
+      "Rightward drag turns right"
+    ],
+    [
+      true,
+      "Snake pause freezes body, direction, food and score"
+    ],
+    [
+      true,
+      "Snake resume continues its current board"
+    ],
+    [
+      true,
+      "Snake wall collision ends the game"
+    ],
+    [
+      true,
+      "Snake touch restarts after collision"
+    ],
+    [
+      true,
+      "Leaving Snake pauses and prevents offscreen updates"
+    ],
+    [
+      true,
+      "IDA lives in the outer ring and opens immediately"
+    ],
+    [
+      true,
+      "IDA is explicitly SIM and all telemetry stays static when clock/timers change"
+    ],
+    [
+      true,
+      "New page 15 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 15 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "New page 16 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 16 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "New page 17 has no visible appbar"
+    ],
+    [
+      true,
+      "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "beba4d3099a17d9cb7eff71e2964cfed1a92a05b73c8f9cca433040dc596ef04",
-  "firmware_sha256": "d749cfa899fcbcf8ef9b760f6310702a4207cc5c43a1da476bf532c4f17fc6c3",
+  "elf_sha256": "48014c57fbdb90485ecbba44222fbe22c9bccff4aabde6cf1e6d7db69a82f1fa",
+  "firmware_sha256": "e61acf9abb68f284007c6308bb0d8a0258b1f15adf82570f4bf927d2d9bc90d8",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

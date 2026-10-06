@@ -56,7 +56,7 @@ void settings_refresh(void)
 
 void theme_apply(void)
 {    for(unsigned i = 0; i < SCREEN_COUNT; ++i) {
-        if(i == HOME || i == FACES) continue;
+        if(i == HOME || i == FACES || i == MENU || i == FLAPPY || i == SNAKE || i == IDA) continue;
         lv_obj_set_style_bg_color(screens[i], lv_color_hex(light_theme ? 0xEAF0F8 : 0x070D18), 0);
         lv_obj_set_style_text_color(screens[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
         if(page_titles[i]) lv_obj_set_style_text_color(page_titles[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);

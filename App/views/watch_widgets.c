@@ -2,11 +2,11 @@
 
 static const lv_style_prop_t button_motion_properties[]={LV_STYLE_TRANSFORM_SCALE_X,LV_STYLE_TRANSFORM_SCALE_Y,LV_STYLE_BG_COLOR,0};
 static const lv_style_transition_dsc_t button_transition={
-    .props=button_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=90
+    .props=button_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=50
 };
 static const lv_style_prop_t card_motion_properties[]={LV_STYLE_BG_COLOR,LV_STYLE_BORDER_COLOR,0};
 static const lv_style_transition_dsc_t card_transition={
-    .props=card_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=90
+    .props=card_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=50
 };
 
 void button_motion(lv_obj_t *button)
@@ -91,6 +91,8 @@ void watch_ui_header(lv_obj_t *page, const char *title, lv_event_cb_t back, void
     (void)back;
     lv_obj_t *label = label_at(page, title, 44, &lv_font_montserrat_24);
     lv_obj_set_width(label, 290);
+    /* Keep navigation metadata and stable child indices without an appbar. */
+    lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
     for(unsigned i=0; i<SCREEN_COUNT; ++i) if(screens[i] == page) {

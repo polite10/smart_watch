@@ -40,23 +40,10 @@ void watch_ui_init(void)
         lv_obj_add_event_cb(screens[i], screen_loaded, LV_EVENT_SCREEN_LOADED, NULL);
     }
     watch_faces_init(screens[HOME], screens[FACES], navigate, (void *)(uintptr_t)MENU);
-    page_header(MENU, "Uygulamalar", HOME);
-    const unsigned targets[] = {HOME, ALARMS, CALCULATOR, NOTES, PUZZLE, FACES, WATER, CALENDAR, SETTINGS};
-    const lv_image_dsc_t *icons[] = {&icon_clock, &icon_alarm, &icon_calculator, &icon_notes,
-                                   &icon_puzzle, &icon_faces, &icon_water, &icon_calendar, &icon_settings};
-    const uint32_t colors[] = {0x9CAFFF,0xFF9B9E,0x96E1C2,0xE5C191,0xFFD18B,0xD7AFF7,0x82D9F4,0xFFC5A2,0xADC4D6};
-    const int xs[] = {-106,0,106,-112,0,112,-106,0,106};
-    const int ys[] = {123,89,123,223,223,223,323,357,323};
-    for(unsigned i = 0; i < sizeof targets / sizeof targets[0]; ++i) {
-        lv_obj_t *label = round_action(screens[MENU], "", xs[i], ys[i], 92, colors[i], navigate, (void *)(uintptr_t)targets[i]);
-        lv_obj_t *image = lv_image_create(lv_obj_get_parent(label));
-        lv_image_set_src(image, icons[i]); lv_obj_center(image);
-        lv_obj_remove_flag(image, LV_OBJ_FLAG_CLICKABLE);
-    }
-
+    watch_menu_init();
 
     page_header(CALENDAR,"Takvim",MENU); calendar_init(); settings_init();
-    alarms_init(); calculator_init(); notes_init(); water_init(); puzzle_init(); notifications_init(); clock_editor_init();
+    alarms_init(); calculator_init(); notes_init(); water_init(); puzzle_init(); arcade_init(); ida_init(); notifications_init(); clock_editor_init();
     apps_refresh(); refresh_time(); lv_screen_load(screens[HOME]);
 }
 void watch_ui_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t hour,uint8_t minute,uint8_t second)

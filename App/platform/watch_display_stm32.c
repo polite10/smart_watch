@@ -5,6 +5,8 @@
 #include <string.h>
 #include "services/watch_display_service.h"
 #include "platform/watch_dirty_rows.h"
+#include "lvgl/src/draw/sw/blend/lv_draw_sw_blend_private.h"
+#include "platform/watch_draw_dma2d.h"
 static uint32_t draw_buffer[480 * 40] __attribute__((aligned(16)));
 static uint32_t back_framebuffer[184320] __attribute__((aligned(16)));
 static unsigned front_buffer;
@@ -18,6 +20,32 @@ static lv_display_t *pending_display;
 static uint32_t present_started;
 volatile uint32_t smartwatch_sync_bytes,smartwatch_frame_total_ms;
 static uint32_t render_started;
+volatile uint32_t smartwatch_rgb565_dma_transfers;
+
+lv_result_t watch_display_blend_rgb565(lv_draw_sw_blend_image_dsc_t *dsc)
+{
+    if(dsc->src_color_format!=LV_COLOR_FORMAT_RGB565 || dsc->opa!=LV_OPA_COVER ||
+       dsc->mask_buf || dsc->blend_mode!=LV_BLEND_MODE_NORMAL ||
+       dsc->dest_w<=0 || dsc->dest_h<=0 || dsc->dest_stride%4 || dsc->src_stride%2 ||
+       dsc->dest_stride<dsc->dest_w*4 || dsc->src_stride<dsc->dest_w*2 ||
+       ((uintptr_t)dsc->dest_buf&3U) || ((uintptr_t)dsc->src_buf&1U)) return LV_RESULT_INVALID;
+    /* Rendering and flushes run synchronously on the UI thread, so this transfer
+     * finishes before display_copy reconfigures the same DMA2D peripheral. */
+    display_dma.Instance=DMA2D;
+    display_dma.Init.Mode=DMA2D_M2M_PFC;
+    display_dma.Init.ColorMode=DMA2D_OUTPUT_ARGB8888;
+    display_dma.Init.OutputOffset=dsc->dest_stride/4-dsc->dest_w;
+    display_dma.LayerCfg[1].InputColorMode=DMA2D_INPUT_RGB565;
+    display_dma.LayerCfg[1].InputOffset=dsc->src_stride/2-dsc->dest_w;
+    display_dma.LayerCfg[1].InputAlpha=255;
+    display_dma.LayerCfg[1].AlphaMode=DMA2D_NO_MODIF_ALPHA;
+    __DSB();
+    if(HAL_DMA2D_Init(&display_dma)!=HAL_OK || HAL_DMA2D_ConfigLayer(&display_dma,1)!=HAL_OK ||
+       HAL_DMA2D_Start(&display_dma,(uint32_t)dsc->src_buf,(uint32_t)dsc->dest_buf,dsc->dest_w,dsc->dest_h)!=HAL_OK ||
+       HAL_DMA2D_PollForTransfer(&display_dma,100)!=HAL_OK) Error_Handler();
+    __DSB();++smartwatch_rgb565_dma_transfers;
+    return LV_RESULT_OK;
+}
 
 static void display_copy(uint32_t source, uint32_t destination, uint32_t width,
                          uint32_t height, uint32_t input_offset, uint32_t output_offset)

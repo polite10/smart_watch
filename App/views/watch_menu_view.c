@@ -3,16 +3,49 @@
 #include "views/watch_art.h"
 #include <math.h>
 #include "views/watch_folder_icons.h"
+#include "views/watch_folder_frames.h"
 
 static lv_obj_t *menu_buttons[9],*menu_folder,*menu_games[3],*menu_game_images[3];
 static bool folder_open,folder_moving;
 static unsigned folder_progress;
 static int folder_icon_stage=-1;
+static lv_obj_t *folder_backdrop,*folder_canvas;
+static uint16_t folder_pixels[WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE] __attribute__((aligned(4)));
+static int folder_frame=-1;
+static const lv_image_dsc_t folder_picture={
+    .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,
+        .w=WATCH_FOLDER_FRAME_SIZE,.h=WATCH_FOLDER_FRAME_SIZE,.stride=WATCH_FOLDER_FRAME_SIZE*2},
+    .data_size=sizeof folder_pixels,.data=(const uint8_t *)folder_pixels
+};
+static void folder_apply_delta(unsigned frame)
+{
+    const uint16_t *source=watch_folder_frames[frame];
+    uint16_t *pixel=folder_pixels,*end=folder_pixels+WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE;
+    while(pixel<end) {
+        unsigned token=*source++,count=token&0x7FFF;
+        if(token&0x8000) {
+            uint16_t delta=*source++;
+            if(!delta) pixel+=count;
+            else while(count--) *pixel++^=delta;
+        } else while(count--) *pixel++^=*source++;
+    }
+}
+static void folder_cached_frame(unsigned progress)
+{
+    int next=(progress+4)/8;
+    if(folder_frame==next) return;
+    if(folder_frame<0) { folder_apply_delta(0);folder_frame=0; }
+    /* XOR deltas work in both directions and allow skipped animation ticks. */
+    while(folder_frame<next) folder_apply_delta((unsigned)++folder_frame);
+    while(folder_frame>next) folder_apply_delta((unsigned)folder_frame--);
+    lv_obj_invalidate(folder_canvas);
+}
 static const int small_x[]={240,277,203},small_y[]={197,261,261};
 static const int large_x[]={240,305,175},large_y[]={165,278,278};
 static void folder_layout(void *unused,int32_t value)
 {
     (void)unused; folder_progress=(unsigned)value;
+    if(folder_moving) { folder_cached_frame(folder_progress);return; }
     int size=190+value*110/256;
     lv_obj_set_size(menu_folder,size,size);lv_obj_set_pos(menu_folder,240-size/2,240-size/2);
     int stage=(value*6+128)/256;
@@ -29,6 +62,9 @@ static void folder_layout(void *unused,int32_t value)
 static void folder_finished(lv_anim_t *animation)
 {
     (void)animation; folder_moving=false;
+    folder_layout(NULL,folder_open ? 256 : 0);
+    lv_obj_add_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<3;++i) {
         lv_obj_remove_state(menu_games[i],LV_STATE_PRESSED);
         if(folder_open) lv_obj_add_flag(menu_games[i],LV_OBJ_FLAG_CLICKABLE);
@@ -39,6 +75,9 @@ static void folder_show(bool open)
 {
     if(folder_moving || folder_open==open) return;
     folder_open=open;folder_moving=true;
+    folder_cached_frame(folder_progress);
+    lv_obj_remove_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<9;++i) {
         lv_obj_set_style_bg_opa(menu_buttons[i],open ? 80 : LV_OPA_COVER,0);
         lv_obj_t *image=lv_obj_get_child(menu_buttons[i],1);
@@ -63,6 +102,8 @@ static void game_clicked(lv_event_t *e)
 void watch_menu_reset(void)
 {
     lv_anim_delete(menu_folder,folder_layout);folder_open=folder_moving=false;folder_icon_stage=-1;folder_layout(NULL,0);
+    lv_obj_add_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<9;++i) {
         lv_obj_add_flag(menu_buttons[i],LV_OBJ_FLAG_CLICKABLE);
         lv_obj_set_style_bg_opa(menu_buttons[i],LV_OPA_COVER,0);
@@ -112,5 +153,15 @@ void watch_menu_init(void)
         lv_obj_remove_flag(menu_game_images[i],LV_OBJ_FLAG_CLICKABLE);
     }
     lv_obj_add_event_cb(screens[MENU],background_clicked,LV_EVENT_CLICKED,NULL);
+    /* Opaque cached layers occlude the costly live alpha/radius objects during motion.
+     * Their non-clickable images leave existing hit targets and gesture routing intact. */
+    folder_backdrop=lv_image_create(screens[MENU]);lv_image_set_src(folder_backdrop,&watch_folder_backdrop);
+    lv_obj_remove_flag(folder_backdrop,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(folder_backdrop,0,0);
+    folder_canvas=lv_image_create(screens[MENU]);lv_image_set_src(folder_canvas,&folder_picture);
+    lv_obj_remove_flag(folder_canvas,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(folder_canvas,90,90);
+    /* LVGL 9.3's base-object cover check also requires an opaque background.
+     * Without this, it redraws every alpha icon below the opaque cached images. */
+    lv_obj_set_style_bg_opa(folder_backdrop,LV_OPA_COVER,0);
+    lv_obj_set_style_bg_opa(folder_canvas,LV_OPA_COVER,0);
     watch_menu_reset();
 }

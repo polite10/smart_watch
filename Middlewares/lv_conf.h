@@ -218,10 +218,10 @@
         #define LV_DRAW_SW_CIRCLE_CACHE_SIZE 4
     #endif
 
-    #define  LV_USE_DRAW_SW_ASM     LV_DRAW_SW_ASM_NONE
+    #define  LV_USE_DRAW_SW_ASM     LV_DRAW_SW_ASM_CUSTOM
 
     #if LV_USE_DRAW_SW_ASM == LV_DRAW_SW_ASM_CUSTOM
-        #define  LV_DRAW_SW_ASM_CUSTOM_INCLUDE ""
+        #define  LV_DRAW_SW_ASM_CUSTOM_INCLUDE "platform/watch_draw_dma2d.h"
     #endif
 
     /** Enable drawing complex gradients in software: linear at an angle, radial or conical */

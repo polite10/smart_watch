@@ -1,0 +1,172 @@
+{
+  "passed": 41,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "TIM6 is configured for 10 ms interrupts at 160 MHz"
+    ],
+    [
+      true,
+      "PC13 EXTI detects both press and release edges"
+    ],
+    [
+      true,
+      "USART1 is configured for 115200 baud, transmit only"
+    ],
+    [
+      true,
+      "GPDMA channel 0 uses USART1_TX request and linked HAL handles"
+    ],
+    [
+      true,
+      "Before 1000 ms there is no LED transition or UART report"
+    ],
+    [
+      true,
+      "LED changes inside TIM6 IRQ at 1000 ms without polling"
+    ],
+    [
+      true,
+      "The first periodic DMA message reports interval, full cycle and press count"
+    ],
+    [
+      true,
+      "Real HAL DMA points from the static SRAM message to USART1 TDR"
+    ],
+    [
+      true,
+      "Polling cannot overwrite or restart an active DMA message"
+    ],
+    [
+      true,
+      "DMA completion retains the buffer until the final UART TC interrupt"
+    ],
+    [
+      true,
+      "USART1 TC releases the buffer and counts one completed message"
+    ],
+    [
+      true,
+      "Contact bounce does not change speed before a stable 40 ms press"
+    ],
+    [
+      true,
+      "The first debounced press selects permanent OFF exactly once"
+    ],
+    [
+      true,
+      "Entering OFF switches off an already lit physical LED immediately"
+    ],
+    [
+      true,
+      "OFF remains dark through 300 timer interrupts without main-loop polling"
+    ],
+    [
+      true,
+      "Holding the button in OFF counts only one press"
+    ],
+    [
+      true,
+      "Release bounce cannot produce another press"
+    ],
+    [
+      true,
+      "Next press selects mode index 2"
+    ],
+    [
+      true,
+      "LED waits the full 100 ms interval"
+    ],
+    [
+      true,
+      "TIM6 produces the 100 ms interval"
+    ],
+    [
+      true,
+      "Next press selects mode index 3"
+    ],
+    [
+      true,
+      "LED waits the full 250 ms interval"
+    ],
+    [
+      true,
+      "TIM6 produces the 250 ms interval"
+    ],
+    [
+      true,
+      "Next press selects mode index 4"
+    ],
+    [
+      true,
+      "LED waits the full 500 ms interval"
+    ],
+    [
+      true,
+      "TIM6 produces the 500 ms interval"
+    ],
+    [
+      true,
+      "Next press selects mode index 0"
+    ],
+    [
+      true,
+      "LED waits the full 1000 ms interval"
+    ],
+    [
+      true,
+      "TIM6 produces the 1000 ms interval"
+    ],
+    [
+      true,
+      "Slowing through all four blink intervals wraps back to sustained OFF"
+    ],
+    [
+      true,
+      "Delayed polling sends one current snapshot with six presses and TX completion count"
+    ],
+    [
+      true,
+      "UART DMA keeps reporting in OFF and distinguishes disabled mode from a blink off-phase"
+    ],
+    [
+      true,
+      "Normal polling schedules exactly one DMA report per second"
+    ],
+    [
+      true,
+      "A missing UART completion aborts safely after 250 ms"
+    ],
+    [
+      true,
+      "UART reporting resumes after a timed out transfer"
+    ],
+    [
+      true,
+      "A real DMA error IRQ releases ownership through main-loop recovery"
+    ],
+    [
+      true,
+      "An immediate DMA start failure is counted and recovered"
+    ],
+    [
+      true,
+      "Successful DMA/UART transmission resumes after both error paths"
+    ],
+    [
+      true,
+      "Button debounce works across the HAL tick rollover and re-enables blinking from OFF"
+    ],
+    [
+      true,
+      "Leaving OFF waits the full new interval before lighting the LED"
+    ],
+    [
+      true,
+      "After OFF, the next press resumes 100 ms blinking in the timer IRQ"
+    ]
+  ],
+  "elf_sha256": "f83a91db25df7ebdb21a06705957a2354e5f01c3877f5bd6616f48637ce9b770",
+  "scope": "Real compiled ARM demo and EXTI/TIM6/GPDMA/UART HAL IRQ paths. MMIO, DMA data movement, TX acknowledgement and DMA abort suspension are simulated; no physical board timing or UART wire data is measured."
+}

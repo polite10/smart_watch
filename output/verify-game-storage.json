@@ -1,0 +1,52 @@
+{
+  "passed": 11,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Legacy version-1 journal loads all 916 user bytes unchanged"
+    ],
+    [
+      true,
+      "Legacy record migrates to empty game records"
+    ],
+    [
+      true,
+      "Extended settings and records commit atomically"
+    ],
+    [
+      true,
+      "Reload after migration preserves notes, alarms and all settings byte-for-byte"
+    ],
+    [
+      true,
+      "Game records survive journal reinitialization"
+    ],
+    [
+      true,
+      "Unchanged settings and records do not write flash"
+    ],
+    [
+      true,
+      "Ordinary settings saves retain game records"
+    ],
+    [
+      true,
+      "Interrupted flash programming reports failure"
+    ],
+    [
+      true,
+      "Torn write preserves the previous settings and records"
+    ],
+    [
+      true,
+      "Both journal pages rotate repeatedly without losing settings or records"
+    ],
+    [
+      true,
+      "Corrupt latest CRC falls back to the previous valid snapshot"
+    ]
+  ],
+  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "scope": "Real ARM storage journal with flash program/erase primitives simulated; physical flash timing and power loss are not verified."
+}

@@ -25,10 +25,11 @@ int main(void)
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
         if(HAL_GetTick()-last_update>=1000) { refresh_rtc(); last_update=HAL_GetTick(); ++smartwatch_heartbeat; }
+        watch_platform_display_poll();
         lv_timer_handler();
         if(watch_notification_vm_alarm_active() && (HAL_GetTick()/300)%2) BSP_LED_On(LED_RED);
         else BSP_LED_Off(LED_RED);
-        HAL_Delay(5);
+        HAL_Delay(1);
     }
 }
 void Error_Handler(void)

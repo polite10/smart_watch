@@ -19,6 +19,7 @@ void watch_navigation_show(unsigned screen)
     lv_obj_t *previous=lv_screen_active();
     if(previous==screens[screen]) return;
     if(previous==screens[MENU]) watch_menu_reset();
+    if(previous==screens[PUZZLE]) (void)watch_games_vm_save_records();
     if(previous==screens[FLAPPY]) arcade_leave(FLAPPY);
     if(previous==screens[SNAKE]) arcade_leave(SNAKE);
     if(previous) reset_motion(previous);
@@ -33,8 +34,8 @@ void watch_navigation_show(unsigned screen)
         lv_anim_t animation; lv_anim_init(&animation);
         lv_anim_set_var(&animation,child);
         lv_anim_set_exec_cb(&animation,enter_x);
-        lv_anim_set_values(&animation,10,0);
-        lv_anim_set_duration(&animation,70);
+        lv_anim_set_values(&animation,24,0);
+        lv_anim_set_duration(&animation,180);
 
         lv_anim_set_path_cb(&animation,lv_anim_path_ease_out);
         lv_anim_start(&animation);
@@ -113,7 +114,7 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
                 display_awake = false; watch_ui_display_power(false);
             }
             consumed = home_contact = false;
-        } else if(!moved && now-started < 200 && contact_screen!=MENU && contact_screen!=FLAPPY && contact_screen!=SNAKE) {
+        } else if(!moved && now-started < 200 && contact_screen!=MENU && contact_screen!=PUZZLE && contact_screen!=FLAPPY && contact_screen!=SNAKE) {
             pending = true; released = now;
             data->point = last; data->state = LV_INDEV_STATE_PRESSED;
         }

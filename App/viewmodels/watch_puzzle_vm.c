@@ -1,5 +1,6 @@
 #include "viewmodels/watch_viewmodels.h"
 #include <string.h>
+#include "services/watch_records_service.h"
 
 static watch_puzzle_state_t puzzle_state;
 static uint32_t generation;
@@ -12,4 +13,9 @@ void watch_puzzle_vm_new(uint32_t entropy)
         watch_puzzle_new(&puzzle_state,entropy^(++generation*0x9E3779B9u));
     } while(!memcmp(previous,puzzle_state.tiles,sizeof previous));
 }
-bool watch_puzzle_vm_move(unsigned slot) { return watch_puzzle_move(&puzzle_state,slot); }
+bool watch_puzzle_vm_move(unsigned slot)
+{
+    bool moved=watch_puzzle_move(&puzzle_state,slot);
+    if(moved && puzzle_state.won) watch_records_service_update(WATCH_RECORD_PUZZLE,puzzle_state.moves);
+    return moved;
+}

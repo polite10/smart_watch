@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum { WATCH_SNAKE_SIDE=18, WATCH_SNAKE_CELLS=324, WATCH_FLAPPY_PIPES=3 };
+enum { WATCH_SNAKE_SIDE=18, WATCH_SNAKE_CELLS=324, WATCH_FLAPPY_PIPES=3, WATCH_FLAPPY_SPACING=160, WATCH_FLAPPY_GAP_HALF=56 };
 typedef enum { WATCH_GAME_READY, WATCH_GAME_RUNNING, WATCH_GAME_PAUSED, WATCH_GAME_OVER, WATCH_GAME_WON } watch_game_phase_t;
 typedef enum { WATCH_RIGHT, WATCH_DOWN, WATCH_LEFT, WATCH_UP } watch_direction_t;
 typedef struct { uint8_t x,y; } watch_cell_t;

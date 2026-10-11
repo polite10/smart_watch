@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-11",
+  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "firmware_sha256": "814021ae9718c19b17178e0a6a555c3d95fbac08166a547dbd1423923575a9f0",
+  "clean_build_sources": 502,
+  "warnings": 0,
+  "suites": {
+    "round-ui": {
+      "passed": 187,
+      "failed": 0
+    },
+    "viewmodels": {
+      "passed": 54,
+      "failed": 0
+    },
+    "game-storage": {
+      "passed": 11,
+      "failed": 0
+    },
+    "game-platform": {
+      "passed": 15,
+      "failed": 0
+    }
+  },
+  "total_passed": 267,
+  "total_failed": 0,
+  "native_test": "PASS: records, failed-save retry, reload, tilt calibration/filter/reversal, dirty row clipping/union and denser Flappy obstacles.\nPASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.",
+  "hardware_verified": false
+}

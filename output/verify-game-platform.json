@@ -1,0 +1,68 @@
+{
+  "passed": 15,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Last flush returns without waiting for vblank and retains buffer ownership"
+    ],
+    [
+      true,
+      "Polling before reload neither copies nor releases a pending frame"
+    ],
+    [
+      true,
+      "Refresh callback cannot render over a pending hidden buffer"
+    ],
+    [
+      true,
+      "Reload completion releases exactly one pending frame in the main loop"
+    ],
+    [
+      true,
+      "A 16x16 update synchronizes 1024 bytes instead of the entire 737280-byte buffer"
+    ],
+    [
+      true,
+      "Dirty synchronization uses correct input and output virtual strides"
+    ],
+    [
+      true,
+      "The hidden buffer contains the presented pixels for the next partial frame"
+    ],
+    [
+      true,
+      "Refresh resumes after buffer synchronization"
+    ],
+    [
+      true,
+      "Overlapping partial flushes synchronize their union once and increment one frame"
+    ],
+    [
+      true,
+      "Full-screen changes use the smaller packed physical buffer copy"
+    ],
+    [
+      true,
+      "Absent sensor probes both legal addresses with bounded timeouts"
+    ],
+    [
+      true,
+      "Detected LSM6DSOX enables BDU, register increment and 104Hz +/-2g acceleration"
+    ],
+    [
+      true,
+      "Acceleration adapter reads all three axes and converts signed raw values to milli-g"
+    ],
+    [
+      true,
+      "Stale acceleration samples are not consumed"
+    ],
+    [
+      true,
+      "Leaving motion control powers down acceleration and stops reads"
+    ]
+  ],
+  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "scope": "Real ARM scheduling/dirty copies and LSM6DSOX registers; DMA/LTDC/I2C primitives simulated. Hardware timing, GFXMMU mapping and a physical sensor are not verified."
+}

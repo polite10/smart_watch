@@ -81,6 +81,7 @@ size = subprocess.run([str(BIN / 'arm-none-eabi-size'), str(elf)], check=True, c
 print(size, end='')
 binary = ROOT / 'Firmware/Smartwatch.bin'
 subprocess.run([str(BIN / 'arm-none-eabi-objcopy'), '-O', 'binary', str(elf), str(binary)], check=True)
+binary.chmod(0o644)  # Raw firmware is data, not a host executable.
 cache.write_text(signature)
 report = {'compiler': str(BIN / 'arm-none-eabi-gcc'), 'sources': len(sources),
           'compiled': sum(r[2] for r in results), 'warnings': warnings, 'size': size,

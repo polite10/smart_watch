@@ -10,6 +10,8 @@ enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NO
 extern lv_obj_t *screens[SCREEN_COUNT], *page_titles[SCREEN_COUNT];
 extern unsigned back_targets[SCREEN_COUNT];
 void button_motion(lv_obj_t *button);
+void button_color_motion(lv_obj_t *button);
+#include "viewmodels/watch_games_vm.h"
 void watch_navigation_show(unsigned screen);
 void watch_menu_init(void);
 void watch_menu_reset(void);

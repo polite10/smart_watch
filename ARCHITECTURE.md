@@ -145,3 +145,39 @@ fiziksel panel zamanlaması, güç kesintisi veya karta yükleme doğrulaması d
 Yeni bir özellik eklerken önce model kuralını ve ViewModel durum/komutlarını
 yazın; ardından View'i bu sözleşmeye bağlayın. HAL işlevlerini ViewModel'e,
 iş kurallarını LVGL callback'lerine taşımayın.
+
+## Kontrol ve performans güncellemesi — 11 Ekim 2026
+
+Yeni rekor modeli `watch_records.c`, kayıt servisi `watch_records_service.c` ve
+ortak oyun ViewModel'i `watch_games_vm.c` üzerinden kullanılır. Oyun VM'leri
+sonuçları RAM'de günceller; View yalnız güvenli oyun sınırlarında kayıt komutunu
+çağırır. Başarısız kayıt dirty durumunu temizlemez. `watch_data_t` 916 bayt kalır;
+platform günlüğü eski 916 veya yeni 928 bayt payload'u kabul eder. Yeni payload'un
+son 12 baytı `watch_records_t` yapısıdır. Ayar kayıtları rekorları korur.
+
+Eğim kontrolündeki sensör portu `services/watch_motion_service.h`, LSM6DSOX/I²C2
+adaptörü `platform/watch_motion_stm32.c`, nötr kalibrasyonu ve süzgeç
+`models/watch_tilt.c` içindedir. View sensörü okur ve sayısal örnekleri VM'ye
+iletir; VM HAL/LVGL kullanmaz. Seçim, kalibrasyon, touch/tap yönleri, veri kaybı,
+duraklatma ve yeniden başlatma ayrı akışlardır. Gerçek sensör donanımı henüz
+bağlanmadığından bu port register ve örnek simülasyonlarıyla doğrulanır.
+
+Görüntü interpolasyonu View'e aittir; Yılan'ın hücre fiziği 160–80 ms kalır.
+Canvas eski/yeni gövde bölgelerini temizler ve yalnız değişen görüntüde çizim
+ister. Menü ikon boyutları `generate-folder-icons.py` ile önceden rasterize edilir.
+`generate-turkish-font.py`, mevcut MIT lisanslı Montserrat glyph'lerinden kontrol
+metinleri için Türkçe ek glyph'ler üretir; ASCII ve semboller mevcut fonta düşer.
+
+Son flush vblank isteğini başlatır ve LVGL tamponunu sürücüde tutarak döner.
+`watch_platform_display_poll`, reload sonrası değişen satır aralıklarını gizli
+tampona eşitler, sonra `lv_display_flush_ready` çağırır. Refresh timer callback'i
+pending kare varken render'ı engeller; LVGL invalidation timer'ı tekrar açsa da
+hazır olmayan tampon kullanılmaz. ISR yalnız tamamlanma bayrağını yazar.
+`smartwatch_sync_bytes` eşitlenen baytları, `smartwatch_frame_total_ms` ilk çizim
+başlangıcından eşitleme sonuna kadar geçen süreyi ölçer. Mevcut `frame_ms` ve
+`frame_max_ms` ilk flush'tan başlayan ölçümleriyle korunur.
+
+`verify-game-storage.py` gerçek ARM günlüğünün eski kayıt, CRC, torn write,
+no-op yazma ve sayfa dönüşü davranışlarını; `verify-game-platform.py` gerçek ARM
+frame sahipliği, DMA stride/bölge kopyası ve sensör register adaptörünü doğrular.
+Bu testler fiziksel GFXMMU eşlemesini veya donanım zamanlamasını kanıtlamaz.

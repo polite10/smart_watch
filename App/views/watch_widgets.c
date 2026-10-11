@@ -2,12 +2,18 @@
 
 static const lv_style_prop_t button_motion_properties[]={LV_STYLE_TRANSFORM_SCALE_X,LV_STYLE_TRANSFORM_SCALE_Y,LV_STYLE_BG_COLOR,0};
 static const lv_style_transition_dsc_t button_transition={
-    .props=button_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=50
+    .props=button_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=100
 };
 static const lv_style_prop_t card_motion_properties[]={LV_STYLE_BG_COLOR,LV_STYLE_BORDER_COLOR,0};
 static const lv_style_transition_dsc_t card_transition={
-    .props=card_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=50
+    .props=card_motion_properties,.path_xcb=lv_anim_path_ease_out,.time=100
 };
+
+void button_color_motion(lv_obj_t *button)
+{
+    lv_obj_set_style_transition(button,&card_transition,LV_STATE_DEFAULT);
+    lv_obj_set_style_transition(button,&card_transition,LV_STATE_PRESSED);
+}
 
 void button_motion(lv_obj_t *button)
 {

@@ -15,6 +15,8 @@ PASS: Outer app 6 has an 80px safe target
 PASS: Outer app 7 has an 80px safe target
 PASS: Outer app 8 has an 80px safe target
 PASS: Nine outer apps share a circular orbit
+PASS: Closed folder icon never enters pressed state
+PASS: Closed folder icon never scales on contact
 PASS: Folder opens on release without a 260ms wait
 PASS: Game selection is disabled during expansion
 PASS: Game icons grow at an intermediate animation frame
@@ -22,14 +24,15 @@ PASS: Folder finishes with selectable 88px game icons
 PASS: Center puzzle icon opens the ninth app
 PASS: All fifteen 62px square targets lie inside the round display
 PASS: Tapping a non-adjacent tile leaves the board unchanged
-PASS: Pressed tile visibly compresses before the delayed click
-PASS: Adjacent tap updates one move and starts a tile animation
+PASS: Puzzle press uses color feedback without a transformed layer
+PASS: Adjacent release immediately starts a tile slide without a 120ms wait
 PASS: Tile occupies an intermediate position while sliding
 PASS: Additional clicks during the tile slide are ignored
 PASS: Tile finishes exactly at the empty-cell destination and releases the input guard
 PASS: New game button reshuffles and clears the move count
 PASS: Opening the puzzle from the menu starts a new game
 PASS: Last tile slide displays congratulations and final moves
+PASS: Completed puzzle shows the best completed move count
 PASS: Completed puzzle ignores tile taps
 PASS: Restart dismisses the win state
 PASS: Interrupted navigation restores the circular menu layout
@@ -128,8 +131,8 @@ PASS: Water reminder wakes an off panel automatically
 PASS: Reminder alert remains visible until acted on
 PASS: Notification buttons bypass double-tap delay and add one glass
 PASS: Menu app opens at release with no added tap wait
-PASS: Ordinary content moves through an intermediate 70ms entry frame
-PASS: Content entry animation ends within 80ms
+PASS: Ordinary content has a visible intermediate 180ms entry frame
+PASS: Content entry animation ends within 200ms
 PASS: Other apps preserve double-tap arbitration for 119ms
 PASS: Single control activates at 120ms instead of 260ms
 PASS: Tapping a game during folder expansion cannot launch it
@@ -145,6 +148,9 @@ PASS: Leaving Flappy pauses and prevents offscreen updates
 PASS: Flappy collision shows game over
 PASS: Touch restarts Flappy immediately after game over
 PASS: Expanded Snake icon opens on first release
+PASS: Snake opens at control selection before any simulation
+PASS: Absent motion sensor leaves choice visible and offers touch control
+PASS: Touch control selection reveals a ready board without starting it
 PASS: Snake starts immediately and ignores small finger jitter
 PASS: Upward drag queues the upward turn
 PASS: Snake applies finger direction on the next grid step
@@ -157,6 +163,20 @@ PASS: Snake resume continues its current board
 PASS: Snake wall collision ends the game
 PASS: Snake touch restarts after collision
 PASS: Leaving Snake pauses and prevents offscreen updates
+PASS: Upper region tap turns Snake up
+PASS: Left region tap turns Snake left
+PASS: Lower region tap turns Snake down
+PASS: Right region tap turns Snake right
+PASS: Region taps cannot reverse into the body
+PASS: Snake interpolates with fewer than 10000 pixel writes instead of a full 82944-pixel clear
+PASS: Snake moves visually between unchanged grid states
+PASS: Connected tilt mode waits for neutral calibration
+PASS: Sixteen stable sensor samples calibrate and start tilt play
+PASS: Filtered forward tilt commands up
+PASS: Lost tilt samples pause play and return to control selection
+PASS: Flappy shows its record after starting a new zero-score game
+PASS: Failed record save keeps the achieved result and a visible retry status
+PASS: Snake record survives restart and a failed save can be retried
 PASS: IDA lives in the outer ring and opens immediately
 PASS: IDA is explicitly SIM and all telemetry stays static when clock/timers change
 PASS: New page 15 has no visible appbar
@@ -166,7 +186,7 @@ PASS: New page 16 edge swipe returns to menu
 PASS: New page 17 has no visible appbar
 PASS: New page 17 edge swipe returns to menu
 {
-  "passed": 167,
+  "passed": 187,
   "failed": 0,
   "checks": [
     [
@@ -239,6 +259,14 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
+      "Closed folder icon never enters pressed state"
+    ],
+    [
+      true,
+      "Closed folder icon never scales on contact"
+    ],
+    [
+      true,
       "Folder opens on release without a 260ms wait"
     ],
     [
@@ -267,11 +295,11 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Pressed tile visibly compresses before the delayed click"
+      "Puzzle press uses color feedback without a transformed layer"
     ],
     [
       true,
-      "Adjacent tap updates one move and starts a tile animation"
+      "Adjacent release immediately starts a tile slide without a 120ms wait"
     ],
     [
       true,
@@ -296,6 +324,10 @@ PASS: New page 17 edge swipe returns to menu
     [
       true,
       "Last tile slide displays congratulations and final moves"
+    ],
+    [
+      true,
+      "Completed puzzle shows the best completed move count"
     ],
     [
       true,
@@ -691,11 +723,11 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Ordinary content moves through an intermediate 70ms entry frame"
+      "Ordinary content has a visible intermediate 180ms entry frame"
     ],
     [
       true,
-      "Content entry animation ends within 80ms"
+      "Content entry animation ends within 200ms"
     ],
     [
       true,
@@ -759,6 +791,18 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
+      "Snake opens at control selection before any simulation"
+    ],
+    [
+      true,
+      "Absent motion sensor leaves choice visible and offers touch control"
+    ],
+    [
+      true,
+      "Touch control selection reveals a ready board without starting it"
+    ],
+    [
+      true,
       "Snake starts immediately and ignores small finger jitter"
     ],
     [
@@ -807,6 +851,62 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
+      "Upper region tap turns Snake up"
+    ],
+    [
+      true,
+      "Left region tap turns Snake left"
+    ],
+    [
+      true,
+      "Lower region tap turns Snake down"
+    ],
+    [
+      true,
+      "Right region tap turns Snake right"
+    ],
+    [
+      true,
+      "Region taps cannot reverse into the body"
+    ],
+    [
+      true,
+      "Snake interpolates with fewer than 10000 pixel writes instead of a full 82944-pixel clear"
+    ],
+    [
+      true,
+      "Snake moves visually between unchanged grid states"
+    ],
+    [
+      true,
+      "Connected tilt mode waits for neutral calibration"
+    ],
+    [
+      true,
+      "Sixteen stable sensor samples calibrate and start tilt play"
+    ],
+    [
+      true,
+      "Filtered forward tilt commands up"
+    ],
+    [
+      true,
+      "Lost tilt samples pause play and return to control selection"
+    ],
+    [
+      true,
+      "Flappy shows its record after starting a new zero-score game"
+    ],
+    [
+      true,
+      "Failed record save keeps the achieved result and a visible retry status"
+    ],
+    [
+      true,
+      "Snake record survives restart and a failed save can be retried"
+    ],
+    [
+      true,
       "IDA lives in the outer ring and opens immediately"
     ],
     [
@@ -838,7 +938,7 @@ PASS: New page 17 edge swipe returns to menu
       "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "48014c57fbdb90485ecbba44222fbe22c9bccff4aabde6cf1e6d7db69a82f1fa",
-  "firmware_sha256": "e61acf9abb68f284007c6308bb0d8a0258b1f15adf82570f4bf927d2d9bc90d8",
+  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "firmware_sha256": "814021ae9718c19b17178e0a6a555c3d95fbac08166a547dbd1423923575a9f0",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

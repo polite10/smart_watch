@@ -9,19 +9,34 @@ void refresh_time(void)
                              current_hour, current_minute, current_second, twelve_hour);
 }
 
-void apps_refresh(void) { watch_faces_refresh(); alarms_refresh(); notes_refresh(); water_refresh(); }
+void apps_refresh(void)
+{
+    lv_obj_t *active=lv_screen_active();
+    if(active==screens[HOME] || active==screens[FACES]) watch_faces_refresh();
+    else if(active==screens[ALARMS] || active==screens[ALARM_EDIT]) alarms_refresh();
+    else if(active==screens[NOTES] || active==screens[NOTE_EDIT]) notes_refresh();
+    else if(active==screens[WATER] || active==screens[WATER_SETTINGS] || active==screens[HISTORY]) water_refresh();
+    else if(active==screens[CALENDAR]) calendar_refresh();
+    else if(active==screens[SETTINGS]) settings_refresh();
+}
 static void screen_loaded(lv_event_t *e) { (void)e; refresh_time(); apps_refresh(); }
 static void state_changed(watch_vm_event_t event)
 {
     static bool previous_clock_valid;
+    static uint32_t previous_day;
     if(event==WATCH_VM_CLOCK) {
         bool lost=previous_clock_valid && !ui_clock_valid;
         previous_clock_valid=ui_clock_valid;
-        watch_faces_set_clock_valid(ui_clock_valid); clock_status_refresh(); calendar_refresh(); notifications_refresh();
+        watch_faces_set_clock_valid(ui_clock_valid); clock_status_refresh();
+        if(lv_screen_active()==screens[CALENDAR]) calendar_refresh();
+        notifications_refresh();
         if(!ui_clock_valid && (lost || lv_screen_active()==screens[HOME])) clock_editor_open();
         apps_refresh();
     } else {
-        refresh_time(); calendar_refresh();
+        refresh_time();
+        uint32_t today=watch_day_key(current_year,current_month,current_day);
+        if(today!=previous_day && lv_screen_active()==screens[CALENDAR]) calendar_refresh();
+        previous_day=today;
         if(current_second==0 || event==WATCH_VM_TIME_CHANGED) apps_refresh();
         notifications_refresh(); storage_refresh();
     }

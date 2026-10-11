@@ -2,6 +2,98 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Kontroller, akıcılık ve oyun rekorları — 11 Ekim 2026
+
+Yılan açılırken **Dokunarak kontrol** ve **Eğerek kontrol** seçenekleri sunulur.
+Dokunarak kontrolde kaydırma ve kısa dokunma birlikte çalışır: ekranın sağ/sol/üst/alt
+bölgesine dokunmak ilgili yönü seçer; merkezdeki 32 px alan yön değiştirmez.
+Kaydırmanın bırakılması ek bir yön komutuna dönüşmez. Ters dönüş ve aynı hücre
+adımında ikinci dönüş engeli korunur. Her menü açılışında kontrol yöntemi yeniden seçilir.
+
+Eğerek kontrol için **harici LSM6DSOX** desteği eklendi. Kartın kendi üzerinde
+ivmeölçer/IMU yoktur. Sensör bulunmazsa oyun başlamaz; seçim ekranı
+“Hareket sensörü bağlı değil” bilgisini verir ve dokunarak oynama seçeneği açık kalır.
+Bağlı sensörde 16 kararlı örnek nötr tutuşu belirler; süzgeç, yaklaşık 0,22 g eşik
+ve baskın eksen kontrolü küçük titremeleri/kararsız çapraz eğimleri eler.
+500 ms boyunca yeni veri alınamazsa oyun duraklar ve kontrol seçimine döner.
+Duraklatmadan devam etmek nötr konumu yeniden kalibre eder. Sensör yalnız ilgili
+oyunda okunur; çıkışta ivmeölçer kapatılır.
+
+**Sensör bağlantısı:** desteklenen adaptör I²C2 kullanır; MCU sinyalleri **PF1/SCL**,
+**PF0/SDA**, ortak GND ve sensör modülüne uygun beslemedir. Sensörün 7-bit adresi
+0x6A veya 0x6B, WHO_AM_I değeri 0x6C olmalıdır. İvmeölçer ±2 g / 104 Hz çalışır;
+register işlemlerinin zaman aşımı 3 ms ile sınırlıdır. Kartın mantık seviyesi 1,8 V
+olduğundan modülün I/O seviyesi buna uygun olmalıdır; gerektiğinde seviye dönüştürücü
+kullanın. Konektör pinlerini kart revizyonunun şemasından doğrulayın. Sensörün +X
+ekseni ekranın sağına, +Y ekseni altına hizalanmalıdır; farklı montajda platform
+adaptöründeki eksen eşlemesini değiştirin.
+Kaynaklar: [kart özellikleri](https://www.st.com/en/evaluation-tools/stm32u5a9j-dk.html),
+[LSM6DSOX veri sayfası](https://www.st.com/resource/en/datasheet/lsm6dsox.pdf).
+
+Akıcılık ve geri bildirim değişiklikleri:
+
+- Kapalı klasörde ve büyüme sırasında oyun ikonları dokunma hedefi değildir;
+  basma efekti oluşturmaz. Bu dokunuşu klasör karşılar. Yalnız tamamen açık
+  klasörde oyun seçilebilir. 260 ms büyümede ikonların yedi ara boyutu önceden
+  çizilmiş RGB565A8 görsellerden seçilir; işlemci görüntü ölçeklemesi yapmaz.
+- Genel sayfa girişleri 180 ms / 24 px, düğme renk/basma geçişleri 100 ms oldu.
+  Menü ve aktif oyun açılışları anında kalır. Bulmaca taşları ölçek katmanı
+  oluşturmadan renk geri bildirimi verir; 170 ms kayma ilk bırakmada başlar.
+  Bulmaca, menü ve oyunlar 120 ms çift dokunma beklemesini kullanmaz.
+- Yılanın 160–80 ms hücre fiziği korunur; görüntü hücre adımları arasında
+  20 ms timer'dan yumuşatılır. Tahta yalnız başlangıçta tamamen hazırlanır;
+  sonraki çizimler eski/yeni gövde ve yem bölgelerini yeniler. Sabit kare yeniden
+  çizilmez. Flappy'nin kuşu her adımda yazılımla döndürülmez.
+- Ekranın son parçasından sonra LTDC dikey boşluğu ana döngüde beklenmez.
+  Tampon sahipliği reload tamamlanınca ana döngüde bırakılır; bekleyen kare varken
+  yeni çizim başlamaz. Tampon eşitlemesi değişen satır aralıklarını kopyalar;
+  büyük değişikliklerde mevcut 720 KiB fiziksel kopya kullanılır. Ana döngüdeki
+  bekleme 1 ms oldu. Gizli uygulamalar/takvim her saat güncellemesinde yenilenmez.
+- Flappy boru çiftleri arası 190 → **160 px**, geçiş boşluğu 128 → **112 px** oldu.
+  Çizim ve çarpışma aynı sabitleri kullanır; uçuş hızı korunur.
+
+Yılan ve Flappy **en yüksek puanı**, 15 Bulmaca **tamamlanan oyunlardaki en az hamleyi**
+gösterir. Farklı bulmaca başlangıçlarının zorluğu değişir; hamle rekoru kişisel
+istatistiktir. Rekor RAM'de anında güncellenir; oyun bitişi, duraklatma, yeniden
+başlatma veya çıkışta kalıcı kayda geçirilir. Her puanda flash yazılmaz. Başarısız
+kayıt RAM'deki sonucu korur ve yeniden denenebilir.
+
+Eski kullanıcı yapısı **916 bayt / sürüm 1** olarak korunur. Aynı iki sayfalı
+CRC günlüğünün yeni payload'u kullanıcı verisine 12 bayt rekor ekler (**928 bayt**).
+Eski 916 bayt kayıt okunur; yeni rekorlar sıfırdan başlar. Yeni kayıtta ayar ve
+rekor birlikte, commit header en son yazılarak saklanır. Bu geçiş notları, alarmları
+ve su geçmişini korur. Eski firmware'e geri dönüş yeni payload'u okuyamaz;
+güncellemeden önceki yedek eski sürüme dönmek için korunmalıdır.
+
+Yeni önizlemeler: [kontrol seçimi](output/round-snake-controls.png),
+[sensör bağlantısı kesildiğinde](output/round-snake-sensor-missing.png),
+[oyun klasörü](output/round-games-folder.png), [Yılan](output/round-snake.png),
+[Flappy](output/round-flappy.png), [Bulmaca rekoru](output/round-puzzle-won.png).
+
+Doğrulama komutları: `python3 output/build-macos.py --clean`,
+`python3 output/verify-round-ui.py`, `python3 output/verify-viewmodels.py`,
+`python3 output/verify-game-storage.py`, `python3 output/verify-game-platform.py`.
+Native oyun testi için:
+
+```sh
+cc -std=c11 -Wall -Wextra -Werror -IApp output/test-arcade.c \
+  App/models/watch_arcade.c App/models/watch_records.c App/models/watch_tilt.c \
+  App/services/watch_records_service.c App/viewmodels/watch_games_vm.c \
+  App/viewmodels/watch_arcade_vm.c App/viewmodels/watch_ida_vm.c -o /tmp/watch-test-arcade
+/tmp/watch-test-arcade
+```
+
+Temiz ARM derlemesi **502 kaynak, 0 hata, 0 uyarı** ile tamamlandı. Son firmware
+üzerinde **187 arayüz/dokunma**, **54 Model/ViewModel**, **11 flash kayıt**
+ve **15 ekran/sensör adaptörü** kontrolü geçti: toplam **267 kontrol, 0 başarısızlık**.
+Native C testi 512 başlangıç tahtasını, oyun kurallarını, rekorları, eğim süzgecini
+ve değişen satır aralıklarını doğruladı. Birleşik rapor: [verify-games.json](output/verify-games.json).
+
+ARM/LVGL ve platform testleri gerçek derlenmiş kodu çalıştırır; DMA, LTDC, flash
+programlama ve I²C donanım erişimleri taklit edilir. Fiziksel kart FPS'i, panel
+zamanlaması, gerçek güç kesintisi ve harici sensör bu sürümde ölçülmedi. Firmware
+karta yüklenmedi. Aşağıdaki tarihli bölümler önceki sürümlerin sonuçlarını anlatır.
+
 ## Yuvarlak oyun klasörü, Flappy Bird, Yılan ve İDA — 6 Ekim 2026
 
 Menüde **12 uygulama** bulunur: alarm, hesap makinesi, notlar, kadranlar, takvim,

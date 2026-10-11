@@ -67,7 +67,7 @@ static float gap(uint32_t *random) { return 190.0f+(float)(random_next(random)%1
 void watch_flappy_new(watch_flappy_state_t *s,uint32_t seed)
 {
     memset(s,0,sizeof *s); s->random=seed; s->y=235; s->phase=WATCH_GAME_READY;
-    for(unsigned i=0;i<WATCH_FLAPPY_PIPES;++i) s->pipes[i]=(watch_pipe_t){350.0f+190.0f*i,gap(&s->random),false};
+    for(unsigned i=0;i<WATCH_FLAPPY_PIPES;++i) s->pipes[i]=(watch_pipe_t){350.0f+WATCH_FLAPPY_SPACING*i,gap(&s->random),false};
 }
 void watch_flappy_flap(watch_flappy_state_t *s)
 {
@@ -85,10 +85,10 @@ void watch_flappy_step(watch_flappy_state_t *s)
         if(p->x<24) {
             float furthest=0;
             for(unsigned j=0;j<WATCH_FLAPPY_PIPES;++j) if(s->pipes[j].x>furthest) furthest=s->pipes[j].x;
-            p->x=furthest+190; p->gap_y=gap(&s->random); p->scored=false;
+            p->x=furthest+WATCH_FLAPPY_SPACING; p->gap_y=gap(&s->random); p->scored=false;
         }
-        /* Bird center x=170, collision half extents 14/12; gap height 128. */
-        if(p->x<184 && p->x+46>156 && (s->y-12<p->gap_y-64 || s->y+12>p->gap_y+64)) {
+        /* Bird center x=170, collision half extents 14/12; gap height 112. */
+        if(p->x<184 && p->x+46>156 && (s->y-12<p->gap_y-WATCH_FLAPPY_GAP_HALF || s->y+12>p->gap_y+WATCH_FLAPPY_GAP_HALF)) {
             s->phase=WATCH_GAME_OVER; return;
         }
         if(!p->scored && p->x+46<156) { p->scored=true; ++s->score; }

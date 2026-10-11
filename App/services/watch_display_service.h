@@ -2,6 +2,7 @@
 #define WATCH_DISPLAY_SERVICE_H
 #include <stdbool.h>
 void watch_platform_display_init(void);
+void watch_platform_display_poll(void);
 /* Also retained as the emulator's panel-power port. */
 void watch_ui_display_power(bool on);
 #endif

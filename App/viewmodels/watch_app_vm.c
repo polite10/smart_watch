@@ -1,6 +1,7 @@
 #include "viewmodels/watch_viewmodels.h"
 #include "services/watch_repository.h"
 #include "services/watch_clock_service.h"
+#include "services/watch_records_service.h"
 static watch_app_state_t state;
 static watch_vm_observer_t changed;
 static void clock_changed(bool valid, const watch_datetime_t *time)
@@ -11,6 +12,7 @@ static void clock_changed(bool valid, const watch_datetime_t *time)
 void watch_app_vm_init(watch_vm_observer_t observer)
 {
     watch_model_init();
+    watch_records_service_init();
     state = (watch_app_state_t){.time={2026,10,4,0,0,0}, .storage_ok=true};
     changed=observer; watch_clock_service_subscribe(clock_changed);
     watch_calculator_vm_init(); watch_calendar_vm_init(state.time.year,state.time.month);

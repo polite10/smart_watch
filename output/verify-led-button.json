@@ -167,6 +167,6 @@
       "After OFF, the next press resumes 100 ms blinking in the timer IRQ"
     ]
   ],
-  "elf_sha256": "f83a91db25df7ebdb21a06705957a2354e5f01c3877f5bd6616f48637ce9b770",
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
   "scope": "Real compiled ARM demo and EXTI/TIM6/GPDMA/UART HAL IRQ paths. MMIO, DMA data movement, TX acknowledgement and DMA abort suspension are simulated; no physical board timing or UART wire data is measured."
 }

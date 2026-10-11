@@ -31,6 +31,8 @@ with (ROOT/'Debug/Smartwatch.elf').open('rb') as f:
     die=resolve(die.get_DIE_from_attribute('DW_AT_type'));total+=index*die.attributes['DW_AT_byte_size'].value
   return total
  dma_input=offset('DMA2D_HandleTypeDef','LayerCfg[1].InputOffset');dma_output=offset('DMA2D_HandleTypeDef','Init.OutputOffset')
+ dma_format=offset('DMA2D_HandleTypeDef','LayerCfg[1].InputColorMode')
+ blend_fields={name:offset('lv_draw_sw_blend_image_dsc_t',name) for name in ['dest_buf','dest_w','dest_h','dest_stride','mask_buf','src_buf','src_stride','src_color_format','opa','blend_mode']}
  gfx0=offset('GFXMMU_HandleTypeDef','Init.Buffers.Buf0Address');gfx1=offset('GFXMMU_HandleTypeDef','Init.Buffers.Buf1Address')
 u.reg_write(UC_ARM_REG_C1_C0_2,0xf00000);u.reg_write(UC_ARM_REG_FPEXC,0x40000000)
 regs=[UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3];tick=1000
@@ -54,7 +56,16 @@ def dma_start():
  handle=u.reg_read(UC_ARM_REG_R0);source=u.reg_read(UC_ARM_REG_R1);dest=u.reg_read(UC_ARM_REG_R2);width=u.reg_read(UC_ARM_REG_R3)
  height=read32(u.reg_read(UC_ARM_REG_SP));inp=read32(handle+dma_input);out=read32(handle+dma_output)
  copies.append((source,dest,width,height,inp,out))
- for y in range(height):u.mem_write(dest+y*(width+out)*4,bytes(u.mem_read(source+y*(width+inp)*4,width*4)))
+ if read32(handle+dma_format)==2:
+  for y in range(height):
+   pixels=struct.unpack('<'+'H'*width,u.mem_read(source+y*(width+inp)*2,width*2))
+   row=bytearray()
+   for p in pixels:
+    r=(p>>11)&31;g=(p>>5)&63;b=p&31
+    row.extend(((b<<3)|(b>>2),(g<<2)|(g>>4),(r<<3)|(r>>2),255))
+   u.mem_write(dest+y*(width+out)*4,bytes(row))
+ else:
+  for y in range(height):u.mem_write(dest+y*(width+out)*4,bytes(u.mem_read(source+y*(width+inp)*4,width*4)))
  ret()
 replace('HAL_DMA2D_Start',dma_start)
 last=True;ready_count=0;render_count=0
@@ -88,5 +99,19 @@ check(read32(symbols['smartwatch_sync_bytes'])==600 and read32(symbols['smartwat
 last=True;u.mem_write(AREA,struct.pack('<iiii',0,0,479,479));call('flush',display,AREA,0x21000000)
 call('HAL_LTDC_ReloadEventCallback',symbols['hlcd_ltdc']);tick+=16;call('watch_platform_display_poll')
 check(copies[-1][2:]==(512,360,0,0) and read32(symbols['smartwatch_sync_bytes'])==737280,'Full-screen changes use the smaller packed physical buffer copy')
+# Execute the real blend adapter, with HAL's DMA operation faked at its boundary.
+DSC=0x210e0000;SOURCE=0x21080000;DEST=0x21090000
+u.mem_write(DSC,bytes(128));u.mem_write(SOURCE,struct.pack('<12H',0xf800,0x07e0,0x001f,0,0,0,0xffff,0,0x8410,0,0,0));u.mem_write(DEST,bytes([0xcc])*40)
+for name,value in {'dest_buf':DEST,'dest_w':3,'dest_h':2,'dest_stride':20,'src_buf':SOURCE,'src_stride':12}.items():u.mem_write(DSC+blend_fields[name],struct.pack('<I',value))
+u.mem_write(DSC+blend_fields['src_color_format'],b'\x12');u.mem_write(DSC+blend_fields['opa'],b'\xff')
+check(call('watch_display_blend_rgb565',DSC)==1 and read32(symbols['smartwatch_rgb565_dma_transfers'])==1,'Opaque RGB565 rendering uses the DMA2D color converter and completes synchronously')
+check(copies[-1][2:]==(3,2,3,2),'Color conversion respects padded source and destination row strides')
+check(bytes(u.mem_read(DEST,12))==bytes((0,0,255,255,0,255,0,255,255,0,0,255)) and bytes(u.mem_read(DEST+20,8))==bytes((255,255,255,255,0,0,0,255)),'RGB565 converts red, green, blue, white and black to opaque ARGB8888')
+check(bytes(u.mem_read(DEST+12,8))==bytes([0xcc])*8 and bytes(u.mem_read(DEST+32,8))==bytes([0xcc])*8,'Color conversion preserves padding outside the clipped draw rectangle')
+before=len(copies)
+u.mem_write(DSC+blend_fields['opa'],b'\x50');rejected=call('watch_display_blend_rgb565',DSC)==0
+u.mem_write(DSC+blend_fields['opa'],b'\xff');u.mem_write(DSC+blend_fields['mask_buf'],struct.pack('<I',SOURCE));rejected &= call('watch_display_blend_rgb565',DSC)==0
+u.mem_write(DSC+blend_fields['mask_buf'],bytes(4));u.mem_write(DSC+blend_fields['src_stride'],struct.pack('<I',5));rejected &= call('watch_display_blend_rgb565',DSC)==0
+check(rejected and len(copies)==before,'Opacity, masks and unsupported strides return to software without starting DMA')
 report={'passed':sum(ok for ok,_ in checks),'failed':sum(not ok for ok,_ in checks),'checks':checks,'elf_sha256':hashlib.sha256((ROOT/'Debug/Smartwatch.elf').read_bytes()).hexdigest(),'scope':'Real ARM scheduling/dirty copies; DMA/LTDC primitives simulated. Hardware timing and GFXMMU mapping are not verified.'}
 (ROOT/'output/verify-game-platform.json').write_text(json.dumps(report,indent=2)+'\n');raise SystemExit(bool(report['failed']))

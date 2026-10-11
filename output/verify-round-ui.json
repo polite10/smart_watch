@@ -1,5 +1,5 @@
 {
-  "passed": 184,
+  "passed": 202,
   "failed": 0,
   "checks": [
     [
@@ -20,7 +20,7 @@
     ],
     [
       true,
-      "Menu has wallpaper, nine outer apps, a circular folder and three game icons"
+      "Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers"
     ],
     [
       true,
@@ -88,11 +88,27 @@
     ],
     [
       true,
-      "Game icons grow at an intermediate animation frame"
+      "Expansion presents an intermediate cached frame without live widget scaling"
+    ],
+    [
+      true,
+      "Opaque motion canvas occludes live menu drawing in LVGL cover detection"
     ],
     [
       true,
       "Folder finishes with selectable 88px game icons"
+    ],
+    [
+      true,
+      "Completed animation restores live interactive icons"
+    ],
+    [
+      true,
+      "Skipped forward and reverse XOR frames restore the exact closed pixels"
+    ],
+    [
+      true,
+      "Reopening after reverse motion restores the exact open pixels"
     ],
     [
       true,
@@ -620,6 +636,10 @@
     ],
     [
       true,
+      "Snake background is solid with no grid lines"
+    ],
+    [
+      true,
       "Snake starts immediately and ignores small finger jitter"
     ],
     [
@@ -656,7 +676,11 @@
     ],
     [
       true,
-      "Snake wall collision ends the game"
+      "Straight Snake movement survives crossing the board boundary"
+    ],
+    [
+      true,
+      "Snake body collision ends the game"
     ],
     [
       true,
@@ -693,6 +717,54 @@
     [
       true,
       "Snake moves visually between unchanged grid states"
+    ],
+    [
+      true,
+      "Snake wraps across edge 0 without losing"
+    ],
+    [
+      true,
+      "Seam 0 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 0 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 1 without losing"
+    ],
+    [
+      true,
+      "Seam 1 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 1 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 2 without losing"
+    ],
+    [
+      true,
+      "Seam 2 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 2 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 3 without losing"
+    ],
+    [
+      true,
+      "Seam 3 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 3 preserves bounded incremental drawing"
     ],
     [
       true,
@@ -739,7 +811,7 @@
       "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
-  "firmware_sha256": "6686015ce269da501bdec7c07bcbe736df20873ed37e45d45afde0e1e93b2890",
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

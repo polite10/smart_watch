@@ -2,6 +2,43 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Klasör animasyonu ve kenarlardan geçen Yılan — 11 Ekim 2026
+
+Oyun klasörünün açılış/kapanışında 33 önceden çizilmiş kare kullanılır. Opak
+önbellek, alttaki ikonların her karede tekrar çizilmesini önler; RGB565 görüntüler
+DMA2D ile ekran tamponuna dönüştürülür. Hareketin hedef süresi 260 ms'dir.
+STM32U5A9J-DK üzerinde aynı açılış/kapanış yolu için alınan ölçüm:
+
+| Ölçüm | Önce | Güncel firmware |
+| --- | --- | --- |
+| Açılışta gösterilen kare | 2 | 11 |
+| Açılış süresi | 400 ms | 297 ms |
+| Açılışta en uzun flush/sunma | 101 ms | 26 ms |
+| Kapanışta gösterilen kare | 2 | 11 |
+| Kapanış süresi | 318 ms | 274 ms |
+| Kapanışta en uzun flush/sunma | 124 ms | 28 ms |
+
+Bunlar firmware sayaçlarıyla bir açılış/kapanışta ölçülen değerlerdir;
+ekranın kamera ile ölçülmüş FPS değeri değildir. Donanım testi için
+`./output/Verify-Folder-Performance.ps1` çalıştırılır. Test sırasında dokunma
+okuma kısa süre durdurulur; bitişte saat ekranına dönülür ve dokunma açılır.
+[Donanım ölçüm raporu](output/verify-folder-performance.json).
+
+Yılanın ızgarası kaldırıldı. Dört kenardan geçen baş ve gövde, hareket sırasında
+karşı kenarda görünür; duvara ulaşmak oyunu bitirmez. Yalnız kendi gövdesine
+çarpması kaybettirir. Kuyruk hücresinin boşalması, büyüme, yön kontrolü ve
+160–80 ms hücre adımları / 20 ms görüntü güncellemesi korunur.
+[Yılan önizlemesi](output/round-snake.png).
+
+Son derleme **0 hata, 0 uyarı** ile tamamlandı. Derlenmiş ARM/LVGL üzerinde
+**323 kontrol, 0 başarısızlık** ve bağımsız ARM C oyun testleri (512 başlangıç
+tahtası ve dört kenar geçişleri dahil) geçti. Firmware karta yüklendi ve flash
+doğrulaması tamamlandı; saat ve UART çalışıyor. Kullanıcı ayarları ile oyun
+rekorlarını içeren flash günlüğü yükleme öncesiyle byte byte aynı kaldı.
+[Derleme raporu](output/build-smooth-folder.json),
+[test özeti](output/verify-games.json),
+[bağımsız oyun modeli testi](output/verify-arcade-model.json).
+
 ## Buton, timer kesmesi ve UART DMA uygulaması — 11 Ekim 2026
 
 Saatle birlikte çalışan uygulama `Core/Src/led_button_demo.c` içindedir.
@@ -54,7 +91,8 @@ periferik register'ları, DMA veri hareketi ve UART hattı simüle edilir.
 ARM derlemesi **505 kaynak, 0 hata, 0 uyarı** ile tamamlandı;
 LED/buton/UART simülasyonunda **41 kontrol, 0 başarısızlık**:
 [derleme raporu](output/build-led-button.json), [test raporu](output/verify-led-button.json).
-Fiziksel kart üzerinde doğrulama ve karta yükleme yapılmadı.
+Bu önceki raporda fiziksel kart doğrulaması yapılmamıştı; güncel firmware'in
+karta yükleme ve çalışma doğrulaması yukarıdaki bölümde yer alır.
 
 ### İlk öneriyle farkı
 
@@ -91,8 +129,8 @@ Akıcılık ve geri bildirim değişiklikleri:
 
 - Kapalı klasörde ve büyüme sırasında oyun ikonları dokunma hedefi değildir;
   basma efekti oluşturmaz. Bu dokunuşu klasör karşılar. Yalnız tamamen açık
-  klasörde oyun seçilebilir. 260 ms büyümede ikonların yedi ara boyutu önceden
-  çizilmiş RGB565A8 görsellerden seçilir; işlemci görüntü ölçeklemesi yapmaz.
+  klasörde oyun seçilebilir. Güncel 260 ms büyümede birleşik kare önbelleği
+  kullanılır; hareketsiz ikonlar önceden çizilmiş RGB565A8 görsellerden seçilir.
 - Genel sayfa girişleri 180 ms / 24 px, düğme renk/basma geçişleri 100 ms oldu.
   Menü ve aktif oyun açılışları anında kalır. Bulmaca taşları ölçek katmanı
   oluşturmadan renk geri bildirimi verir; 170 ms kayma ilk bırakmada başlar.
@@ -138,16 +176,18 @@ cc -std=c11 -Wall -Wextra -Werror -IApp output/test-arcade.c \
 /tmp/watch-test-arcade
 ```
 
-Temiz ARM derlemesi **500 kaynak, 0 hata, 0 uyarı** ile tamamlandı. Son firmware
-üzerinde **184 arayüz/dokunma**, **54 Model/ViewModel**, **11 flash kayıt**
-ve **10 ekran adaptörü** kontrolü geçti: toplam **259 kontrol, 0 başarısızlık**.
-Native C testi 512 başlangıç tahtasını, oyun kurallarını, rekorları
+Güncel ARM derlemesi **508 bağlı nesne, 0 hata, 0 uyarı** ile tamamlandı. Son firmware
+üzerinde **202 arayüz/dokunma**, **54 Model/ViewModel**, **11 flash kayıt**,
+**15 ekran adaptörü** ve **41 LED/buton/UART** kontrolü geçti:
+toplam **323 kontrol, 0 başarısızlık**.
+Bağımsız C testi 512 başlangıç tahtasını, oyun kurallarını, rekorları
 ve değişen satır aralıklarını doğruladı. Birleşik rapor: [verify-games.json](output/verify-games.json).
 
 ARM/LVGL ve platform testleri gerçek derlenmiş kodu çalıştırır; DMA, LTDC, flash
 programlama donanım erişimleri taklit edilir. Fiziksel kart FPS'i, panel
-zamanlaması ve gerçek güç kesintisi bu sürümde ölçülmedi. Firmware
-karta yüklenmedi. Aşağıdaki tarihli bölümler önceki sürümlerin sonuçlarını anlatır.
+zamanlaması ve gerçek güç kesintisi bu simülasyonla ölçülmez. Güncel firmware
+karta yüklendi; klasörün donanım sayaçlarıyla ölçümü ilk bölümde yer alır.
+Aşağıdaki tarihli bölümlerde önceki sürümlerin test sonuçları da korunur.
 
 ## Yuvarlak oyun klasörü, Flappy Bird, Yılan ve İDA — 6 Ekim 2026
 
@@ -159,7 +199,7 @@ appbarları da gizlidir. Soldaki kenardan sağa kaydırmak önce klasörü kapat
 ardından bir üst ekrana döner.
 
 Klasöre dokununca çapı **190 → 300 px**, oyun ikonları **64 → 88 px** olur.
-**180 ms** büyüme tamamlandıktan sonra oyunlar seçilebilir. Açık klasörün dışındaki
+Güncel **260 ms** büyüme tamamlandıktan sonra oyunlar seçilebilir. Açık klasörün dışındaki
 ikonlar soluklaşır ve geçici olarak tıklanamaz. Boş alana veya klasöre dokunmak
 kapatır; bir oyun açıldığında menü eski boyutuna döner.
 
@@ -170,7 +210,8 @@ kapatır; bir oyun açıldığında menü eski boyutuna döner.
 - **Yılan:** parmağı ekranda yukarı, aşağı, sağa veya sola sürüklemek baskın yönde
   döndürür. 12 px altındaki hareketler süzülür; anlık ters dönüş ve aynı hücre
   adımındaki ikinci dönüş engellenir. Yön bir sonraki hücre adımında uygulanır.
-  18 × 18 tahta, yemle büyüme, duvar/gövde çarpışması, puan ve duraklatma bulunur.
+  18 × 18 tahta, yemle büyüme, gövde çarpışması, puan ve duraklatma bulunur.
+  Güncel sürümde duvar yerine karşı kenara geçiş uygulanır; zemin ızgarasızdır.
   İlk dokunuş oyunu başlatır; oyun bitince tekrar dokunmak yeniden başlatır.
 - **15 Bulmaca:** mevcut çözülebilir 4 × 4 tahta, hamle sayacı, 140 ms taş kayması
   ve yeni oyun işlevleri korunur.

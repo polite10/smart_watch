@@ -1,12 +1,10 @@
 {
   "date": "2026-10-11",
-  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
-  "firmware_sha256": "6686015ce269da501bdec7c07bcbe736df20873ed37e45d45afde0e1e93b2890",
-  "clean_build_sources": 500,
-  "warnings": 0,
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
   "suites": {
     "round-ui": {
-      "passed": 184,
+      "passed": 202,
       "failed": 0
     },
     "viewmodels": {
@@ -18,12 +16,21 @@
       "failed": 0
     },
     "game-platform": {
-      "passed": 10,
+      "passed": 15,
+      "failed": 0
+    },
+    "led-button": {
+      "passed": 41,
       "failed": 0
     }
   },
-  "total_passed": 259,
+  "total_passed": 323,
   "total_failed": 0,
-  "native_test": "PASS: records, failed-save retry, reload, dirty row clipping/union and denser Flappy obstacles.\nPASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.",
-  "hardware_verified": false
+  "standalone_arm_model": {
+    "passed": true,
+    "scope": "Standalone ARM C assertions: 512 boards, all four seams, repeated wraps, seam growth/body collision, tail vacancy, full board, games/records and dirty rows."
+  },
+  "hardware_verified": true,
+  "hardware_scope": "ST-LINK flash verification; running status/heartbeat/display/LSE/UART; folder open/close frames and DMA2D; unchanged user settings and complete games journal.",
+  "hardware_report": "verify-folder-performance.json"
 }

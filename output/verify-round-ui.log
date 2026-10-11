@@ -2,7 +2,7 @@ PASS: Home starts with clock
 PASS: Single tap turns the panel off
 PASS: Wake tap shows clock and is consumed
 PASS: Moving 40px unlocks directly to menu
-PASS: Menu has wallpaper, nine outer apps, a circular folder and three game icons
+PASS: Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers
 PASS: Menu appbar is hidden
 PASS: Persistent user-data structure retains its 916-byte format
 PASS: Outer app 0 has an 80px safe target
@@ -19,8 +19,12 @@ PASS: Closed folder icon never enters pressed state
 PASS: Closed folder icon never scales on contact
 PASS: Folder opens on release without a 260ms wait
 PASS: Game selection is disabled during expansion
-PASS: Game icons grow at an intermediate animation frame
+PASS: Expansion presents an intermediate cached frame without live widget scaling
+PASS: Opaque motion canvas occludes live menu drawing in LVGL cover detection
 PASS: Folder finishes with selectable 88px game icons
+PASS: Completed animation restores live interactive icons
+PASS: Skipped forward and reverse XOR frames restore the exact closed pixels
+PASS: Reopening after reverse motion restores the exact open pixels
 PASS: Center puzzle icon opens the ninth app
 PASS: All fifteen 62px square targets lie inside the round display
 PASS: Tapping a non-adjacent tile leaves the board unchanged
@@ -152,6 +156,7 @@ PASS: Snake opens directly on a ready board without control selection
 PASS: Snake immediately shows touch and swipe instructions
 PASS: Snake has no control chooser or motion sensor code
 PASS: The ready board waits for the first touch before moving
+PASS: Snake background is solid with no grid lines
 PASS: Snake starts immediately and ignores small finger jitter
 PASS: Upward drag queues the upward turn
 PASS: Snake applies finger direction on the next grid step
@@ -161,7 +166,8 @@ PASS: Downward drag turns down
 PASS: Rightward drag turns right
 PASS: Snake pause freezes body, direction, food and score
 PASS: Snake resume continues its current board
-PASS: Snake wall collision ends the game
+PASS: Straight Snake movement survives crossing the board boundary
+PASS: Snake body collision ends the game
 PASS: Snake touch restarts after collision
 PASS: Leaving Snake pauses and prevents offscreen updates
 PASS: Upper region tap turns Snake up
@@ -171,6 +177,18 @@ PASS: Right region tap turns Snake right
 PASS: Region taps cannot reverse into the body
 PASS: Snake interpolates with fewer than 10000 pixel writes instead of a full 82944-pixel clear
 PASS: Snake moves visually between unchanged grid states
+PASS: Snake wraps across edge 0 without losing
+PASS: Seam 0 draws both edges without a streak through the board
+PASS: Seam 0 preserves bounded incremental drawing
+PASS: Snake wraps across edge 1 without losing
+PASS: Seam 1 draws both edges without a streak through the board
+PASS: Seam 1 preserves bounded incremental drawing
+PASS: Snake wraps across edge 2 without losing
+PASS: Seam 2 draws both edges without a streak through the board
+PASS: Seam 2 preserves bounded incremental drawing
+PASS: Snake wraps across edge 3 without losing
+PASS: Seam 3 draws both edges without a streak through the board
+PASS: Seam 3 preserves bounded incremental drawing
 PASS: Flappy shows its record after starting a new zero-score game
 PASS: Failed record save keeps the achieved result and a visible retry status
 PASS: Snake record survives restart and a failed save can be retried
@@ -183,7 +201,7 @@ PASS: New page 16 edge swipe returns to menu
 PASS: New page 17 has no visible appbar
 PASS: New page 17 edge swipe returns to menu
 {
-  "passed": 184,
+  "passed": 202,
   "failed": 0,
   "checks": [
     [
@@ -204,7 +222,7 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Menu has wallpaper, nine outer apps, a circular folder and three game icons"
+      "Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers"
     ],
     [
       true,
@@ -272,11 +290,27 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Game icons grow at an intermediate animation frame"
+      "Expansion presents an intermediate cached frame without live widget scaling"
+    ],
+    [
+      true,
+      "Opaque motion canvas occludes live menu drawing in LVGL cover detection"
     ],
     [
       true,
       "Folder finishes with selectable 88px game icons"
+    ],
+    [
+      true,
+      "Completed animation restores live interactive icons"
+    ],
+    [
+      true,
+      "Skipped forward and reverse XOR frames restore the exact closed pixels"
+    ],
+    [
+      true,
+      "Reopening after reverse motion restores the exact open pixels"
     ],
     [
       true,
@@ -804,6 +838,10 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
+      "Snake background is solid with no grid lines"
+    ],
+    [
+      true,
       "Snake starts immediately and ignores small finger jitter"
     ],
     [
@@ -840,7 +878,11 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Snake wall collision ends the game"
+      "Straight Snake movement survives crossing the board boundary"
+    ],
+    [
+      true,
+      "Snake body collision ends the game"
     ],
     [
       true,
@@ -877,6 +919,54 @@ PASS: New page 17 edge swipe returns to menu
     [
       true,
       "Snake moves visually between unchanged grid states"
+    ],
+    [
+      true,
+      "Snake wraps across edge 0 without losing"
+    ],
+    [
+      true,
+      "Seam 0 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 0 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 1 without losing"
+    ],
+    [
+      true,
+      "Seam 1 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 1 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 2 without losing"
+    ],
+    [
+      true,
+      "Seam 2 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 2 preserves bounded incremental drawing"
+    ],
+    [
+      true,
+      "Snake wraps across edge 3 without losing"
+    ],
+    [
+      true,
+      "Seam 3 draws both edges without a streak through the board"
+    ],
+    [
+      true,
+      "Seam 3 preserves bounded incremental drawing"
     ],
     [
       true,
@@ -923,7 +1013,7 @@ PASS: New page 17 edge swipe returns to menu
       "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
-  "firmware_sha256": "6686015ce269da501bdec7c07bcbe736df20873ed37e45d45afde0e1e93b2890",
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-11",
+  "device": "STM32U5A9J-DK",
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
+  "nominal_animation_ms": 260,
+  "failed": 0,
+  "baseline": {
+    "open": {
+      "elapsed_ms": 400,
+      "frames": 2,
+      "max_flush_ms": 101,
+      "last_total_ms": 126
+    },
+    "close": {
+      "elapsed_ms": 318,
+      "frames": 2,
+      "max_flush_ms": 124,
+      "last_total_ms": 107
+    }
+  },
+  "current": {
+    "open": {
+      "elapsed_ms": 297,
+      "frames": 11,
+      "max_flush_ms": 26,
+      "last_total_ms": 11,
+      "dma_conversions": 70
+    },
+    "close": {
+      "elapsed_ms": 274,
+      "frames": 11,
+      "max_flush_ms": 28,
+      "last_total_ms": 16,
+      "dma_conversions": 70
+    }
+  },
+  "scope": "One open/close sequence using compiled folder_show and the real main loop. Counters measure firmware presentation/flush timing, not camera FPS. GDB pauses input during the sequence, restores HOME and resumes input before detach.",
+  "assertions": "At least 6 frames each way; opaque RGB565 DMA conversion used; each animation completes within 600ms.",
+  "userdata": {
+    "settings_916_bytes_unchanged": true,
+    "journal_16384_bytes_unchanged": true
+  },
+  "run": "./output/Verify-Folder-Performance.ps1"
+}

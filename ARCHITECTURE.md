@@ -100,7 +100,7 @@ ve diğer dijital kadranların saniye göstergeleri çalışmaya devam eder.
 ## Oyun klasörü ve yeni ekranlar
 
 `watch_menu_view.c` dokuz uygulamayı dış çembere, üç oyunu merkezdeki yuvarlak
-klasöre yerleştirir. 180 ms büyüme sırasında oyun hedefleri tıklanamaz; hareket
+klasöre yerleştirir. 260 ms büyüme sırasında oyun hedefleri tıklanamaz; hareket
 bittiğinde etkinleşir. Navigasyon menüden ayrılırken klasörü sıfırlar. Appbar
 etiketleri gizli metadata olarak tutulur; mevcut sayfa çocuk indeksleri ve geri
 hedefleri korunur.
@@ -135,7 +135,7 @@ GCC dependency dosyaları ve derleme seçenekleri izlenir. Testler aynı ELF'i �
   sınırlar, saat servisi hataları, alarm erteleme ve 916 baytlık kayıt uyumluluğu.
 
 - `output/test-arcade.c`: 512 Yılan başlangıcı, dört yön, ters/çift dönüş engeli,
-  gövde/duvar çarpışması, büyüme, dolu tahta, duraklatma, Flappy fizik/puan/yeniden
+  dört kenardan geçiş, gövde çarpışması, büyüme, dolu tahta, duraklatma, Flappy fizik/puan/yeniden
   başlatma ve statik İDA için bağımsız C modeli/VM testi.
 
 Testler yerel `unicorn`, `pyelftools` ve UI görselleri için `Pillow` kullanır.
@@ -178,4 +178,36 @@ başlangıcından eşitleme sonuna kadar geçen süreyi ölçer. Mevcut `frame_m
 `verify-game-storage.py` gerçek ARM günlüğünün eski kayıt, CRC, torn write,
 no-op yazma ve sayfa dönüşü davranışlarını; `verify-game-platform.py` gerçek ARM
 frame sahipliği, DMA stride/bölge kopyasını doğrular.
-Bu testler fiziksel GFXMMU eşlemesini veya donanım zamanlamasını kanıtlamaz.
+Bu simülasyon testleri fiziksel GFXMMU eşlemesini veya donanım zamanlamasını
+kanıtlamaz; fiziksel klasör ölçümü ayrı `verify-folder-performance` raporundadır.
+
+## Klasör kare önbelleği ve sınırsız Yılan — 11 Ekim 2026
+
+Klasörün 260 ms açılış/kapanış hareketi, canlı üç ikon ve yarı saydam daireyi
+her adımda yeniden çizmek yerine 33 önceden çizilmiş RGB565 kare kullanır.
+`generate-folder-frames.py` derlenmiş LVGL ile arka planı, ikonları ve daireyi
+birleştirir. Flash'taki kare farkları 16 bit literal/tekrar paketleriyle saklanır;
+XOR farkları ileri ve geri aynı biçimde uygulanır. Atlanan timer adımları da
+aynı son görüntüyü üretir. Tek 300 × 300 tampon 180.000 bayt statik RAM kullanır.
+Geçişte opak görüntüler alttaki canlı çizimi örter; bitişte mevcut dokunma
+hedefleri ve buton geri bildirimleri yeniden görünür. Navigasyon veya geri
+kaydırma, devam eden hareketi ve iki önbellek katmanını birlikte kapatır.
+İki görüntünün `bg_opa` değeri de opaktır: LVGL 9.3'ün base-object cover
+kontrolü bu değeri istediği için yalnız görüntünün RGB565 olması yeterli değildir.
+Arayüz testi, merkezi çizim alanında `lv_refr_get_top_obj` sonucunun önbellek
+canvas'ı olduğunu denetleyerek alttaki ikonların yeniden çizilmesini önler.
+
+`watch_draw_dma2d.h`, LVGL'nin özel blend uzantısını platformdaki
+`watch_display_blend_rgb565` fonksiyonuna bağlar. Tam opak, masksiz RGB565 →
+ARGB8888 çizimleri DMA2D PFC ile yapılır. Clipping ve byte stride değerleri
+LVGL'den gelir; transfer tamamlanmadan callback dönmez. Aynı UI görevinde
+çalışan flush/eşitleme yolu daha sonra aynı DMA2D'yi yeniden yapılandırabilir.
+Maskeli, saydam veya desteklenmeyen stride/hizalama durumları yazılım çizimine
+döner. `smartwatch_rgb565_dma_transfers`, gerçek donanım yolunun kullanımını sayar.
+
+Yılan modeli koordinatları 18'e göre sarar; kenara ulaşmak oyunu bitirmez.
+Gövde çarpışması, kuyruk hücresinin boşalması ve büyüme kuralları korunur.
+View, 17 ↔ 0 geçişini en kısa hücre hareketi olarak interpolasyonla çizer;
+taşan pikseller ve invalidation alanları karşı kenara sarılır. Izgarasız zemin
+ve yalnız eski/yeni gövde bölgelerinin çizilmesi, mevcut 20 ms görünüm timer'ını
+korur. Model, ViewModel ve kalıcı kayıt boyutları değişmez.

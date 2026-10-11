@@ -4,31 +4,12 @@ STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekme
 
 ## Kontroller, akıcılık ve oyun rekorları — 11 Ekim 2026
 
-Yılan açılırken **Dokunarak kontrol** ve **Eğerek kontrol** seçenekleri sunulur.
-Dokunarak kontrolde kaydırma ve kısa dokunma birlikte çalışır: ekranın sağ/sol/üst/alt
-bölgesine dokunmak ilgili yönü seçer; merkezdeki 32 px alan yön değiştirmez.
+Yılan doğrudan oyun tahtasıyla açılır; ilk dokunma oyunu başlatır.
+Kaydırma ve kısa dokunma birlikte çalışır: ekranın sağ/sol/üst/alt bölgesine
+dokunmak ilgili yönü seçer; merkezdeki 32 px alan yön değiştirmez.
 Kaydırmanın bırakılması ek bir yön komutuna dönüşmez. Ters dönüş ve aynı hücre
-adımında ikinci dönüş engeli korunur. Her menü açılışında kontrol yöntemi yeniden seçilir.
-
-Eğerek kontrol için **harici LSM6DSOX** desteği eklendi. Kartın kendi üzerinde
-ivmeölçer/IMU yoktur. Sensör bulunmazsa oyun başlamaz; seçim ekranı
-“Hareket sensörü bağlı değil” bilgisini verir ve dokunarak oynama seçeneği açık kalır.
-Bağlı sensörde 16 kararlı örnek nötr tutuşu belirler; süzgeç, yaklaşık 0,22 g eşik
-ve baskın eksen kontrolü küçük titremeleri/kararsız çapraz eğimleri eler.
-500 ms boyunca yeni veri alınamazsa oyun duraklar ve kontrol seçimine döner.
-Duraklatmadan devam etmek nötr konumu yeniden kalibre eder. Sensör yalnız ilgili
-oyunda okunur; çıkışta ivmeölçer kapatılır.
-
-**Sensör bağlantısı:** desteklenen adaptör I²C2 kullanır; MCU sinyalleri **PF1/SCL**,
-**PF0/SDA**, ortak GND ve sensör modülüne uygun beslemedir. Sensörün 7-bit adresi
-0x6A veya 0x6B, WHO_AM_I değeri 0x6C olmalıdır. İvmeölçer ±2 g / 104 Hz çalışır;
-register işlemlerinin zaman aşımı 3 ms ile sınırlıdır. Kartın mantık seviyesi 1,8 V
-olduğundan modülün I/O seviyesi buna uygun olmalıdır; gerektiğinde seviye dönüştürücü
-kullanın. Konektör pinlerini kart revizyonunun şemasından doğrulayın. Sensörün +X
-ekseni ekranın sağına, +Y ekseni altına hizalanmalıdır; farklı montajda platform
-adaptöründeki eksen eşlemesini değiştirin.
-Kaynaklar: [kart özellikleri](https://www.st.com/en/evaluation-tools/stm32u5a9j-dk.html),
-[LSM6DSOX veri sayfası](https://www.st.com/resource/en/datasheet/lsm6dsox.pdf).
+adımında ikinci dönüş engeli korunur. Sensör gerektiren eğerek kontrol, kontrol
+seçim ekranı ve sensör sürücüsü kaldırıldı; oyun yalnız dokunmayla kontrol edilir.
 
 Akıcılık ve geri bildirim değişiklikleri:
 
@@ -65,9 +46,7 @@ rekor birlikte, commit header en son yazılarak saklanır. Bu geçiş notları, 
 ve su geçmişini korur. Eski firmware'e geri dönüş yeni payload'u okuyamaz;
 güncellemeden önceki yedek eski sürüme dönmek için korunmalıdır.
 
-Yeni önizlemeler: [kontrol seçimi](output/round-snake-controls.png),
-[sensör bağlantısı kesildiğinde](output/round-snake-sensor-missing.png),
-[oyun klasörü](output/round-games-folder.png), [Yılan](output/round-snake.png),
+Yeni önizlemeler: [oyun klasörü](output/round-games-folder.png), [Yılan](output/round-snake.png),
 [Flappy](output/round-flappy.png), [Bulmaca rekoru](output/round-puzzle-won.png).
 
 Doğrulama komutları: `python3 output/build-macos.py --clean`,
@@ -77,21 +56,21 @@ Native oyun testi için:
 
 ```sh
 cc -std=c11 -Wall -Wextra -Werror -IApp output/test-arcade.c \
-  App/models/watch_arcade.c App/models/watch_records.c App/models/watch_tilt.c \
+  App/models/watch_arcade.c App/models/watch_records.c \
   App/services/watch_records_service.c App/viewmodels/watch_games_vm.c \
   App/viewmodels/watch_arcade_vm.c App/viewmodels/watch_ida_vm.c -o /tmp/watch-test-arcade
 /tmp/watch-test-arcade
 ```
 
-Temiz ARM derlemesi **502 kaynak, 0 hata, 0 uyarı** ile tamamlandı. Son firmware
-üzerinde **187 arayüz/dokunma**, **54 Model/ViewModel**, **11 flash kayıt**
-ve **15 ekran/sensör adaptörü** kontrolü geçti: toplam **267 kontrol, 0 başarısızlık**.
-Native C testi 512 başlangıç tahtasını, oyun kurallarını, rekorları, eğim süzgecini
+Temiz ARM derlemesi **500 kaynak, 0 hata, 0 uyarı** ile tamamlandı. Son firmware
+üzerinde **184 arayüz/dokunma**, **54 Model/ViewModel**, **11 flash kayıt**
+ve **10 ekran adaptörü** kontrolü geçti: toplam **259 kontrol, 0 başarısızlık**.
+Native C testi 512 başlangıç tahtasını, oyun kurallarını, rekorları
 ve değişen satır aralıklarını doğruladı. Birleşik rapor: [verify-games.json](output/verify-games.json).
 
 ARM/LVGL ve platform testleri gerçek derlenmiş kodu çalıştırır; DMA, LTDC, flash
-programlama ve I²C donanım erişimleri taklit edilir. Fiziksel kart FPS'i, panel
-zamanlaması, gerçek güç kesintisi ve harici sensör bu sürümde ölçülmedi. Firmware
+programlama donanım erişimleri taklit edilir. Fiziksel kart FPS'i, panel
+zamanlaması ve gerçek güç kesintisi bu sürümde ölçülmedi. Firmware
 karta yüklenmedi. Aşağıdaki tarihli bölümler önceki sürümlerin sonuçlarını anlatır.
 
 ## Yuvarlak oyun klasörü, Flappy Bird, Yılan ve İDA — 6 Ekim 2026

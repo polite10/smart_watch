@@ -78,40 +78,12 @@ int main(void)
     port_ok=true;assert(watch_games_vm_save_records());
     unsigned count=save_count;assert(watch_games_vm_save_records() && count==save_count);
     watch_records_service_init();assert(watch_games_vm_records()->snake_score==9 && watch_games_vm_records()->puzzle_moves==60);
-    watch_snake_vm_new(1);watch_snake_vm_choose_control(WATCH_SNAKE_CONTROL_TILT);
-    for(unsigned i=0;i<15;++i) watch_snake_vm_tilt(0,0,1000);
-    assert(!watch_snake_vm_calibrated() && watch_snake_vm_state()->phase==WATCH_GAME_READY);
-    watch_snake_vm_tilt(0,0,1000);assert(watch_snake_vm_calibrated() && watch_snake_vm_state()->phase==WATCH_GAME_RUNNING);
-    for(unsigned i=0;i<8;++i) watch_snake_vm_tilt(0,-400,916);
-    watch_snake_vm_step();assert(watch_snake_vm_state()->direction==WATCH_UP);
-    for(unsigned i=0;i<8;++i) watch_snake_vm_tilt(0,400,916);
-    assert(!watch_snake_vm_state()->turn_queued); /* Opposite tilt is rejected. */
-    watch_snake_vm_pause();watch_snake_state_t paused=*watch_snake_vm_state();
-    for(unsigned i=0;i<8;++i) watch_snake_vm_tilt(-400,0,916);
-    assert(!memcmp(&paused,watch_snake_vm_state(),sizeof paused));
-    watch_tilt_t tilt;watch_tilt_reset(&tilt);int dx=0,dy=0;
-    for(unsigned i=0;i<16;++i) assert(!watch_tilt_sample(&tilt,0,0,1000,&dx,&dy));
-    for(unsigned i=0;i<20;++i) assert(!watch_tilt_sample(&tilt,30,-25,1000,&dx,&dy));
-    assert(!watch_tilt_sample(&tilt,1500,1500,1500,&dx,&dy));
-    watch_tilt_reset(&tilt);for(unsigned i=0;i<16;++i) watch_tilt_sample(&tilt,0,0,1000,&dx,&dy);
-    bool direction=false;for(unsigned i=0;i<10;++i) direction|=watch_tilt_sample(&tilt,400,0,916,&dx,&dy);
-    assert(direction && dx>0 && dy==0);
-    watch_tilt_reset(&tilt);for(unsigned i=0;i<16;++i) watch_tilt_sample(&tilt,0,0,1000,&dx,&dy);
-    direction=false;for(unsigned i=0;i<10;++i) direction|=watch_tilt_sample(&tilt,-400,0,916,&dx,&dy);
-    assert(direction && dx<0 && dy==0);
-    watch_tilt_reset(&tilt);for(unsigned i=0;i<16;++i) watch_tilt_sample(&tilt,0,0,1000,&dx,&dy);
-    direction=false;for(unsigned i=0;i<10;++i) direction|=watch_tilt_sample(&tilt,0,400,916,&dx,&dy);
-    assert(direction && dx==0 && dy>0);
-    watch_tilt_reset(&tilt);for(unsigned i=0;i<16;++i) watch_tilt_sample(&tilt,0,0,1000,&dx,&dy);
-    for(unsigned i=0;i<10;++i) assert(!watch_tilt_sample(&tilt,400,400,824,&dx,&dy));
-    watch_tilt_reset(&tilt);for(unsigned i=0;i<32;++i) watch_tilt_sample(&tilt,i%2 ? 300 : -300,0,954,&dx,&dy);
-    assert(!tilt.calibrated); /* Moving hands must not establish a neutral pose. */
     watch_dirty_rows_t dirty;watch_dirty_reset(&dirty);
     watch_dirty_add(&dirty,20,30,29,39);assert(dirty.pixels==100);
     watch_dirty_add(&dirty,25,30,34,39);assert(dirty.pixels==150);
     watch_dirty_add(&dirty,-30,-5,4,4);assert(dirty.pixels==175);
     watch_dirty_add(&dirty,500,500,550,550);assert(dirty.pixels==175);
     watch_dirty_reset(&dirty);watch_dirty_add(&dirty,0,0,479,479);assert(dirty.pixels==480*480);
-    puts("PASS: records, failed-save retry, reload, tilt calibration/filter/reversal, dirty row clipping/union and denser Flappy obstacles.");
+    puts("PASS: records, failed-save retry, reload, dirty row clipping/union and denser Flappy obstacles.");
     puts("PASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.");
 }

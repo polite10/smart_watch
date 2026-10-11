@@ -1,4 +1,4 @@
-"""Exercise real ARM display scheduling and LSM6DSOX adapter with hardware I/O fakes."""
+"""Exercise real ARM display scheduling with hardware I/O fakes."""
 import sys,struct,json,hashlib
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tmp/simulator-libs'))
@@ -88,23 +88,5 @@ check(read32(symbols['smartwatch_sync_bytes'])==600 and read32(symbols['smartwat
 last=True;u.mem_write(AREA,struct.pack('<iiii',0,0,479,479));call('flush',display,AREA,0x21000000)
 call('HAL_LTDC_ReloadEventCallback',symbols['hlcd_ltdc']);tick+=16;call('watch_platform_display_poll')
 check(copies[-1][2:]==(512,360,0,0) and read32(symbols['smartwatch_sync_bytes'])==737280,'Full-screen changes use the smaller packed physical buffer copy')
-# LSM6DSOX register adapter: no board sensor is assumed.
-connected=False;reads=[];writes=[];raw=(0,-6557,15016);sensor_ready=True
-replace('BSP_I2C2_Init',lambda:ret())
-def sensor_read():
- addr=u.reg_read(UC_ARM_REG_R1);reg=u.reg_read(UC_ARM_REG_R2);sp=u.reg_read(UC_ARM_REG_SP);dest=read32(sp);length=read32(sp+4);timeout=read32(sp+8)
- reads.append((addr,reg,length,timeout));assert timeout<=3
- if not connected or addr!=0x6A*2:ret(1);return
- data={0x0F:b'\x6c',0x1E:bytes([int(sensor_ready)]),0x28:struct.pack('<hhh',*raw)}[reg]
- u.mem_write(dest,data[:length]);ret()
-def sensor_write():
- addr=u.reg_read(UC_ARM_REG_R1);reg=u.reg_read(UC_ARM_REG_R2);sp=u.reg_read(UC_ARM_REG_SP);data=bytes(u.mem_read(read32(sp),read32(sp+4)))
- assert read32(sp+8)<=3;writes.append((addr,reg,data));ret(0 if connected else 1)
-replace('HAL_I2C_Mem_Read',sensor_read);replace('HAL_I2C_Mem_Write',sensor_write)
-check(call('watch_motion_start')==0 and len(reads)==2,'Absent sensor probes both legal addresses with bounded timeouts')
-connected=True;check(call('watch_motion_start')==1 and writes[-2:]==[(0xD4,0x12,b'\x44'),(0xD4,0x10,b'\x40')],'Detected LSM6DSOX enables BDU, register increment and 104Hz +/-2g acceleration')
-check(call('watch_motion_read',AREA)==1 and struct.unpack('<hhh',u.mem_read(AREA,6))==(0,-399,915),'Acceleration adapter reads all three axes and converts signed raw values to milli-g')
-sensor_ready=False;check(call('watch_motion_read',AREA)==0,'Stale acceleration samples are not consumed')
-call('watch_motion_stop');check(writes[-1]==(0xD4,0x10,b'\x00') and call('watch_motion_read',AREA)==0,'Leaving motion control powers down acceleration and stops reads')
-report={'passed':sum(ok for ok,_ in checks),'failed':sum(not ok for ok,_ in checks),'checks':checks,'elf_sha256':hashlib.sha256((ROOT/'Debug/Smartwatch.elf').read_bytes()).hexdigest(),'scope':'Real ARM scheduling/dirty copies and LSM6DSOX registers; DMA/LTDC/I2C primitives simulated. Hardware timing, GFXMMU mapping and a physical sensor are not verified.'}
+report={'passed':sum(ok for ok,_ in checks),'failed':sum(not ok for ok,_ in checks),'checks':checks,'elf_sha256':hashlib.sha256((ROOT/'Debug/Smartwatch.elf').read_bytes()).hexdigest(),'scope':'Real ARM scheduling/dirty copies; DMA/LTDC primitives simulated. Hardware timing and GFXMMU mapping are not verified.'}
 (ROOT/'output/verify-game-platform.json').write_text(json.dumps(report,indent=2)+'\n');raise SystemExit(bool(report['failed']))

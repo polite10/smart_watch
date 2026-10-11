@@ -219,6 +219,6 @@
       "Playing and restarting never change persistent notes, alarms or settings"
     ]
   ],
-  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
   "scope": "Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes."
 }

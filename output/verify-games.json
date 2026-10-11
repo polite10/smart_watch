@@ -1,12 +1,12 @@
 {
   "date": "2026-10-11",
-  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
-  "firmware_sha256": "814021ae9718c19b17178e0a6a555c3d95fbac08166a547dbd1423923575a9f0",
-  "clean_build_sources": 502,
+  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
+  "firmware_sha256": "6686015ce269da501bdec7c07bcbe736df20873ed37e45d45afde0e1e93b2890",
+  "clean_build_sources": 500,
   "warnings": 0,
   "suites": {
     "round-ui": {
-      "passed": 187,
+      "passed": 184,
       "failed": 0
     },
     "viewmodels": {
@@ -18,12 +18,12 @@
       "failed": 0
     },
     "game-platform": {
-      "passed": 15,
+      "passed": 10,
       "failed": 0
     }
   },
-  "total_passed": 267,
+  "total_passed": 259,
   "total_failed": 0,
-  "native_test": "PASS: records, failed-save retry, reload, tilt calibration/filter/reversal, dirty row clipping/union and denser Flappy obstacles.\nPASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.",
+  "native_test": "PASS: records, failed-save retry, reload, dirty row clipping/union and denser Flappy obstacles.\nPASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.",
   "hardware_verified": false
 }

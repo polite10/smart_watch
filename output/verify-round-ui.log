@@ -148,9 +148,10 @@ PASS: Leaving Flappy pauses and prevents offscreen updates
 PASS: Flappy collision shows game over
 PASS: Touch restarts Flappy immediately after game over
 PASS: Expanded Snake icon opens on first release
-PASS: Snake opens at control selection before any simulation
-PASS: Absent motion sensor leaves choice visible and offers touch control
-PASS: Touch control selection reveals a ready board without starting it
+PASS: Snake opens directly on a ready board without control selection
+PASS: Snake immediately shows touch and swipe instructions
+PASS: Snake has no control chooser or motion sensor code
+PASS: The ready board waits for the first touch before moving
 PASS: Snake starts immediately and ignores small finger jitter
 PASS: Upward drag queues the upward turn
 PASS: Snake applies finger direction on the next grid step
@@ -170,10 +171,6 @@ PASS: Right region tap turns Snake right
 PASS: Region taps cannot reverse into the body
 PASS: Snake interpolates with fewer than 10000 pixel writes instead of a full 82944-pixel clear
 PASS: Snake moves visually between unchanged grid states
-PASS: Connected tilt mode waits for neutral calibration
-PASS: Sixteen stable sensor samples calibrate and start tilt play
-PASS: Filtered forward tilt commands up
-PASS: Lost tilt samples pause play and return to control selection
 PASS: Flappy shows its record after starting a new zero-score game
 PASS: Failed record save keeps the achieved result and a visible retry status
 PASS: Snake record survives restart and a failed save can be retried
@@ -186,7 +183,7 @@ PASS: New page 16 edge swipe returns to menu
 PASS: New page 17 has no visible appbar
 PASS: New page 17 edge swipe returns to menu
 {
-  "passed": 187,
+  "passed": 184,
   "failed": 0,
   "checks": [
     [
@@ -791,15 +788,19 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Snake opens at control selection before any simulation"
+      "Snake opens directly on a ready board without control selection"
     ],
     [
       true,
-      "Absent motion sensor leaves choice visible and offers touch control"
+      "Snake immediately shows touch and swipe instructions"
     ],
     [
       true,
-      "Touch control selection reveals a ready board without starting it"
+      "Snake has no control chooser or motion sensor code"
+    ],
+    [
+      true,
+      "The ready board waits for the first touch before moving"
     ],
     [
       true,
@@ -879,22 +880,6 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Connected tilt mode waits for neutral calibration"
-    ],
-    [
-      true,
-      "Sixteen stable sensor samples calibrate and start tilt play"
-    ],
-    [
-      true,
-      "Filtered forward tilt commands up"
-    ],
-    [
-      true,
-      "Lost tilt samples pause play and return to control selection"
-    ],
-    [
-      true,
       "Flappy shows its record after starting a new zero-score game"
     ],
     [
@@ -938,7 +923,7 @@ PASS: New page 17 edge swipe returns to menu
       "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
-  "firmware_sha256": "814021ae9718c19b17178e0a6a555c3d95fbac08166a547dbd1423923575a9f0",
+  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
+  "firmware_sha256": "6686015ce269da501bdec7c07bcbe736df20873ed37e45d45afde0e1e93b2890",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

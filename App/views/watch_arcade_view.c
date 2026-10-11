@@ -1,15 +1,13 @@
 #include "views/watch_view_internal.h"
 #include "viewmodels/watch_arcade_vm.h"
-#include "services/watch_motion_service.h"
 #include "views/watch_art.h"
 #include "views/watch_fonts.h"
 
 static lv_obj_t *flappy_bird,*flappy_score,*flappy_best,*flappy_hint,*flappy_pause;
 static lv_obj_t *pipe_top[3],*pipe_bottom[3],*pipe_top_cap[3],*pipe_bottom_cap[3];
 static lv_obj_t *snake_canvas,*snake_score,*snake_best,*snake_hint,*snake_pause;
-static lv_obj_t *snake_controls[4],*snake_control_status;
 static uint16_t snake_pixels[288*288] __attribute__((aligned(4)));
-static uint32_t arcade_last_tick,arcade_accumulator,motion_last_sample;
+static uint32_t arcade_last_tick,arcade_accumulator;
 static lv_point_t snake_anchor,snake_origin;
 static bool snake_dragged,snake_contact,snake_picture_valid,snake_food_visible;
 static watch_cell_t snake_from[WATCH_SNAKE_CELLS],snake_picture_food;
@@ -128,38 +126,14 @@ static void snake_render(unsigned fraction)
     }
     score_label(snake_score,s->score);best_label(snake_best,watch_games_vm_records()->snake_score);
     hint(snake_hint,s->phase,true);
-    if(watch_snake_vm_control()==WATCH_SNAKE_CONTROL_TILT && !watch_snake_vm_calibrated() && (s->phase==WATCH_GAME_READY || s->phase==WATCH_GAME_RUNNING)) {
-        set_label(snake_hint,"Saati sabit tut\nKalibre ediliyor...");lv_obj_remove_flag(snake_hint,LV_OBJ_FLAG_HIDDEN);
-    }
     set_label(snake_pause,s->phase==WATCH_GAME_PAUSED ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
 }
 static void snake_new(void)
 {
     save_records(snake_best);watch_snake_vm_new(lv_tick_get());
     const watch_snake_state_t *s=watch_snake_vm_state();memcpy(snake_from,s->body,s->length*sizeof *snake_from);
-    snake_picture_valid=false;arcade_last_tick=lv_tick_get();arcade_accumulator=0;motion_last_sample=arcade_last_tick;
+    snake_picture_valid=false;arcade_last_tick=lv_tick_get();arcade_accumulator=0;
     snake_render(256);
-}
-static void show_control_choice(bool show)
-{
-    for(unsigned i=0;i<4;++i) {
-        if(show) lv_obj_remove_flag(snake_controls[i],LV_OBJ_FLAG_HIDDEN);
-        else lv_obj_add_flag(snake_controls[i],LV_OBJ_FLAG_HIDDEN);
-    }
-    lv_obj_t *game[]={snake_canvas,snake_hint,lv_obj_get_parent(snake_pause)};
-    for(unsigned i=0;i<3;++i) {
-        if(show) lv_obj_add_flag(game[i],LV_OBJ_FLAG_HIDDEN);
-        else lv_obj_remove_flag(game[i],LV_OBJ_FLAG_HIDDEN);
-    }
-}
-static void control_clicked(lv_event_t *e)
-{
-    watch_snake_control_t control=(watch_snake_control_t)(uintptr_t)lv_event_get_user_data(e);
-    if(control==WATCH_SNAKE_CONTROL_TILT && !watch_motion_start()) {
-        set_label(snake_control_status,"Hareket sensörü bağlı değil.\nDokunarak oynayabilirsin.");return;
-    }
-    if(control==WATCH_SNAKE_CONTROL_TOUCH) watch_motion_stop();
-    watch_snake_vm_choose_control(control);snake_new();show_control_choice(false);
 }
 static void flappy_touch(lv_event_t *e)
 {
@@ -171,8 +145,6 @@ static void flappy_touch(lv_event_t *e)
 }
 static void snake_touch(lv_event_t *e)
 {
-    watch_snake_control_t control=watch_snake_vm_control();
-    if(control==WATCH_SNAKE_CONTROL_CHOOSE) return;
     lv_indev_t *input=lv_indev_active();if(!input) return;
     lv_point_t point;lv_indev_get_point(input,&point);
     lv_event_code_t code=lv_event_get_code(e);
@@ -181,15 +153,15 @@ static void snake_touch(lv_event_t *e)
         const watch_snake_state_t *s=watch_snake_vm_state();
         bool starting=s->phase==WATCH_GAME_READY || s->phase==WATCH_GAME_OVER || s->phase==WATCH_GAME_WON;
         if(s->phase==WATCH_GAME_OVER || s->phase==WATCH_GAME_WON) snake_new();
-        if(control==WATCH_SNAKE_CONTROL_TOUCH && starting) {
+        if(starting) {
             arcade_last_tick=lv_tick_get();arcade_accumulator=0;watch_snake_vm_start();snake_render(256);
         }
-    } else if(code==LV_EVENT_PRESSING && snake_contact && control==WATCH_SNAKE_CONTROL_TOUCH) {
+    } else if(code==LV_EVENT_PRESSING && snake_contact) {
         int dx=point.x-snake_anchor.x,dy=point.y-snake_anchor.y;
         if(dx*dx+dy*dy>=12*12) { snake_dragged=true;watch_snake_vm_turn(dx,dy);snake_anchor=point; }
     } else if(code==LV_EVENT_RELEASED) {
         int dx=point.x-snake_origin.x,dy=point.y-snake_origin.y;
-        if(snake_contact && !snake_dragged && dx*dx+dy*dy<12*12 && control==WATCH_SNAKE_CONTROL_TOUCH) {
+        if(snake_contact && !snake_dragged && dx*dx+dy*dy<12*12) {
             dx=point.x-240;dy=point.y-248;
             /* The dominant quadrant selects a direction; the center is neutral. */
             if(dx*dx+dy*dy>=32*32) watch_snake_vm_turn(dx,dy);
@@ -202,18 +174,9 @@ static void pause_clicked(lv_event_t *e)
     unsigned screen=(unsigned)(uintptr_t)lv_event_get_user_data(e);
     if(screen==FLAPPY) { watch_flappy_vm_pause();flappy_render();save_records(flappy_best); }
     else {
-        bool resuming=watch_snake_vm_state()->phase==WATCH_GAME_PAUSED;
-        if(resuming && watch_snake_vm_control()==WATCH_SNAKE_CONTROL_TILT) {
-            if(!watch_motion_start()) {
-                watch_snake_vm_choose_control(WATCH_SNAKE_CONTROL_CHOOSE);show_control_choice(true);
-                set_label(snake_control_status,"Hareket sensörü bağlı değil.\nDokunarak oynayabilirsin.");return;
-            }
-            /* Resume recalibrates in a stationary state, rather than moving blindly. */
-            watch_snake_vm_recalibrate();
-        }
         watch_snake_vm_pause();snake_render(256);save_records(snake_best);
     }
-    arcade_accumulator=0;arcade_last_tick=lv_tick_get();motion_last_sample=arcade_last_tick;
+    arcade_accumulator=0;arcade_last_tick=lv_tick_get();
 }
 static void arcade_tick(lv_timer_t *timer)
 {
@@ -223,20 +186,6 @@ static void arcade_tick(lv_timer_t *timer)
         arcade_accumulator=0;return;
     }
     bool flappy=screen==screens[FLAPPY];
-    if(!flappy && watch_snake_vm_control()==WATCH_SNAKE_CONTROL_CHOOSE) return;
-    if(!flappy && watch_snake_vm_control()==WATCH_SNAKE_CONTROL_TILT &&
-       (watch_snake_vm_state()->phase==WATCH_GAME_READY || watch_snake_vm_state()->phase==WATCH_GAME_RUNNING)) {
-        watch_acceleration_t acceleration;
-        if(watch_motion_read(&acceleration)) {
-            motion_last_sample=now;
-            watch_snake_vm_tilt(acceleration.x,acceleration.y,acceleration.z);
-        } else if(now-motion_last_sample>500) {
-            if(watch_snake_vm_state()->phase==WATCH_GAME_RUNNING) watch_snake_vm_pause();
-            watch_motion_stop();watch_snake_vm_choose_control(WATCH_SNAKE_CONTROL_CHOOSE);
-            show_control_choice(true);set_label(snake_control_status,"Sensör bağlantısı kesildi.\nKontrol yöntemini seç.");save_records(snake_best);return;
-        }
-        if(!watch_snake_vm_calibrated()) { arcade_accumulator=0;snake_render(256);return; }
-    }
     watch_game_phase_t phase=flappy ? watch_flappy_vm_state()->phase : watch_snake_vm_state()->phase;
     if(phase!=WATCH_GAME_RUNNING) { arcade_accumulator=0;return; }
     arcade_accumulator+=elapsed>160 ? 160 : elapsed;
@@ -265,7 +214,7 @@ void arcade_leave(unsigned screen)
     if(screen==FLAPPY && watch_flappy_vm_state()->phase==WATCH_GAME_RUNNING) watch_flappy_vm_pause();
     if(screen==SNAKE) {
         if(watch_snake_vm_state()->phase==WATCH_GAME_RUNNING) watch_snake_vm_pause();
-        snake_contact=false;watch_motion_stop();
+        snake_contact=false;
     }
     save_records(screen==FLAPPY ? flappy_best : snake_best);arcade_accumulator=0;
 }
@@ -276,8 +225,7 @@ void flappy_open(void)
 }
 void snake_open(void)
 {
-    watch_motion_stop();watch_snake_vm_choose_control(WATCH_SNAKE_CONTROL_CHOOSE);snake_contact=false;
-    snake_new();show_control_choice(true);set_label(snake_control_status,"Kaydır veya yönlere dokun.\nEğerek oynamak için sensör bağla.");
+    snake_contact=false;snake_new();
     watch_navigation_show(SNAKE);
 }
 void arcade_init(void)
@@ -304,17 +252,11 @@ void arcade_init(void)
     snake_pause=round_action(screens[SNAKE],LV_SYMBOL_PAUSE,100,57,48,0x24445C,pause_clicked,(void *)(uintptr_t)SNAKE);
     snake_hint=label_at(screens[SNAKE],"",410,&watch_font_turkish_16);lv_obj_set_style_text_align(snake_hint,LV_TEXT_ALIGN_CENTER,0);
     lv_obj_set_style_text_color(snake_hint,lv_color_hex(0xBCF5D0),0);
-    snake_controls[0]=label_at(screens[SNAKE],"Kontrol yöntemini seç",138,&watch_font_turkish_24);
-    snake_controls[1]=lv_obj_get_parent(button_at(screens[SNAKE],"Dokunarak kontrol",0,202,260,control_clicked,(void *)(uintptr_t)WATCH_SNAKE_CONTROL_TOUCH));
-    snake_controls[2]=lv_obj_get_parent(button_at(screens[SNAKE],"Eğerek kontrol",0,278,260,control_clicked,(void *)(uintptr_t)WATCH_SNAKE_CONTROL_TILT));
-    for(unsigned i=1;i<=2;++i) lv_obj_set_style_text_font(lv_obj_get_child(snake_controls[i],0),&watch_font_turkish_20,0);
-    snake_control_status=label_at(screens[SNAKE],"",364,&watch_font_turkish_16);snake_controls[3]=snake_control_status;
-    lv_obj_set_width(snake_control_status,330);lv_obj_set_style_text_align(snake_control_status,LV_TEXT_ALIGN_CENTER,0);
     lv_obj_add_event_cb(screens[FLAPPY],flappy_touch,LV_EVENT_PRESSED,NULL);
     lv_obj_add_event_cb(screens[SNAKE],snake_touch,LV_EVENT_PRESSED,NULL);
     lv_obj_add_event_cb(screens[SNAKE],snake_touch,LV_EVENT_PRESSING,NULL);
     lv_obj_add_event_cb(screens[SNAKE],snake_touch,LV_EVENT_RELEASED,NULL);
     watch_flappy_vm_new(1);watch_snake_vm_new(1);flappy_render();
-    memcpy(snake_from,watch_snake_vm_state()->body,4*sizeof *snake_from);snake_render(256);show_control_choice(true);
+    memcpy(snake_from,watch_snake_vm_state()->body,4*sizeof *snake_from);snake_render(256);
     arcade_last_tick=lv_tick_get();lv_timer_create(arcade_tick,20,NULL);
 }

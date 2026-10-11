@@ -47,6 +47,6 @@
       "Corrupt latest CRC falls back to the previous valid snapshot"
     ]
   ],
-  "elf_sha256": "69de28fd1d4f1a130236284d6a993a32089bd10a05aa7515375b81a92956a1ad",
+  "elf_sha256": "c20cf4ecd56c2cb971bbc875fbd1b6ffef248d3cb443a6481623c7eae12c1fcb",
   "scope": "Real ARM storage journal with flash program/erase primitives simulated; physical flash timing and power loss are not verified."
 }

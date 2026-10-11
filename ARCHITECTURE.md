@@ -155,17 +155,15 @@ sonuçları RAM'de günceller; View yalnız güvenli oyun sınırlarında kayıt
 platform günlüğü eski 916 veya yeni 928 bayt payload'u kabul eder. Yeni payload'un
 son 12 baytı `watch_records_t` yapısıdır. Ayar kayıtları rekorları korur.
 
-Eğim kontrolündeki sensör portu `services/watch_motion_service.h`, LSM6DSOX/I²C2
-adaptörü `platform/watch_motion_stm32.c`, nötr kalibrasyonu ve süzgeç
-`models/watch_tilt.c` içindedir. View sensörü okur ve sayısal örnekleri VM'ye
-iletir; VM HAL/LVGL kullanmaz. Seçim, kalibrasyon, touch/tap yönleri, veri kaybı,
-duraklatma ve yeniden başlatma ayrı akışlardır. Gerçek sensör donanımı henüz
-bağlanmadığından bu port register ve örnek simülasyonlarıyla doğrulanır.
+Yılan doğrudan dokunma/kaydırma kontrolüyle açılır. View dokunma bölgesinden
+veya kaydırmanın baskın ekseninden yönü çıkarır; VM hücre adımı, ters dönüş ve
+bekleyen yön kurallarını uygular. Kontrol seçimi, eğim kalibrasyonu ve harici
+sensör portu kaldırılmıştır.
 
 Görüntü interpolasyonu View'e aittir; Yılan'ın hücre fiziği 160–80 ms kalır.
 Canvas eski/yeni gövde bölgelerini temizler ve yalnız değişen görüntüde çizim
 ister. Menü ikon boyutları `generate-folder-icons.py` ile önceden rasterize edilir.
-`generate-turkish-font.py`, mevcut MIT lisanslı Montserrat glyph'lerinden kontrol
+`generate-turkish-font.py`, mevcut MIT lisanslı Montserrat glyph'lerinden arayüz
 metinleri için Türkçe ek glyph'ler üretir; ASCII ve semboller mevcut fonta düşer.
 
 Son flush vblank isteğini başlatır ve LVGL tamponunu sürücüde tutarak döner.
@@ -179,5 +177,5 @@ başlangıcından eşitleme sonuna kadar geçen süreyi ölçer. Mevcut `frame_m
 
 `verify-game-storage.py` gerçek ARM günlüğünün eski kayıt, CRC, torn write,
 no-op yazma ve sayfa dönüşü davranışlarını; `verify-game-platform.py` gerçek ARM
-frame sahipliği, DMA stride/bölge kopyası ve sensör register adaptörünü doğrular.
+frame sahipliği, DMA stride/bölge kopyasını doğrular.
 Bu testler fiziksel GFXMMU eşlemesini veya donanım zamanlamasını kanıtlamaz.

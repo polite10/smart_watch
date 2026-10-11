@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-11",
+  "build_command": "./Build.ps1",
+  "errors": 0,
+  "warnings": 0,
+  "linked_objects": 508,
+  "elf_size": {
+    "text": 3860156,
+    "data": 820,
+    "bss": 2185520
+  },
+  "firmware_bytes": 3860980,
+  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
+  "flash_command": "./Flash.ps1",
+  "flash_verified": true,
+  "device_running": true,
+  "suite_passed": 323,
+  "suite_failed": 0,
+  "hardware_report": "verify-folder-performance.json"
+}

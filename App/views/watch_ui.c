@@ -7,6 +7,7 @@ void refresh_time(void)
 {
     watch_faces_set_datetime(current_year, current_month, current_day,
                              current_hour, current_minute, current_second, twelve_hour);
+    ida_refresh();
 }
 
 void apps_refresh(void)
@@ -18,6 +19,7 @@ void apps_refresh(void)
     else if(active==screens[WATER] || active==screens[WATER_SETTINGS] || active==screens[HISTORY]) water_refresh();
     else if(active==screens[CALENDAR]) calendar_refresh();
     else if(active==screens[SETTINGS]) settings_refresh();
+    else if(active==screens[IDA]) ida_refresh();
 }
 static void screen_loaded(lv_event_t *e) { (void)e; refresh_time(); apps_refresh(); }
 static void state_changed(watch_vm_event_t event)
@@ -28,6 +30,7 @@ static void state_changed(watch_vm_event_t event)
         bool lost=previous_clock_valid && !ui_clock_valid;
         previous_clock_valid=ui_clock_valid;
         watch_faces_set_clock_valid(ui_clock_valid); clock_status_refresh();
+        ida_refresh();
         if(lv_screen_active()==screens[CALENDAR]) calendar_refresh();
         notifications_refresh();
         if(!ui_clock_valid && (lost || lv_screen_active()==screens[HOME])) clock_editor_open();

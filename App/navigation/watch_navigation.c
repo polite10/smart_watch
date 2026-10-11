@@ -114,7 +114,7 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
                 display_awake = false; watch_ui_display_power(false);
             }
             consumed = home_contact = false;
-        } else if(!moved && now-started < 200 && contact_screen!=MENU && contact_screen!=PUZZLE && contact_screen!=FLAPPY && contact_screen!=SNAKE) {
+        } else if(!moved && now-started < 200 && contact_screen!=MENU && contact_screen!=PUZZLE && contact_screen!=FLAPPY && contact_screen!=SNAKE && contact_screen!=IDA) {
             pending = true; released = now;
             data->point = last; data->state = LV_INDEV_STATE_PRESSED;
         }

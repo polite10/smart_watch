@@ -21,6 +21,7 @@ void flappy_open(void);
 void snake_open(void);
 void arcade_leave(unsigned screen);
 void ida_init(void);
+void ida_refresh(void);
 extern bool display_awake;
 extern int displayed_notification;
 #define ui_clock_valid (watch_app_vm_state()->clock_valid)

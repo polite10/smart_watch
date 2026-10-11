@@ -1,5 +1,5 @@
 {
-  "passed": 202,
+  "passed": 227,
   "failed": 0,
   "checks": [
     [
@@ -784,7 +784,107 @@
     ],
     [
       true,
-      "IDA is explicitly SIM and all telemetry stays static when clock/timers change"
+      "IDA displays RTC time rather than a static example"
+    ],
+    [
+      true,
+      "IDA hides invalid RTC time"
+    ],
+    [
+      true,
+      "Radar target selection acts on first release without double-tap arbitration"
+    ],
+    [
+      true,
+      "Waypoint label uses radar coordinates and stays on the display"
+    ],
+    [
+      true,
+      "IDA panel is initially hidden"
+    ],
+    [
+      true,
+      "Existing speed value opens an in-place control panel"
+    ],
+    [
+      true,
+      "IDA panel text stays readable when the surrounding app uses light theme"
+    ],
+    [
+      true,
+      "Plus control changes live simulation speed"
+    ],
+    [
+      true,
+      "Minus control changes live simulation speed"
+    ],
+    [
+      true,
+      "Open panel prevents accidental target changes underneath it"
+    ],
+    [
+      true,
+      "Return closes the panel without leaving radar"
+    ],
+    [
+      true,
+      "Range control zooms without moving target"
+    ],
+    [
+      true,
+      "Out-of-range target retains its bearing and gets a range indicator"
+    ],
+    [
+      true,
+      "Task panel starts simulation and returns to radar"
+    ],
+    [
+      true,
+      "Visible-screen timer advances position and remaining distance coherently"
+    ],
+    [
+      true,
+      "Target panel shows live distance, bearing and ETA"
+    ],
+    [
+      true,
+      "Retargeting while running immediately changes heading"
+    ],
+    [
+      true,
+      "Pause leaves vehicle and remaining distance unchanged"
+    ],
+    [
+      true,
+      "IDA does not simulate with display asleep"
+    ],
+    [
+      true,
+      "Notification overlay freezes IDA simulation"
+    ],
+    [
+      true,
+      "Edge swipe leaves IDA and hidden-screen timer cannot move vehicle"
+    ],
+    [
+      true,
+      "Returning retains task but requires explicit resume"
+    ],
+    [
+      true,
+      "Reset clears position, target and route"
+    ],
+    [
+      true,
+      "Starting without a target is disabled"
+    ],
+    [
+      true,
+      "Clear target removes waypoint and distance"
+    ],
+    [
+      true,
+      "Arrival displays a visible completion message and exact zero distance"
     ],
     [
       true,
@@ -811,7 +911,7 @@
       "New page 17 edge swipe returns to menu"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
-  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
+  "elf_sha256": "468308d0d4fe9c85946c67393db3eeec3ec34c01a43efbceea3e28ecb0c9088b",
+  "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

@@ -1,0 +1,21 @@
+{
+  "build": "Isolated clean build with CubeIDE ARM GCC and project source entries",
+  "sources": 506,
+  "errors": 0,
+  "warnings": 0,
+  "text_bytes": 3867032,
+  "data_bytes": 820,
+  "bss_bytes": 2186016,
+  "firmware_bytes": 3867860,
+  "elf_sha256": "468308d0d4fe9c85946c67393db3eeec3ec34c01a43efbceea3e28ecb0c9088b",
+  "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
+  "checks": {
+    "verify-ida": 24,
+    "verify-round-ui": 227,
+    "verify-viewmodels": 54
+  },
+  "total_passed": 305,
+  "standalone_arcade_model": true,
+  "physical_board_tested": false,
+  "flashed_by_this_task": false
+}

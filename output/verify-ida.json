@@ -1,0 +1,105 @@
+{
+  "passed": 24,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Initial target is 420 m northeast"
+    ],
+    [
+      true,
+      "Unknown clock and simulation ready state"
+    ],
+    [
+      true,
+      "Valid RTC time is formatted"
+    ],
+    [
+      true,
+      "Invalid time never masquerades as a clock"
+    ],
+    [
+      true,
+      "Sweep animates while ready; vehicle stays still"
+    ],
+    [
+      true,
+      "Off-circle, neutral centre and extreme coordinates are rejected"
+    ],
+    [
+      true,
+      "Selected range maps radar pixels to actual simulated metres"
+    ],
+    [
+      true,
+      "Zoom changes scale without changing world target"
+    ],
+    [
+      true,
+      "Range cycles through 1200, 200 and 600 m"
+    ],
+    [
+      true,
+      "6.4 knots moves 3.292 m each simulated second and reduces distance"
+    ],
+    [
+      true,
+      "Higher speed increases physical travel and reduces ETA"
+    ],
+    [
+      true,
+      "Pause freezes vehicle and target distance"
+    ],
+    [
+      true,
+      "Retargeting a running task turns north without restarting it"
+    ],
+    [
+      true,
+      "Leaving the screen can explicitly pause the task"
+    ],
+    [
+      true,
+      "Zero speed freezes position and clears ETA"
+    ],
+    [
+      true,
+      "Speed clamps to 20 knots for extreme command values"
+    ],
+    [
+      true,
+      "Reset clears task and trace, preserving RTC time"
+    ],
+    [
+      true,
+      "Cannot start without a target"
+    ],
+    [
+      true,
+      "Arrival snaps to target exactly, stops and has zero ETA"
+    ],
+    [
+      true,
+      "Arrival cannot accidentally restart old target"
+    ],
+    [
+      true,
+      "Clear target removes route and restores ready state"
+    ],
+    [
+      true,
+      "Long tasks keep trace bounded at 32 points"
+    ],
+    [
+      true,
+      "Zero elapsed time cannot move the vehicle"
+    ],
+    [
+      true,
+      "Large time jumps are capped instead of teleporting"
+    ]
+  ],
+  "elf_sha256": "468308d0d4fe9c85946c67393db3eeec3ec34c01a43efbceea3e28ecb0c9088b",
+  "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
+  "scope": "Actual ARM IDA ViewModel, no LVGL or physical sensors initialized."
+}

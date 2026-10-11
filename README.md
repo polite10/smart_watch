@@ -2,6 +2,54 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Etkileşimli İDA simülasyonu — 11 Ekim 2026
+
+İDA'nın mevcut radar görünümü artık dokunmaya tepki verir. **SIM** her zaman
+görünür; konum, yön, hız, radar temasları ve hedef mesafesi yazılım simülasyonudur.
+Saat mevcut RTC'den gelir; saat geçersizken `--:--` gösterilir. Sabit örnek pil
+yüzdesi ve bağlantı metni kaldırıldı; alt sırada **HIZ / HEDEF / GOREV** bulunur.
+
+- Radarın içine dokunarak W1 hedefi seçilir. Merkezdeki 8 px nötr bölge ve
+  radar dairesi dışındaki dokunuşlar hedef oluşturmaz. Aktif görevde yeni hedef
+  seçmek rotayı değiştirir ve hareket devam eder.
+- **HIZ** alanı `− / +` panelini açar. Hız 0–20 kn arasında 0,5 kn adımlarla
+  ayarlanır. Sıfır hızda araç durur ve varış süresi `--` olur.
+- **HEDEF** paneli mesafe, yön ve tahmini varış süresini gösterir; hedef
+  kaldırılabilir. Hız, mesafe ve ETA aynı konum hesabından üretilir.
+- **GOREV** panelinden başlat, duraklat, devam ve sıfırla seçilir. Hedefe varınca
+  araç tam hedef konumunda durur ve `HEDEFE VARILDI` mesajı görünür. Sıfırlama
+  hedefi, konumu ve izi temizler; saat korunur.
+- **Menzil** alanına dokunarak 600 → 1200 → 200 → 600 m ölçeği seçilir. Bu,
+  dünya koordinatlarını değiştirmez. Menzil dışındaki hedef çemberin kenarında
+  `W1 >` ile gösterilir.
+
+Radar araç merkezlidir: araç oku merkezde kalır, hedef ve son 32 konumdan oluşan
+iz hareket eder; ok hedefin yönüne döner. Tarama dört saniyede bir tur atar;
+iki kurmaca temas tarama geçtikten sonra solar. Kıyı dokusu dekoratiftir;
+gerçek harita veya engel algılama değildir. Paneller aynı ekranın üzerinde
+açılır ve **Radara don** ile kapanır; menüye sol kenardan sağa kaydırılır.
+
+İDA güncellemesi 50 ms LVGL timer'ından çalışır; uzun gecikmeler 200 ms ile
+sınırlanır. Kapalı ekranda veya bildirim üzerinde simülasyon ilerlemez; ekrandan
+çıkmak görevi duraklatır. Dönüşte **Devam** ile sürdürülür. Görev RAM'dedir;
+yeniden açılışta başlangıç durumuna döner ve flash'a görev kaydı yazılmaz.
+
+Derleme: `./Build.ps1`. Doğrulama: `python output/verify-ida.py`,
+`python output/verify-round-ui.py` ve `python output/verify-viewmodels.py`.
+Emülasyon için `unicorn`, `pyelftools` ve `Pillow` gerekir.
+[İDA model raporu](output/verify-ida.json),
+[arayüz raporu](output/verify-round-ui.json),
+[ViewModel raporu](output/verify-viewmodels.json),
+[derleme raporu](output/build-ida.json).
+Kontroller derlenmiş ARM kodunu çalıştırır; fiziksel kartta FPS/dokunma ölçümü
+yapılmadı ve bu değişiklik kapsamında karta firmware yüklenmedi.
+
+[Radar](output/round-ida.png), [hız paneli](output/round-ida-speed.png),
+[görev paneli](output/round-ida-task.png), [hedef paneli](output/round-ida-target.png)
+gerçek LVGL çizimlerinin emülatör yakalamalarıdır.
+Arka planı diğer uygulama varlıklarına dokunmadan üretmek için
+`python output/generate-arcade-art.py --ida-only` kullanılabilir.
+
 ## Klasör animasyonu ve kenarlardan geçen Yılan — 11 Ekim 2026
 
 Oyun klasörünün açılış/kapanışında 33 önceden çizilmiş kare kullanılır. Opak

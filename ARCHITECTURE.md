@@ -33,7 +33,7 @@ adaptörü, LVGL'nin donanım bağlantısı olduğundan LVGL arayüzlerini kulla
 | Takvim | `watch_calendar_view.c` | `watch_calendar_vm.c` |
 | 15 Bulmaca | `watch_puzzle_view.c` | `watch_puzzle_vm.c` |
 | Flappy Bird ve Yılan | `watch_arcade_view.c` | `watch_arcade_vm.c` |
-| Statik İDA konsolu | `watch_ida_view.c` | `watch_ida_vm.c` |
+| Etkileşimli İDA simülasyonu | `watch_ida_view.c` | `watch_ida_vm.c` |
 | Ayarlar | `watch_settings_view.c` | `watch_settings_vm.c` |
 | Saat/tarih düzenleme | `watch_clock_view.c` | `watch_clock_vm.c` |
 | Alarm/su bildirimleri | `watch_notification_view.c` | `watch_notification_vm.c` |
@@ -69,6 +69,17 @@ Başarısız kadran kaydında önceki aktif seçim geri yüklenir ve taslak tekr
 denemek için korunur. Diğer kayıt hatalarında RAM'deki güncel değer ve genel
 kayıt hata bildirimi korunur; işlemler tüm uygulama için atomik bir transaction
 olarak uygulanmaz.
+
+İDA ViewModel'i sensör kullanmadan metre cinsinden araç/hedef konumunu,
+0–20 kn hızı, pusula açısını, mesafeyi, ETA'yı ve en fazla 32 iz noktasını
+hesaplar. Radar pikselini mevcut menzile göre dünya koordinatına çevirir;
+menzil değişimi konumu değiştirmez. Varış hedefe tam olarak oturtulur.
+View 50 ms timer'ından yalnız görünür ve açık ekranda geçen süreyi iletir;
+bildirimler hareketi dondurur, ekran çıkışı görevi duraklatır. RTC metni ortak
+saat/geçerlilik akışından beslenir. Sabit arka plan yalnız halkalar ve kurmaca
+kıyı dokusudur; tarama, temaslar, rota ve araç ayrı LVGL çizim katmanındadır.
+Kontroller aynı ekrandaki panelleri açar. Görev durumu RAM'de kalır ve kullanıcı
+flash kayıt formatını değiştirmez.
 
 ## Donanım ve kayıt uyumluluğu
 

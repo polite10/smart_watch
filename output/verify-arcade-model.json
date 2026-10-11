@@ -1,0 +1,4 @@
+{
+  "passed": true,
+  "scope": "Standalone ARM C assertions: 512 boards, all four seams, repeated wraps, seam growth/body collision, tail vacancy, full board, games/records and dirty rows."
+}

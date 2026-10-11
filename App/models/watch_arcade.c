@@ -48,7 +48,9 @@ void watch_snake_step(watch_snake_state_t *s)
     else if(s->direction==WATCH_LEFT) --x;
     else if(s->direction==WATCH_DOWN) ++y;
     else --y;
-    if(x<0 || y<0 || x>=WATCH_SNAKE_SIDE || y>=WATCH_SNAKE_SIDE) { s->phase=WATCH_GAME_OVER; return; }
+    /* Opposite edges join; only the occupied body can end a running game. */
+    x=(x+WATCH_SNAKE_SIDE)%WATCH_SNAKE_SIDE;
+    y=(y+WATCH_SNAKE_SIDE)%WATCH_SNAKE_SIDE;
     watch_cell_t head={(uint8_t)x,(uint8_t)y};
     bool eating=head.x==s->food.x && head.y==s->food.y;
     /* The old tail vacates this tick unless the snake grows. */

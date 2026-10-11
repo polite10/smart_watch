@@ -65,17 +65,32 @@ static void flappy_render(void)
 }
 static uint16_t rgb565(uint32_t color)
 { return (uint16_t)(((color>>19)<<11)|(((color>>10)&63)<<5)|((color>>3)&31)); }
-static uint16_t board_pixel(int x,int y)
-{ return x%16==0 || y%16==0 ? rgb565(0x173046) : rgb565(0x061421); }
+static int snake_wrap_pixel(int value)
+{ return value<0 ? value+288 : value>=288 ? value-288 : value; }
+static int snake_motion(int from,int to,unsigned fraction)
+{
+    int delta=to-from;
+    if(delta>1) delta-=WATCH_SNAKE_SIDE;
+    else if(delta<-1) delta+=WATCH_SNAKE_SIDE;
+    return from*16+delta*16*(int)fraction/256;
+}
 static void snake_invalidate(int x,int y)
 {
-    lv_area_t area={96+x,104+y,96+x+15,104+y+15};
-    lv_obj_invalidate_area(snake_canvas,&area);
+    /* A segment crossing a seam dirties two edges, never the middle of the board. */
+    x=snake_wrap_pixel(x);y=snake_wrap_pixel(y);
+    int widths[]={288-x<16 ? 288-x : 16,0};widths[1]=16-widths[0];
+    int heights[]={288-y<16 ? 288-y : 16,0};heights[1]=16-heights[0];
+    for(unsigned row=0;row<2;++row) for(unsigned col=0;col<2;++col) {
+        if(!widths[col] || !heights[row]) continue;
+        int left=col ? 0 : x,top=row ? 0 : y;
+        lv_area_t area={96+left,104+top,96+left+widths[col]-1,104+top+heights[row]-1};
+        lv_obj_invalidate_area(snake_canvas,&area);
+    }
 }
 static void snake_clear(int x,int y)
 {
     for(int dy=0;dy<16;++dy) for(int dx=0;dx<16;++dx) {
-        snake_pixels[(y+dy)*288+x+dx]=board_pixel(x+dx,y+dy);
+        snake_pixels[snake_wrap_pixel(y+dy)*288+snake_wrap_pixel(x+dx)]=rgb565(0x061421);
         ++smartwatch_snake_pixel_writes;
     }
     snake_invalidate(x,y);
@@ -84,7 +99,7 @@ static void snake_segment(int x,int y,uint16_t color)
 {
     for(int dy=0;dy<14;++dy) for(int dx=0;dx<14;++dx) {
         if((dx<2 || dx>11) && (dy<2 || dy>11)) continue;
-        snake_pixels[(y+dy+1)*288+x+dx+1]=color;
+        snake_pixels[snake_wrap_pixel(y+dy+1)*288+snake_wrap_pixel(x+dx+1)]=color;
         ++smartwatch_snake_pixel_writes;
     }
     snake_invalidate(x,y);
@@ -98,13 +113,13 @@ static void snake_render(unsigned fraction)
     bool food=s->phase!=WATCH_GAME_WON;
     changed|=snake_food_visible!=food || (food && (snake_picture_food.x!=s->food.x || snake_picture_food.y!=s->food.y));
     for(unsigned i=0;i<s->length;++i) {
-        positions[i].x=(int)snake_from[i].x*16+((int)s->body[i].x-snake_from[i].x)*16*(int)fraction/256;
-        positions[i].y=(int)snake_from[i].y*16+((int)s->body[i].y-snake_from[i].y)*16*(int)fraction/256;
+        positions[i].x=snake_motion(snake_from[i].x,s->body[i].x,fraction);
+        positions[i].y=snake_motion(snake_from[i].y,s->body[i].y,fraction);
         if(i>=snake_drawn_length || positions[i].x!=snake_drawn[i].x || positions[i].y!=snake_drawn[i].y) changed=true;
     }
     if(changed) {
         if(!snake_picture_valid) {
-            for(int y=0;y<288;++y) for(int x=0;x<288;++x) snake_pixels[y*288+x]=board_pixel(x,y);
+            for(int i=0;i<288*288;++i) snake_pixels[i]=rgb565(0x061421);
             smartwatch_snake_pixel_writes=288*288;
             lv_obj_invalidate(snake_canvas);
         } else {
@@ -118,7 +133,7 @@ static void snake_render(unsigned fraction)
         int a=(s->direction==WATCH_RIGHT || s->direction==WATCH_DOWN) ? 10 : 4;
         for(int eye=0;eye<2;++eye) for(int j=0;j<2;++j) for(int k=0;k<2;++k) {
             int ex=horizontal ? a : 4+eye*6,ey=horizontal ? 4+eye*6 : a;
-            snake_pixels[(y+ey+j)*288+x+ex+k]=rgb565(0x061421);
+            snake_pixels[snake_wrap_pixel(y+ey+j)*288+snake_wrap_pixel(x+ex+k)]=rgb565(0x061421);
         }
         memcpy(snake_drawn,positions,s->length*sizeof *positions);
         snake_drawn_length=s->length;snake_drawn_direction=s->direction;

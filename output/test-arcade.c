@@ -41,7 +41,24 @@ int main(void)
     assert(watch_snake_turn(&s,-60,15));watch_snake_step(&s);assert(s.direction==WATCH_LEFT);watch_snake_step(&s);watch_snake_step(&s);
     assert(watch_snake_turn(&s,0,50));watch_snake_step(&s);assert(s.direction==WATCH_DOWN);
     watch_snake_pause(&s);watch_snake_state_t copy=s;watch_snake_step(&s);assert(!memcmp(&s,&copy,sizeof s));watch_snake_pause(&s);assert(s.phase==WATCH_GAME_RUNNING);
-    watch_snake_new(&s,3);s.phase=WATCH_GAME_RUNNING;s.body[0].x=17;watch_snake_step(&s);assert(s.phase==WATCH_GAME_OVER);
+    /* Every edge wraps; a long straight run remains alive across repeated seams. */
+    for(unsigned direction=0;direction<4;++direction) {
+        watch_snake_new(&s,3);s.phase=WATCH_GAME_RUNNING;s.direction=direction;
+        for(unsigned i=0;i<4;++i) s.body[i]=(watch_cell_t){
+            direction==WATCH_RIGHT ? 17-i : direction==WATCH_LEFT ? i : 9,
+            direction==WATCH_DOWN ? 17-i : direction==WATCH_UP ? i : 9};
+        s.food=(watch_cell_t){1,1};watch_snake_step(&s);
+        assert(s.phase==WATCH_GAME_RUNNING);
+        assert(s.body[0].x==(direction==WATCH_RIGHT ? 0 : direction==WATCH_LEFT ? 17 : 9));
+        assert(s.body[0].y==(direction==WATCH_DOWN ? 0 : direction==WATCH_UP ? 17 : 9));
+        for(unsigned i=0;i<WATCH_SNAKE_SIDE*3;++i) { watch_snake_step(&s);assert(s.phase==WATCH_GAME_RUNNING);same_cells(&s); }
+    }
+    watch_snake_new(&s,3);s.phase=WATCH_GAME_RUNNING;
+    s.body[0]=(watch_cell_t){17,9};s.food=(watch_cell_t){0,9};watch_snake_step(&s);
+    assert(s.phase==WATCH_GAME_RUNNING && s.length==5 && s.score==1 && s.body[0].x==0);
+    watch_snake_new(&s,3);s.phase=WATCH_GAME_RUNNING;
+    s.body[0]=(watch_cell_t){17,9};s.body[1]=(watch_cell_t){0,9};s.food=(watch_cell_t){1,1};watch_snake_step(&s);
+    assert(s.phase==WATCH_GAME_OVER); /* Wrapping into the body is still fatal. */
     watch_snake_new(&s,4);s.phase=WATCH_GAME_RUNNING;s.direction=WATCH_UP;
     s.body[0]=(watch_cell_t){2,2};s.body[1]=(watch_cell_t){3,2};s.body[2]=(watch_cell_t){3,1};s.body[3]=(watch_cell_t){2,1};s.food=(watch_cell_t){10,10};
     watch_snake_step(&s);assert(s.phase==WATCH_GAME_RUNNING && s.body[0].y==1); /* old tail is legal */

@@ -81,7 +81,8 @@ int main(void)
     watch_flappy_new(&f,11);assert(f.score==0 && f.phase==WATCH_GAME_READY);
     watch_snake_vm_new(12);watch_snake_vm_start();watch_snake_vm_turn(0,-40);watch_snake_vm_step();assert(watch_snake_vm_state()->direction==WATCH_UP);
     watch_flappy_vm_new(13);watch_flappy_vm_flap();watch_flappy_vm_step();assert(watch_flappy_vm_state()->phase==WATCH_GAME_RUNNING);
-    assert(!strcmp(watch_ida_vm_state()->mode,"SIM") && !strcmp(watch_ida_vm_state()->time,"14:32"));
+    watch_ida_vm_init();
+    assert(!strcmp(watch_ida_vm_state()->mode,"SIM") && !strcmp(watch_ida_vm_state()->time,"--:--"));
     assert(f.pipes[1].x-f.pipes[0].x==WATCH_FLAPPY_SPACING);
     watch_records_service_init();
     watch_records_service_update(WATCH_RECORD_SNAKE,9);
@@ -102,5 +103,5 @@ int main(void)
     watch_dirty_add(&dirty,500,500,550,550);assert(dirty.pixels==175);
     watch_dirty_reset(&dirty);watch_dirty_add(&dirty,0,0,479,479);assert(dirty.pixels==480*480);
     puts("PASS: records, failed-save retry, reload, dirty row clipping/union and denser Flappy obstacles.");
-    puts("PASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and static IDA.");
+    puts("PASS: 512 boards; all drag directions, reversal/queued turns, collisions, growth, full-board win, pause, restart, Flappy physics/scoring and IDA initialization.");
 }

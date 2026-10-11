@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-11",
+  "spacing_before_px": 160,
+  "spacing_after_px": 175,
+  "vertical_gap_before_px": 112,
+  "vertical_gap_after_px": 104,
+  "tilt_degrees": {
+    "rise": -24,
+    "fall": 30
+  },
+  "build": {
+    "errors": 0,
+    "warnings": 0,
+    "elf_sha256": "5e3b9d79e47880ad88acef3c98861ee0053a613bd47eba5b491ea430622e3b51",
+    "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
+    "scope": "Shared working tree, including preexisting uncommitted IDA changes. This report describes the locally built and flashed firmware."
+  },
+  "suites": {
+    "flappy": {
+      "passed": 17,
+      "failed": 0
+    },
+    "round-ui": {
+      "passed": 227,
+      "failed": 0
+    },
+    "viewmodels": {
+      "passed": 54,
+      "failed": 0
+    }
+  },
+  "total_passed": 298,
+  "total_failed": 0,
+  "standalone_arm_game_model_passed": true,
+  "hardware": {
+    "flash_verified": true,
+    "running_status": 4,
+    "lse": 1,
+    "uart_errors": 0,
+    "rise_rotation_tenths": 3360,
+    "fall_rotation_tenths": 300,
+    "elapsed_ms": 1000,
+    "frames": 38,
+    "max_flush_ms": 76,
+    "last_total_ms": 27,
+    "failed": 0,
+    "scope": "One-second Flappy run, including its initial screen draw. Firmware counters, not camera FPS. Input paused during measurement and restored before returning HOME."
+  },
+  "settings_and_records_journal_16384_bytes_unchanged": true
+}

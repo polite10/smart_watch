@@ -82,7 +82,7 @@ int main(void)
     watch_snake_vm_new(12);watch_snake_vm_start();watch_snake_vm_turn(0,-40);watch_snake_vm_step();assert(watch_snake_vm_state()->direction==WATCH_UP);
     watch_flappy_vm_new(13);watch_flappy_vm_flap();watch_flappy_vm_step();assert(watch_flappy_vm_state()->phase==WATCH_GAME_RUNNING);
     assert(!strcmp(watch_ida_vm_state()->mode,"SIM") && !strcmp(watch_ida_vm_state()->time,"14:32"));
-    assert(f.pipes[1].x-f.pipes[0].x==160);
+    assert(f.pipes[1].x-f.pipes[0].x==WATCH_FLAPPY_SPACING);
     watch_records_service_init();
     watch_records_service_update(WATCH_RECORD_SNAKE,9);
     watch_records_service_update(WATCH_RECORD_SNAKE,4);

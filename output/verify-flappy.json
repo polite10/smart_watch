@@ -1,0 +1,83 @@
+{
+  "passed": 17,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Pipe pairs start 175px apart horizontally"
+    ],
+    [
+      true,
+      "Rendered vertical opening is 104px"
+    ],
+    [
+      true,
+      "Ready bird is level"
+    ],
+    [
+      true,
+      "Vertical collision boundary at -40px matches the opening"
+    ],
+    [
+      true,
+      "Vertical collision boundary at +40px matches the opening"
+    ],
+    [
+      true,
+      "Vertical collision boundary at -41px matches the opening"
+    ],
+    [
+      true,
+      "Vertical collision boundary at +41px matches the opening"
+    ],
+    [
+      true,
+      "Recycled pipe keeps the new horizontal spacing within one physics step"
+    ],
+    [
+      true,
+      "Touch-down pitches the bird gently upward by 24 degrees"
+    ],
+    [
+      true,
+      "Velocity -4.4 sets the expected tilt"
+    ],
+    [
+      true,
+      "Velocity 0.0 sets the expected tilt"
+    ],
+    [
+      true,
+      "Velocity 5.0 sets the expected tilt"
+    ],
+    [
+      true,
+      "LVGL renders distinct rising, level and falling sprite pixels"
+    ],
+    [
+      true,
+      "Bird tilts smoothly through the flight apex into descent"
+    ],
+    [
+      true,
+      "Normal flight changes tilt by at most 1.6 degrees per physics step"
+    ],
+    [
+      true,
+      "Pause preserves the current flight pose"
+    ],
+    [
+      true,
+      "Restart resets the pose to level"
+    ]
+  ],
+  "spacing_px": 175,
+  "vertical_gap_px": 104,
+  "tilt_degrees": {
+    "rise": -24,
+    "fall": 30
+  },
+  "elf_sha256": "5e3b9d79e47880ad88acef3c98861ee0053a613bd47eba5b491ea430622e3b51",
+  "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
+  "scope": "Real ARM model and LVGL renderer; panel hardware timing is measured separately."
+}

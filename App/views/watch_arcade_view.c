@@ -50,7 +50,12 @@ static void flappy_render(void)
     best_label(flappy_best,watch_games_vm_records()->flappy_score);hint(flappy_hint,s->phase,false);
     set_label(flappy_pause,s->phase==WATCH_GAME_PAUSED ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
     lv_obj_set_pos(flappy_bird,142,(int)s->y-28);
-    /* A fixed sprite avoids a software rotation at every physics step. */
+    /* Velocity changes by 0.25 per 20 ms step, giving a gentle 1.5 degree tilt.
+     * Keep the pose when paused and reset it when a new game is ready. */
+    int rotation=s->phase==WATCH_GAME_READY ? 0 : (int)(s->velocity*60.0f);
+    if(rotation < -240) rotation=-240;
+    if(rotation > 300) rotation=300;
+    lv_image_set_rotation(flappy_bird,rotation);
     for(unsigned i=0;i<3;++i) {
         int x=(int)s->pipes[i].x,top=(int)s->pipes[i].gap_y-WATCH_FLAPPY_GAP_HALF;
         int bottom=(int)s->pipes[i].gap_y+WATCH_FLAPPY_GAP_HALF;
@@ -255,6 +260,7 @@ void arcade_init(void)
         pipe_bottom_cap[i]=plain(screens[FLAPPY],0,0,52,12,0xFFF0C7,4);
     }
     flappy_bird=lv_image_create(screens[FLAPPY]);lv_image_set_src(flappy_bird,&bird_sprite);lv_obj_remove_flag(flappy_bird,LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_pivot(flappy_bird,28,28);
     flappy_score=label_at(screens[FLAPPY],"00",34,&lv_font_montserrat_48);lv_obj_set_style_text_color(flappy_score,lv_color_hex(0xFFF0C7),0);
     flappy_best=label_at(screens[FLAPPY],"En iyi: 0",82,&watch_font_turkish_16);
     flappy_pause=round_action(screens[FLAPPY],LV_SYMBOL_PAUSE,100,57,48,0x24445C,pause_clicked,(void *)(uintptr_t)FLAPPY);

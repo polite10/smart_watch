@@ -89,7 +89,7 @@ void watch_flappy_step(watch_flappy_state_t *s)
             for(unsigned j=0;j<WATCH_FLAPPY_PIPES;++j) if(s->pipes[j].x>furthest) furthest=s->pipes[j].x;
             p->x=furthest+WATCH_FLAPPY_SPACING; p->gap_y=gap(&s->random); p->scored=false;
         }
-        /* Bird center x=170, collision half extents 14/12; gap height 112. */
+        /* Bird center x=170, collision half extents 14/12; gap matches the view. */
         if(p->x<184 && p->x+46>156 && (s->y-12<p->gap_y-WATCH_FLAPPY_GAP_HALF || s->y+12>p->gap_y+WATCH_FLAPPY_GAP_HALF)) {
             s->phase=WATCH_GAME_OVER; return;
         }

@@ -22,6 +22,8 @@
 #include "stm32u5xx_it.h"
 #include "stm32u5xx_hal.h"
 #include "smartwatch.h"
+#include "led_button_demo.h"
+#include "stm32u5x9j_discovery.h"
 #include "stm32u5x9j_discovery_lcd.h"
 
 
@@ -189,6 +191,26 @@ void DSI_IRQHandler(void)
   HAL_DSI_IRQHandler(&hlcd_dsi);
 }
 
+void EXTI13_IRQHandler(void)
+{
+  BSP_PB_IRQHandler(BUTTON_USER);
+}
+
+void TIM6_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&led_demo_timer);
+}
+
+void GPDMA1_Channel0_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&led_demo_uart_tx_dma);
+}
+
+void USART1_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&led_demo_uart);
+}
+
 /**
   * @brief  This function handles EXTI13 interrupt request.
   * @param  None
@@ -220,6 +242,4 @@ void DSI_IRQHandler(void)
 /**
   * @}
   */
-
-
 

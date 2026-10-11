@@ -69,6 +69,9 @@ void EXTI6_IRQHandler(void);
 void EXTI7_IRQHandler(void);
 void EXTI8_IRQHandler(void);
 void EXTI13_IRQHandler(void);
+void TIM6_IRQHandler(void);
+void GPDMA1_Channel0_IRQHandler(void);
+void USART1_IRQHandler(void);
 void EXTI14_IRQHandler(void);
 void GFXMMU_IRQHandler(void);
 void LTDC_IRQHandler(void);
@@ -79,5 +82,4 @@ void DSI_IRQHandler(void);
 #endif
 
 #endif /* __STM32U5xx_IT_H */
-
 

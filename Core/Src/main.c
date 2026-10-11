@@ -1,6 +1,7 @@
 /* Composition root: board startup and the single UI loop. */
 #include "smartwatch.h"
 #include "stm32u5x9j_discovery.h"
+#include "led_button_demo.h"
 #include "watch_ui.h"
 #include "services/watch_clock_service.h"
 #include "services/watch_display_service.h"
@@ -22,8 +23,10 @@ int main(void)
     watch_platform_clock_init(); watch_platform_display_init();
     watch_ui_init(); watch_ui_set_rtc_source(smartwatch_rtc_lse!=0);
     watch_ui_set_clock_valid(watch_clock_is_valid()); smartwatch_status=4;
+    led_button_demo_init();
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
+        led_button_demo_poll();
         if(HAL_GetTick()-last_update>=1000) { refresh_rtc(); last_update=HAL_GetTick(); ++smartwatch_heartbeat; }
         watch_platform_display_poll();
         lv_timer_handler();

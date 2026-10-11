@@ -2,6 +2,82 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Buton, timer kesmesi ve UART DMA uygulaması — 11 Ekim 2026
+
+Saatle birlikte çalışan uygulama `Core/Src/led_button_demo.c` içindedir.
+Kartın **mavi B1 USER butonu (PC13)** ve **yeşil LD3 LED'i (PE0)** kullanılır.
+Kırmızı LD4 saatin alarm uyarısını göstermeye devam eder. Ek kablo gerekmez.
+
+- Başlangıçta LD3 sönüktür; her **1000 ms**'de durum değiştirir.
+  Her B1 basışında aralık **1000 ms → kapalı → 100 → 250 → 500 → 1000 ms** olur.
+  Böylece hız en yavaş kademeden sonra tamamen kapanır; başlangıçtan ilk basış kapatır.
+  Kapalı modda LD3 hemen söndürülür ve sonraki basışa kadar sönük kalır.
+  Buton algılama, saat ve UART raporları kapalı modda çalışmaya devam eder.
+  Bu süre tek durum değiştirme aralığıdır; tam yanıp sönme çevrimi bunun iki katıdır.
+- **EXTI13 GPIO kesmesi** basış ve bırakış kenarlarını kaydeder.
+  **TIM6 kesmesi**, son kenardan sonra seviye 40 ms kararlı kaldığında basışı kabul eder.
+  Basılı tutma tek basış sayılır; yeniden basış için kararlı bırakış gerekir.
+  Açılışta basılı duran buton bırakılıp yeniden basılmadan hız değiştirmez.
+- **TIM6**, 10 ms'de bir kesme üretir; LED yalnız timer callback'inde değiştirilir.
+  160 MHz timer saatinde prescaler **15999**, auto-reload **99** olur.
+  LED zamanlaması ana döngünün veya ekran çiziminin hızına bağlı değildir.
+- Aynı timer her **1 saniyede** UART durum mesajını hazır bekler hale getirir.
+  Ana döngü mesajı oluşturur ve `HAL_UART_Transmit_DMA()` ile gönderir.
+  **USART1 TX (PA9 / AF7)** ve **GPDMA1 Channel 0 / USART1_TX isteği** kullanılır.
+  EXTI13/TIM6 kesme önceliği 6, DMA/USART1 önceliği 7'dir.
+
+ST-LINK USB **CN5** üzerinden bağlanın ve kartın sanal seri portunu
+**115200 baud, 8 bit, parity yok, 1 stop bit, akış kontrolü yok (8N1)** ile açın.
+macOS'ta port genellikle `/dev/cu.usbmodem…`, Windows'ta `COM…` olarak görünür.
+Örnek mesaj:
+
+```text
+LED=LD3 mode=BLINK state=ON toggle_ms=500 cycle_ms=1000 presses=4 uptime_ms=2000 uart_ok=1 uart_errors=0
+```
+
+Sürekli kapalı mod `mode=OFF state=OFF toggle_ms=0 cycle_ms=0` olarak bildirilir.
+Yanıp sönmenin sönük fazı ise `mode=BLINK state=OFF` olduğundan ayırt edilebilir.
+
+`uart_ok` tamamlanmış gönderim, `uart_errors` hata/zaman aşımı sayısıdır.
+DMA normal modda çalışır; SRAM mesaj tamponu son byte'ın **USART1 TC kesmesi**
+gelene kadar değiştirilmez. Hem GPDMA hem USART1 IRQ handler'ı gereklidir.
+250 ms'de tamamlanmayan aktarım veya DMA hatası ana döngüde durdurulup toparlanır.
+Ana döngü gecikirse bekleyen raporlar tek güncel mesajda birleştirilir.
+Kesme içinde mesaj biçimlendirme veya `HAL_Delay()` yapılmaz.
+
+Derleme: `python3 output/build-macos.py` veya Windows'ta `./Build.ps1`.
+Firmware `Firmware/Smartwatch.bin`, ELF `Debug/Smartwatch.elf` olarak üretilir.
+ARM simülasyon testi: `python3 output/verify-led-button.py`
+(`unicorn` ve `pyelftools` gerekir; macOS sandbox dışında bellek eşleme izni gerekebilir).
+Test derlenmiş uygulama ile gerçek HAL EXTI/TIM6/GPDMA/UART kesme yollarını çalıştırır;
+periferik register'ları, DMA veri hareketi ve UART hattı simüle edilir.
+ARM derlemesi **505 kaynak, 0 hata, 0 uyarı** ile tamamlandı;
+LED/buton/UART simülasyonunda **41 kontrol, 0 başarısızlık**:
+[derleme raporu](output/build-led-button.json), [test raporu](output/verify-led-button.json).
+Fiziksel kart üzerinde doğrulama ve karta yükleme yapılmadı.
+
+### İlk öneriyle farkı
+
+İlk öneride LED, ana döngüde `HAL_GetTick()` ile süre kontrol edilerek değiştirilirdi.
+Bu da `HAL_Delay()` ile beklemeden çalışır; ancak ana döngü ekran çizimi veya başka
+bir işlemle meşgulse LED değişimi gecikir. Buton için sonraki açıklamada zaten
+EXTI kesmesi önerilmişti; bayrak ve debounce ana döngüde işlenecekti.
+
+| Konu | İlk öneri | Uygulanan timer / EXTI / DMA yöntemi |
+| --- | --- | --- |
+| LED | Ana döngü `HAL_GetTick()` ile kontrol eder | TIM6 kesmesi LED'i değiştirir |
+| Buton | EXTI bayrağı, ana döngüde debounce | EXTI iki kenarı kaydeder, TIM6 debounce yapar |
+| UART | Öneride durum gönderimi yoktu | Her saniye USART1 üzerinden DMA ile rapor |
+| Kurulum | Daha az periferik ve daha basit kod | Timer, DMA, UART ve dört IRQ yolu gerekir |
+| İşlemci işi | Ana döngüde süre/buton kontrolü | 100 Hz timer IRQ; UART byte aktarımını DMA yapar |
+
+Bu projede timer yöntemi, ekranla birlikte çalışan LED'in ana döngü yükünden
+etkilenmesini azaltır. Kesme gecikmesi veya kesmelerin kapatılması yine zamanlamayı
+etkileyebilir; bu bir donanım PWM çıkışı değildir. DMA mesajı byte byte işlemciden
+göndermeden taşır; mesaj biçimlendirme, DMA başlatma ve tamamlanma işlemleri CPU'da
+kalır. Saniyede bir kısa mesaj için performans kazancı küçük olabilir, fakat ana
+döngüyü UART gönderimi bitene kadar bekletmez.
+
 ## Kontroller, akıcılık ve oyun rekorları — 11 Ekim 2026
 
 Yılan doğrudan oyun tahtasıyla açılır; ilk dokunma oyunu başlatır.

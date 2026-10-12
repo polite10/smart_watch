@@ -1,8 +1,8 @@
 PASS: Home starts with clock
 PASS: Single tap turns the panel off
 PASS: Wake tap shows clock and is consumed
-PASS: Moving 40px unlocks directly to menu
-PASS: Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers
+PASS: Moving 40px slides from clock to menu
+PASS: Menu has wallpaper, nine outer apps, folder, three games and a transparent cached motion layer
 PASS: Menu appbar is hidden
 PASS: Persistent user-data structure retains its 916-byte format
 PASS: Outer app 0 has an 80px safe target
@@ -20,10 +20,10 @@ PASS: Closed folder icon never scales on contact
 PASS: Folder opens on release without a 260ms wait
 PASS: Game selection is disabled during expansion
 PASS: Expansion presents an intermediate cached frame without live widget scaling
-PASS: Opaque motion canvas occludes live menu drawing in LVGL cover detection
+PASS: Cached motion hides live folder widgets to avoid double alpha blending
 PASS: Folder finishes with selectable 88px game icons
 PASS: Completed animation restores live interactive icons
-PASS: Skipped forward and reverse XOR frames restore the exact closed pixels
+PASS: Skipped forward and reverse compressed frames restore the exact closed pixels
 PASS: Reopening after reverse motion restores the exact open pixels
 PASS: Center puzzle icon opens the ninth app
 PASS: All fifteen 62px square targets lie inside the round display
@@ -44,11 +44,11 @@ PASS: Calculator icon opens calculator
 PASS: All sixteen calculator keys are 68px and stay inside the round display
 PASS: Calculator uses four straight aligned rows
 PASS: Large keys evaluate 7 + 8 = 15
-PASS: Double tap locks without activating either key
+PASS: Double tapping calculator enters both digits without leaving the app
 PASS: Water icon opens tracker
 PASS: Large plus adds exactly one glass
 PASS: Large minus undoes one glass
-PASS: Double tap on water plus locks without adding water
+PASS: Double tapping water adds two glasses without leaving the app
 PASS: Notes icon opens notes
 PASS: Note card opens large keyboard
 PASS: All 26 alphabet letters are visible together
@@ -93,6 +93,20 @@ PASS: Page 13 has no visible appbar
 PASS: Page 13 edge-swipe returns to its parent
 PASS: Page 14 has no visible appbar
 PASS: Page 14 edge-swipe returns to its parent
+PASS: Global back from page 6 animates both child and parent
+PASS: Global back from page 6 completes cleanly
+PASS: Global back from page 10 animates both child and parent
+PASS: Global back from page 10 completes cleanly
+PASS: Global back from page 8 animates both child and parent
+PASS: Global back from page 8 completes cleanly
+PASS: Global back from page 11 animates both child and parent
+PASS: Global back from page 11 completes cleanly
+PASS: Global back from page 13 animates both child and parent
+PASS: Global back from page 13 completes cleanly
+PASS: Global back from page 15 animates both child and parent
+PASS: Global back from page 15 completes cleanly
+PASS: Global back from page 18 animates both child and parent
+PASS: Global back from page 18 completes cleanly
 PASS: A drag starting in the middle does not navigate back
 PASS: Face confirmation is a 64px circular target
 PASS: Face confirmation shows only a checkmark
@@ -137,8 +151,8 @@ PASS: Notification buttons bypass double-tap delay and add one glass
 PASS: Menu app opens at release with no added tap wait
 PASS: Ordinary content has a visible intermediate 180ms entry frame
 PASS: Content entry animation ends within 200ms
-PASS: Other apps preserve double-tap arbitration for 119ms
-PASS: Single control activates at 120ms instead of 260ms
+PASS: App control responds on release without double-tap waiting
+PASS: App remains open after the former arbitration window
 PASS: Tapping a game during folder expansion cannot launch it
 PASS: Expanded Flappy icon opens on first release
 PASS: Flappy opens ready with a tap prompt
@@ -193,15 +207,65 @@ PASS: Flappy shows its record after starting a new zero-score game
 PASS: Failed record save keeps the achieved result and a visible retry status
 PASS: Snake record survives restart and a failed save can be retried
 PASS: IDA lives in the outer ring and opens immediately
-PASS: IDA is explicitly SIM and all telemetry stays static when clock/timers change
+PASS: IDA displays RTC time rather than a static example
+PASS: IDA hides invalid RTC time
+PASS: Radar target selection acts on first release without double-tap arbitration
+PASS: Waypoint label uses radar coordinates and stays on the display
+PASS: IDA panel is initially hidden
+PASS: Existing speed value opens an in-place control panel
+PASS: IDA panel text stays readable when the surrounding app uses light theme
+PASS: Plus control changes live simulation speed
+PASS: Minus control changes live simulation speed
+PASS: Open panel prevents accidental target changes underneath it
+PASS: Return closes the panel without leaving radar
+PASS: Range control zooms without moving target
+PASS: Out-of-range target retains its bearing and gets a range indicator
+PASS: Task panel starts simulation and returns to radar
+PASS: Visible-screen timer advances position and remaining distance coherently
+PASS: Target panel shows live distance, bearing and ETA
+PASS: Retargeting while running immediately changes heading
+PASS: Pause leaves vehicle and remaining distance unchanged
+PASS: IDA does not simulate with display asleep
+PASS: Notification overlay freezes IDA simulation
+PASS: Edge swipe leaves IDA and hidden-screen timer cannot move vehicle
+PASS: Returning retains task but requires explicit resume
+PASS: Reset clears position, target and route
+PASS: Starting without a target is disabled
+PASS: Clear target removes waypoint and distance
+PASS: Arrival displays a visible completion message and exact zero distance
 PASS: New page 15 has no visible appbar
 PASS: New page 15 edge swipe returns to menu
 PASS: New page 16 has no visible appbar
 PASS: New page 16 edge swipe returns to menu
 PASS: New page 17 has no visible appbar
 PASS: New page 17 edge swipe returns to menu
+PASS: Dragging from an outer icon rotates the ring without launching the icon
+PASS: Fast flick continues rotating after release
+PASS: Inertia snaps every app to the original nine slot angles
+PASS: Three center games remain stationary during the ring rotation
+PASS: Rotation across the angle seam stays continuous and snaps correctly
+PASS: Reverse flick snaps to the same slots
+PASS: Touching a moving ring stops and snaps it without opening an app
+PASS: An app remains tappable at its rotated slot
+PASS: A long second contact on empty space does not lock
+PASS: Distant empty-space taps do not lock
+PASS: Empty-space double tap reveals the clock while both screens remain visible
+PASS: Clock and launcher occupy intermediate slide positions
+PASS: Slide completes with one active clock screen
+PASS: Double tap on empty app space never returns home
+PASS: face_date stays inside the analog tick ring
+PASS: face_water stays inside the analog tick ring
+PASS: face_battery stays inside the analog tick ring
+PASS: Wallpaper settings opens the preview
+PASS: Wallpaper preview does not change saved selection
+PASS: Failed wallpaper save keeps old selection and offers retry
+PASS: Wallpaper retry saves and applies selected image
+PASS: Invalid wallpaper selection is rejected
+PASS: Clouds and two hill layers move at distinct parallax speeds
+PASS: Pausing Flappy also pauses parallax
+PASS: Offscreen Flappy scenery stays frozen
 {
-  "passed": 202,
+  "passed": 266,
   "failed": 0,
   "checks": [
     [
@@ -218,11 +282,11 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Moving 40px unlocks directly to menu"
+      "Moving 40px slides from clock to menu"
     ],
     [
       true,
-      "Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers"
+      "Menu has wallpaper, nine outer apps, folder, three games and a transparent cached motion layer"
     ],
     [
       true,
@@ -294,7 +358,7 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Opaque motion canvas occludes live menu drawing in LVGL cover detection"
+      "Cached motion hides live folder widgets to avoid double alpha blending"
     ],
     [
       true,
@@ -306,7 +370,7 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Skipped forward and reverse XOR frames restore the exact closed pixels"
+      "Skipped forward and reverse compressed frames restore the exact closed pixels"
     ],
     [
       true,
@@ -390,7 +454,7 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Double tap locks without activating either key"
+      "Double tapping calculator enters both digits without leaving the app"
     ],
     [
       true,
@@ -406,7 +470,7 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Double tap on water plus locks without adding water"
+      "Double tapping water adds two glasses without leaving the app"
     ],
     [
       true,
@@ -586,6 +650,62 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
+      "Global back from page 6 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 6 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 10 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 10 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 8 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 8 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 11 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 11 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 13 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 13 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 15 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 15 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 18 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 18 completes cleanly"
+    ],
+    [
+      true,
       "A drag starting in the middle does not navigate back"
     ],
     [
@@ -762,11 +882,11 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "Other apps preserve double-tap arbitration for 119ms"
+      "App control responds on release without double-tap waiting"
     ],
     [
       true,
-      "Single control activates at 120ms instead of 260ms"
+      "App remains open after the former arbitration window"
     ],
     [
       true,
@@ -986,7 +1106,107 @@ PASS: New page 17 edge swipe returns to menu
     ],
     [
       true,
-      "IDA is explicitly SIM and all telemetry stays static when clock/timers change"
+      "IDA displays RTC time rather than a static example"
+    ],
+    [
+      true,
+      "IDA hides invalid RTC time"
+    ],
+    [
+      true,
+      "Radar target selection acts on first release without double-tap arbitration"
+    ],
+    [
+      true,
+      "Waypoint label uses radar coordinates and stays on the display"
+    ],
+    [
+      true,
+      "IDA panel is initially hidden"
+    ],
+    [
+      true,
+      "Existing speed value opens an in-place control panel"
+    ],
+    [
+      true,
+      "IDA panel text stays readable when the surrounding app uses light theme"
+    ],
+    [
+      true,
+      "Plus control changes live simulation speed"
+    ],
+    [
+      true,
+      "Minus control changes live simulation speed"
+    ],
+    [
+      true,
+      "Open panel prevents accidental target changes underneath it"
+    ],
+    [
+      true,
+      "Return closes the panel without leaving radar"
+    ],
+    [
+      true,
+      "Range control zooms without moving target"
+    ],
+    [
+      true,
+      "Out-of-range target retains its bearing and gets a range indicator"
+    ],
+    [
+      true,
+      "Task panel starts simulation and returns to radar"
+    ],
+    [
+      true,
+      "Visible-screen timer advances position and remaining distance coherently"
+    ],
+    [
+      true,
+      "Target panel shows live distance, bearing and ETA"
+    ],
+    [
+      true,
+      "Retargeting while running immediately changes heading"
+    ],
+    [
+      true,
+      "Pause leaves vehicle and remaining distance unchanged"
+    ],
+    [
+      true,
+      "IDA does not simulate with display asleep"
+    ],
+    [
+      true,
+      "Notification overlay freezes IDA simulation"
+    ],
+    [
+      true,
+      "Edge swipe leaves IDA and hidden-screen timer cannot move vehicle"
+    ],
+    [
+      true,
+      "Returning retains task but requires explicit resume"
+    ],
+    [
+      true,
+      "Reset clears position, target and route"
+    ],
+    [
+      true,
+      "Starting without a target is disabled"
+    ],
+    [
+      true,
+      "Clear target removes waypoint and distance"
+    ],
+    [
+      true,
+      "Arrival displays a visible completion message and exact zero distance"
     ],
     [
       true,
@@ -1011,9 +1231,109 @@ PASS: New page 17 edge swipe returns to menu
     [
       true,
       "New page 17 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "Dragging from an outer icon rotates the ring without launching the icon"
+    ],
+    [
+      true,
+      "Fast flick continues rotating after release"
+    ],
+    [
+      true,
+      "Inertia snaps every app to the original nine slot angles"
+    ],
+    [
+      true,
+      "Three center games remain stationary during the ring rotation"
+    ],
+    [
+      true,
+      "Rotation across the angle seam stays continuous and snaps correctly"
+    ],
+    [
+      true,
+      "Reverse flick snaps to the same slots"
+    ],
+    [
+      true,
+      "Touching a moving ring stops and snaps it without opening an app"
+    ],
+    [
+      true,
+      "An app remains tappable at its rotated slot"
+    ],
+    [
+      true,
+      "A long second contact on empty space does not lock"
+    ],
+    [
+      true,
+      "Distant empty-space taps do not lock"
+    ],
+    [
+      true,
+      "Empty-space double tap reveals the clock while both screens remain visible"
+    ],
+    [
+      true,
+      "Clock and launcher occupy intermediate slide positions"
+    ],
+    [
+      true,
+      "Slide completes with one active clock screen"
+    ],
+    [
+      true,
+      "Double tap on empty app space never returns home"
+    ],
+    [
+      true,
+      "face_date stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "face_water stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "face_battery stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "Wallpaper settings opens the preview"
+    ],
+    [
+      true,
+      "Wallpaper preview does not change saved selection"
+    ],
+    [
+      true,
+      "Failed wallpaper save keeps old selection and offers retry"
+    ],
+    [
+      true,
+      "Wallpaper retry saves and applies selected image"
+    ],
+    [
+      true,
+      "Invalid wallpaper selection is rejected"
+    ],
+    [
+      true,
+      "Clouds and two hill layers move at distinct parallax speeds"
+    ],
+    [
+      true,
+      "Pausing Flappy also pauses parallax"
+    ],
+    [
+      true,
+      "Offscreen Flappy scenery stays frozen"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
-  "firmware_sha256": "62464c292b6f5f6f60c40474404e831633839e0dd9219d74f92717770418fe10",
+  "elf_sha256": "435402bd250ccb5a14cafeda29790d272a1e5961cf10c59bc18a555343db2eca",
+  "firmware_sha256": "b3e37fd323aaf481333ba8e830b9a5798e8a57bf861fcdfea1862afb15aa8ed3",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

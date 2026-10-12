@@ -1,5 +1,5 @@
 {
-  "passed": 227,
+  "passed": 266,
   "failed": 0,
   "checks": [
     [
@@ -16,11 +16,11 @@
     ],
     [
       true,
-      "Moving 40px unlocks directly to menu"
+      "Moving 40px slides from clock to menu"
     ],
     [
       true,
-      "Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers"
+      "Menu has wallpaper, nine outer apps, folder, three games and a transparent cached motion layer"
     ],
     [
       true,
@@ -92,7 +92,7 @@
     ],
     [
       true,
-      "Opaque motion canvas occludes live menu drawing in LVGL cover detection"
+      "Cached motion hides live folder widgets to avoid double alpha blending"
     ],
     [
       true,
@@ -104,7 +104,7 @@
     ],
     [
       true,
-      "Skipped forward and reverse XOR frames restore the exact closed pixels"
+      "Skipped forward and reverse compressed frames restore the exact closed pixels"
     ],
     [
       true,
@@ -188,7 +188,7 @@
     ],
     [
       true,
-      "Double tap locks without activating either key"
+      "Double tapping calculator enters both digits without leaving the app"
     ],
     [
       true,
@@ -204,7 +204,7 @@
     ],
     [
       true,
-      "Double tap on water plus locks without adding water"
+      "Double tapping water adds two glasses without leaving the app"
     ],
     [
       true,
@@ -384,6 +384,62 @@
     ],
     [
       true,
+      "Global back from page 6 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 6 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 10 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 10 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 8 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 8 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 11 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 11 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 13 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 13 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 15 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 15 completes cleanly"
+    ],
+    [
+      true,
+      "Global back from page 18 animates both child and parent"
+    ],
+    [
+      true,
+      "Global back from page 18 completes cleanly"
+    ],
+    [
+      true,
       "A drag starting in the middle does not navigate back"
     ],
     [
@@ -560,11 +616,11 @@
     ],
     [
       true,
-      "Other apps preserve double-tap arbitration for 119ms"
+      "App control responds on release without double-tap waiting"
     ],
     [
       true,
-      "Single control activates at 120ms instead of 260ms"
+      "App remains open after the former arbitration window"
     ],
     [
       true,
@@ -909,9 +965,109 @@
     [
       true,
       "New page 17 edge swipe returns to menu"
+    ],
+    [
+      true,
+      "Dragging from an outer icon rotates the ring without launching the icon"
+    ],
+    [
+      true,
+      "Fast flick continues rotating after release"
+    ],
+    [
+      true,
+      "Inertia snaps every app to the original nine slot angles"
+    ],
+    [
+      true,
+      "Three center games remain stationary during the ring rotation"
+    ],
+    [
+      true,
+      "Rotation across the angle seam stays continuous and snaps correctly"
+    ],
+    [
+      true,
+      "Reverse flick snaps to the same slots"
+    ],
+    [
+      true,
+      "Touching a moving ring stops and snaps it without opening an app"
+    ],
+    [
+      true,
+      "An app remains tappable at its rotated slot"
+    ],
+    [
+      true,
+      "A long second contact on empty space does not lock"
+    ],
+    [
+      true,
+      "Distant empty-space taps do not lock"
+    ],
+    [
+      true,
+      "Empty-space double tap reveals the clock while both screens remain visible"
+    ],
+    [
+      true,
+      "Clock and launcher occupy intermediate slide positions"
+    ],
+    [
+      true,
+      "Slide completes with one active clock screen"
+    ],
+    [
+      true,
+      "Double tap on empty app space never returns home"
+    ],
+    [
+      true,
+      "face_date stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "face_water stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "face_battery stays inside the analog tick ring"
+    ],
+    [
+      true,
+      "Wallpaper settings opens the preview"
+    ],
+    [
+      true,
+      "Wallpaper preview does not change saved selection"
+    ],
+    [
+      true,
+      "Failed wallpaper save keeps old selection and offers retry"
+    ],
+    [
+      true,
+      "Wallpaper retry saves and applies selected image"
+    ],
+    [
+      true,
+      "Invalid wallpaper selection is rejected"
+    ],
+    [
+      true,
+      "Clouds and two hill layers move at distinct parallax speeds"
+    ],
+    [
+      true,
+      "Pausing Flappy also pauses parallax"
+    ],
+    [
+      true,
+      "Offscreen Flappy scenery stays frozen"
     ]
   ],
-  "elf_sha256": "468308d0d4fe9c85946c67393db3eeec3ec34c01a43efbceea3e28ecb0c9088b",
-  "firmware_sha256": "8c6ad053e53fa1cdcba55061efbf350e1825e1ab00e89e64b3030619228470cb",
+  "elf_sha256": "435402bd250ccb5a14cafeda29790d272a1e5961cf10c59bc18a555343db2eca",
+  "firmware_sha256": "b3e37fd323aaf481333ba8e830b9a5798e8a57bf861fcdfea1862afb15aa8ed3",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

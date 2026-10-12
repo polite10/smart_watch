@@ -52,8 +52,14 @@ PASS: Completed board stays solved until a new game
 PASS: Restart clears win state and moves
 PASS: 1024 legal moves preserve tile identity, solvability, blank position and counters
 PASS: Playing and restarting never change persistent notes, alarms or settings
+PASS: Wallpaper command saves a valid selection
+PASS: Wallpaper selection preserves notes, alarms, water and face data
+PASS: Wallpaper survives a ViewModel reload from storage
+PASS: Failed wallpaper save restores the prior RAM selection
+PASS: Wallpaper save can be retried after failure
+PASS: Wallpaper command rejects an out-of-range image
 {
-  "passed": 54,
+  "passed": 60,
   "failed": 0,
   "checks": [
     [
@@ -271,8 +277,32 @@ PASS: Playing and restarting never change persistent notes, alarms or settings
     [
       true,
       "Playing and restarting never change persistent notes, alarms or settings"
+    ],
+    [
+      true,
+      "Wallpaper command saves a valid selection"
+    ],
+    [
+      true,
+      "Wallpaper selection preserves notes, alarms, water and face data"
+    ],
+    [
+      true,
+      "Wallpaper survives a ViewModel reload from storage"
+    ],
+    [
+      true,
+      "Failed wallpaper save restores the prior RAM selection"
+    ],
+    [
+      true,
+      "Wallpaper save can be retried after failure"
+    ],
+    [
+      true,
+      "Wallpaper command rejects an out-of-range image"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "elf_sha256": "435402bd250ccb5a14cafeda29790d272a1e5961cf10c59bc18a555343db2eca",
   "scope": "Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes."
 }

@@ -2,6 +2,59 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Kadran, uygulama çarkı ve aurora — 12 Ekim 2026
+
+- **Klasik kadran:** işaretlerin yarıçapı 166 → 218 px oldu. Tarih ve su bilgisi
+  kadranın içine alındı; rakamlar, ibreler ve pil etiketi yeni çembere göre hizalandı.
+- **Uygulama çarkı:** merkezdeki üç oyun sabit kalır. Dış dokuz ikonu parmakla
+  döndürün; hızlı savurma en fazla 620 ms yavaşlayarak devam eder. Son konum
+  başlangıçtaki 40° aralıklı yuvalardan biridir; yarıçap ve yerleşim açıları korunur.
+  Dönüş sırasında ikon açılmaz. Hareketli çarka dokunmak dönüşü kesip yakındaki
+  yuvaya oturtur. Sol kenardan sağa kaydırma geri dönüş olarak önceliklidir.
+- **Global geri geçişi:** uygulamalarda, alt sayfalarda ve saat/menü arasında
+  240 ms yatay kaymada iki ekran birlikte görünür.
+  Geçiş eşik aşıldığında başlar; parmağı birebir takip eden bir önizleme değildir.
+  Geçiş sırasında dokunmalar uygulama açmaz. Klasör açıkken geri hareketi önce
+  klasörü kapatır. Geri hedefleri tek `watch_navigation_back()` fonksiyonundan
+  açılır; yeni sayfa yalnız üst sayfasını tanımlar.
+- **Çift dokunma:** yalnız uygulama menüsünün boş alanında, 300 ms ve 32 px
+  sınırlarıyla saati açar. Uygulamalarda ve uygulama düğmelerinde kilitleme yoktur;
+  örneğin su artı düğmesine iki kez dokunmak iki bardak ekler. Uygulama
+  kontrollerinde önceki 120 ms bırakma beklemesi kaldırıldı. Politika tek yerde,
+  `App/navigation/watch_navigation.c` içinde yönetilir.
+- **Flappy:** bulutlar, iki tepe katmanı, çiçekler ve küçük kelebekler farklı
+  hızlarda kayar. Çiçekler ikinci ve üçüncü borunun bir dudağından boşluğa uzanan
+  ek engellerdir; görünüm ve çarpışma ortak model geometrisini kullanır.
+  Arka plandaki kelebekler ve zemindeki çiçekler dekoratiftir. Duraklatma,
+  bildirim, kapalı ekran veya oyundan çıkış parallax hareketini de durdurur.
+  Güncel 175 px boru aralığı, 104 px boşluk ve hıza bağlı kuş eğimi korunur.
+  [Derlenmiş firmware’den hareketli önizleme](output/flappy-parallax.gif).
+- **Ayarlar → Duvar kagidi:** yeşil/turkuaz, mavi/mor ve gül/mor aurora.
+  Oklarla önizleyin, ✓ ile kaydedin; geri çıkmak seçimi iptal eder. Kayıt hatası
+  eski seçimi korur ve tekrar denemeye izin verir. Önceden görünümü etkilemeyen
+  `face_color` baytı kullanılır; 916 bayt kullanıcı verisi ve 928 bayt kayıt
+  payload'u değişmez. Eski 0/1/2 değerleri aynı indeksli auroraya karşılık gelir.
+
+[Görsel önizleme](output/interaction-preview.png), [geçişin ara karesi](output/round-home-slide.png),
+[üç aurora örneği](output/aurora-preview.png), [görsel kaynakları ve üretim istemleri](output/wallpapers/README.md).
+
+Klasör hareketi, duvar kâğıdı ve çark konumundan bağımsız **17 şeffaf kare**
+kullanır. 260 ms boyunca yaklaşık her 16 ms için bir kare vardır. LZ4 ile
+saklanan kareler tek 270 KB RGB565A8 tampona açılır; ikonlar çalışma anında
+ölçeklenmez. Eski duvar kâğıdının animasyonda belirmesi engellenir. Bu sürüm,
+GitHub’daki kenardan geçen Yılan, canlı İDA ve DMA2D çizim iyileştirmelerini korur.
+
+ARM derlemesi: **506 kaynak, 0 uyarı**. Aynı ELF üzerinde **266 UI/dokunma**,
+**60 Model/ViewModel**, **17 Flappy** ve **24 İDA** kontrolü geçti
+(**367 kontrol, 0 başarısızlık**). [Birleşik rapor](output/verify-interactions.json).
+Bağımsız C testi oyun kurallarını, 512 Yılan başlangıcını ve yeni çiçeklerin
+çarpışma/güvenli geçişini doğruladı. `Firmware/Smartwatch.bin` bu ELF ile eşleşir;
+binary yaklaşık 4,01 MB'dir ve ayrılmış flash kayıt alanına taşmaz.
+Bağlı ST-LINK bulunamadığı için bu sürüm **fiziksel karta yüklenmedi**;
+donanım FPS ve parmak hissi ölçülmedi.
+Simülatör önizlemeleri panel fotoğrafı değildir. Aşağıdaki tarihli bölümler önceki
+sürümlerin davranışını ve test sonuçlarını anlatır.
+
 ## Etkileşimli İDA simülasyonu — 11 Ekim 2026
 
 İDA'nın mevcut radar görünümü artık dokunmaya tepki verir. **SIM** her zaman

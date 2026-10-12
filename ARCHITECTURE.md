@@ -98,8 +98,8 @@ yapısını veya kullanıcı notlarını değiştirmez.
 - `watch_ui_*`, `watch_clock_set_datetime`, `refresh_rtc` ve donanım/debug sembolleri
   mevcut testler ve `Sync-Time.ps1` için korunur. Kökteki küçük başlıklar uyumluluk
   girişleridir; yeni kod ilgili katmanın başlığını kullanmalıdır.
-- Ana döngü ve bildirim öncelikleri korunur. Menü/oyunlar dokunma beklemesini
-  atlar; diğer uygulamalardaki çift dokunma penceresi 120 ms'dir.
+- Ana döngü ve bildirim öncelikleri korunur. Uygulama kontrolleri bırakma beklemesi
+  kullanmaz; yalnız menüdeki boş alanda 300 ms çift dokunma tanınır.
 - İkon bitmapleri ortak bir `.c` dosyasından sunulur; menü ve ayarlar aynı
   bitmapleri kullanır.
 
@@ -222,3 +222,57 @@ View, 17 ↔ 0 geçişini en kısa hücre hareketi olarak interpolasyonla çizer
 taşan pikseller ve invalidation alanları karşı kenara sarılır. Izgarasız zemin
 ve yalnız eski/yeni gövde bölgelerinin çizilmesi, mevcut 20 ms görünüm timer'ını
 korur. Model, ViewModel ve kalıcı kayıt boyutları değişmez.
+
+Bu testler fiziksel GFXMMU eşlemesini veya donanım zamanlamasını kanıtlamaz.
+
+## Uygulama çarkı ve duvar kâğıdı — 12 Ekim 2026
+
+`watch_navigation.c` dokunmanın ekranını ve başlangıç hedefini tek noktada
+belirler. Bildirim/uyanma, sol kenar, menü çarkı, saat hareketi ve boş alandaki
+çift dokunma bu sırayla değerlendirilir. Uygulama kontrollerinin bırakma olayı
+bekletilmez. Boş alan hit-test'i LVGL nesne ağacını kullanır; klasör, ikon ve
+uygulama içindeki boşluk çift dokunma kısayoluna dahil değildir.
+
+`watch_menu_view.c` yalnız dış halkayı döndürür. Açı 0,1° biriminde birikir;
+atan2 geçişi ±180° etrafında normalize edilir. Hız sınırlıdır; bırakınca hedef
+40° katına yuvarlanır ve ease-out animasyonu ile yerleşir. Uzun bekleyen
+bırakışa hız verilmez. Klasör açma/ekran değiştirme yarım animasyonu sonlandırır.
+İkon merkezleri her zaman 178 px yarıçapındadır; merkez oyunlar bu hesaba girmez.
+
+Saat/menü için LVGL MOVE_LEFT/MOVE_RIGHT kullanılır, ekranlar silinmez.
+Bütün kenar-geri işlemleri `watch_navigation_back()` üzerinden aynı MOVE_RIGHT
+geçişini kullanır; sayfalar yalnız `back_targets` ile üst sayfalarını tanımlar.
+İleri uygulama açılışlarındaki 180 ms içerik hareketi korunur. LVGL ekran geçişi süresince
+indev okumayı durdurur; geçiş sonrasında hâlâ basılı görünen temas bırakılana
+kadar tüketilir. Testler animasyon sonunda gerçek okuma döngüsündeki boşta
+bırakma örneğini de gönderir. Ekran yükleme/geçiş bitişinde layout çözülür;
+ilk dokunmanın eski animasyon konumlarına gitmesi önlenir.
+
+Duvar kâğıdı seçimi Model → Settings VM → View akışındadır. Sınır kontrolü
+modeldedir; VM başarısız kayıtta önceki seçimi geri yükler. `face_color`, mevcut
+0..2 aralığı ve veri boyutu korunarak menü duvar kâğıdı indeksine ayrılmıştır.
+Üç bitmap flash'ta RGB565 tutulur; PNG kaynakları ve üretim istemleri
+`output/wallpapers/` içindedir. `generate-arcade-art.py` yeniden üretir.
+
+Flappy'nin dekoratif katmanları küçük LVGL nesneleri olarak taşınır; çalışma
+anında tüm ekranlık yeni canvas veya dönüşüm tamponu ayrılmaz. Görsel adımlar
+fizik adımlarıyla ilerler ve oyunla birlikte donar. `watch_flappy_flower`,
+çiçek engelinin merkezini hem çizime hem modelin daire/dikdörtgen çarpışma
+hesabına sağlar. Kelebekler ve zemindeki çiçekler çarpışmaya dahil değildir.
+
+### Değişen arka planlarla klasör animasyonu
+
+Önceki 11 Ekim opak karelerinin yerini 17 bağımsız RGB565A8/LZ4 kare aldı.
+Opak kareler duvar kâğıdını ve ikon yuvalarını içerdiğinden yeni çarkla uyumsuzdu.
+Yeni kareler yalnız yarı saydam klasör ve oyun ikonlarını içerir; 260 ms harekete
+16 ms civarında örneklenir. Önceki kareleri çözmeden doğrudan hedef kareye gidilir;
+ileri/geri ve atlanan tick'ler aynı sonucu verir. Animasyon sırasında canlı
+klasör/oyun nesneleri gizlenir, hedef kare sonunda yeniden etkinleşir. Tek tampon
+270.000 bayttır; 17 kare flash'ta 497.420 bayt kullanır. Eski tam ekran backdrop
+kaldırılmıştır. Opak RGB565 arka planlar DMA2D yolunu kullanmayı sürdürür.
+
+`generate-folder-frames.py` mevcut ikon kaynaklarını Pillow ile rasterize eder;
+projeye dahil BSD lisanslı LZ4'ü yerel C derleyicisiyle geçici kütüphaneye derler.
+Ek pip/ağ bağımlılığı olmadan her kareyi sıkıştırıp birebir açılabildiğini doğrular.
+Yeni firmware için eski donanım klasör süreleri geçerli kabul edilmez; kartta
+FPS ölçümü henüz yapılmamıştır.

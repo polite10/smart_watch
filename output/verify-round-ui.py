@@ -89,8 +89,8 @@ def settle(milliseconds=400):
         tick+=20
         call('anim_timer',0)
 
-def snapshot(name):
-    settle()
+def snapshot(name,wait=400):
+    settle(wait)
     call('lv_display_refr_timer',0)
     im=Image.frombytes('RGBA',(480,480),bytes(frame),'raw','BGRA').convert('RGB')
     mask=Image.new('L',(480,480));ImageDraw.Draw(mask).ellipse((0,0,479,479),fill=255)
@@ -115,7 +115,7 @@ def tap_object(obj):
 def swipe_back():
     sample(True,24,240);sample(True,108,242,64);sample(False,108,242,16)
     call('lv_display_refr_timer',0);sample(False,108,242,16)
-    settle()
+    settle();sample(False,108,242,16)
 def active():return call('lv_screen_active')
 
 call('lv_init');call('lv_tick_set_cb',symbols['HAL_GetTick'])
@@ -137,10 +137,11 @@ check(power[-1] is False,'Single tap turns the panel off')
 sample(True);sample(False,delta=50)
 check(power[-1] is True and active()==screens(0),'Wake tap shows clock and is consumed')
 sample(True);sample(True,280,240)
-check(active()==screens(1),'Moving 40px unlocks directly to menu')
+settle(280)
+check(active()==screens(1),'Moving 40px slides from clock to menu')
 sample(False,280,240)
 snapshot('menu')
-check(call('lv_obj_get_child_count',screens(1))==17,'Menu has wallpaper, nine outer apps, folder, three games and two cached motion layers')
+check(call('lv_obj_get_child_count',screens(1))==16,'Menu has wallpaper, nine outer apps, folder, three games and a transparent cached motion layer')
 check(call('lv_obj_has_flag',pointer('page_titles',1),1)==1,'Menu appbar is hidden')
 check(sizes['watch_data']==916,'Persistent user-data structure retains its 916-byte format')
 centers=[]
@@ -158,20 +159,20 @@ sample(False,240,197,48)
 check(active()==screens(1) and u.mem_read(symbols['folder_moving'],1)[0], 'Folder opens on release without a 260ms wait')
 check(not call('lv_obj_has_flag',pointer('menu_games'),2),'Game selection is disabled during expansion')
 settle(80);call('lv_obj_update_layout',screens(1))
-check(0<read32(symbols['folder_frame'])<32 and not call('lv_obj_has_flag',pointer('folder_canvas'),1),'Expansion presents an intermediate cached frame without live widget scaling')
+check(0<read32(symbols['folder_frame'])<16 and not call('lv_obj_has_flag',pointer('folder_canvas'),1),'Expansion presents an intermediate cached frame without live widget scaling')
 cover_area=0x210f9000;u.mem_write(cover_area,struct.pack('<iiii',90,90,389,389))
-check(call('lv_refr_get_top_obj',cover_area,screens(1))==pointer('folder_canvas'),'Opaque motion canvas occludes live menu drawing in LVGL cover detection')
+check(call('lv_obj_has_flag',pointer('menu_folder'),1) and all(call('lv_obj_has_flag',pointer('menu_games',i),1) for i in range(3)), 'Cached motion hides live folder widgets to avoid double alpha blending')
 settle(180);snapshot('games-folder')
 check(call('lv_obj_get_width',pointer('menu_games'))==88 and not u.mem_read(symbols['folder_moving'],1)[0],'Folder finishes with selectable 88px game icons')
-check(call('lv_obj_has_flag',pointer('folder_canvas'),1) and call('lv_obj_has_flag',pointer('folder_backdrop'),1),'Completed animation restores live interactive icons')
+check(call('lv_obj_has_flag',pointer('folder_canvas'),1) and not call('lv_obj_has_flag',pointer('menu_folder'),1),'Completed animation restores live interactive icons')
 call('folder_cached_frame',0)
-closed_pixels=bytes(u.mem_read(symbols['folder_pixels'],300*300*2))
+closed_pixels=bytes(u.mem_read(symbols['folder_pixels'],300*300*3))
 call('folder_cached_frame',256)
-open_pixels=bytes(u.mem_read(symbols['folder_pixels'],300*300*2))
+open_pixels=bytes(u.mem_read(symbols['folder_pixels'],300*300*3))
 for progress in (40,216,0,256,0):call('folder_cached_frame',progress)
-check(bytes(u.mem_read(symbols['folder_pixels'],300*300*2))==closed_pixels,'Skipped forward and reverse XOR frames restore the exact closed pixels')
+check(bytes(u.mem_read(symbols['folder_pixels'],300*300*3))==closed_pixels,'Skipped forward and reverse compressed frames restore the exact closed pixels')
 call('folder_cached_frame',256)
-check(bytes(u.mem_read(symbols['folder_pixels'],300*300*2))==open_pixels,'Reopening after reverse motion restores the exact open pixels')
+check(bytes(u.mem_read(symbols['folder_pixels'],300*300*3))==open_pixels,'Reopening after reverse motion restores the exact open pixels')
 # The ninth app is exercised through actual raw input and animated LVGL objects.
 tap(240,165)
 check(active()==screens(14),'Center puzzle icon opens the ninth app')
@@ -251,11 +252,11 @@ check(safe,'All sixteen calculator keys are 68px and stay inside the round displ
 check(all(len(set(rows[i:i+4]))==1 for i in range(0,16,4)),'Calculator uses four straight aligned rows')
 tap(126,178);tap(354,406);tap(202,178);tap(278,406)
 check(text('calc_label')=='15','Large keys evaluate 7 + 8 = 15')
-# Double tap a calculator digit. The first release must not append a digit.
+# App controls accept both taps immediately and never lock.
 before=text('calc_label')
 sample(True,126,178);sample(False,126,178,40);sample(True,126,178,100);sample(False,126,178,40)
-check(active()==screens(0) and text('calc_label')==before,'Double tap locks without activating either key')
-sample(True);sample(True,280,240);sample(False,280,240)
+check(active()==screens(6) and text('calc_label').endswith('77'),'Double tapping calculator enters both digits without leaving the app')
+swipe_back()
 tap(65,209)
 check(active()==screens(10),'Water icon opens tracker')
 snapshot('water')
@@ -266,8 +267,8 @@ check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial+200,'Large plus
 tap(92,211)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Large minus undoes one glass')
 sample(True,388,211);sample(False,388,211,40);sample(True,388,211,100);sample(False,388,211,40)
-check(active()==screens(0) and struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial,'Double tap on water plus locks without adding water')
-sample(True);sample(True,280,240);sample(False,280,240);snapshot('menu');tap(65,209)
+check(active()==screens(10) and struct.unpack('<H',u.mem_read(water_offset,2))[0]==initial+400,'Double tapping water adds two glasses without leaving the app')
+swipe_back();snapshot('menu');tap(65,209)
 tap(388,211);snapshot('water-filled')
 swipe_back();tap(415,209)
 check(active()==screens(7),'Notes icon opens notes')
@@ -316,6 +317,15 @@ for page,parent in [(1,0),(2,1),(3,1),(4,1),(5,4),(6,1),(7,1),(8,7),(9,1),(10,1)
     check(call('lv_obj_has_flag',header,1),'Page %d has no visible appbar'%page)
     swipe_back()
     check(active()==screens(parent),'Page %d edge-swipe returns to its parent'%page)
+# Every parent route uses a visible shared transition, including nested editors.
+for page,parent in [(6,1),(10,1),(8,7),(11,10),(13,1),(15,1),(18,3)]:
+    load(page);call('lv_display_refr_timer',0)
+    sample(True,24,240);sample(True,108,242,64)
+    settle(100);call('lv_display_refr_timer',0)
+    check(active()==screens(parent) and call('lv_display_get_screen_prev',0)==screens(page),
+          'Global back from page %d animates both child and parent'%page)
+    sample(False,108,242);settle(200);sample(False,108,242)
+    check(call('lv_display_get_screen_prev',0)==0,'Global back from page %d completes cleanly'%page)
 # Movement from the middle must not be interpreted as edge-back.
 load(6);sample(True,240,205);sample(True,340,210,80);sample(False,340,210,16)
 check(active()==screens(6),'A drag starting in the middle does not navigate back')
@@ -349,9 +359,9 @@ tap(178,156)
 check(active()==screens(5),'Large alarm time opens matching editor')
 swipe_back()
 load(3);call('lv_display_refr_timer',0)
-tap(340,212)
+tap(340,162)
 check(text('format_button_label')=='12 saat' and bytes(u.mem_read(symbols['watch_data']+912,1))==b'\x01','Tapping settings value changes clock format directly')
-tap(340,212)
+tap(340,162)
 check(text('format_button_label')=='24 saat','Clock format row toggles back to 24 hours')
 tap_object(pointer('settings_rows',0))
 check(active()==screens(13),'Clock settings capsule opens date and time editor')
@@ -380,7 +390,7 @@ def object_center(obj):
     return (call('lv_obj_get_x',obj)+call('lv_obj_get_width',obj)/2,
             call('lv_obj_get_y',obj)+call('lv_obj_get_height',obj)/2)
 check(object_center(pointer('center_pin'))==(240,240),'Analog hands pivot exactly at the screen center')
-expected_centers=[(240,104),(376,240),(104,240),(240,376)]
+expected_centers=[(240,59),(421,240),(59,240),(240,421)]
 check(all(all(abs(a-b)<=1 for a,b in zip(object_center(pointer('classic_numbers',i)),expected_centers[i])) for i in range(4)),
       'Analog numerals sit symmetrically around the screen center')
 top=object_center(pointer('face_date',2)); bottom=object_center(pointer('face_water',2))
@@ -399,7 +409,7 @@ check(all((px-240)**2+(py-240)**2<180**2 for px in [x,x+w] for py in [y,y+h]),'N
 mint=call('lv_obj_get_style_prop',pointer('face_clock',1),0,88)&0xffffff
 u.mem_write(symbols['watch_data']+915,b'\x02');call('watch_faces_apply_saved')
 check((call('lv_obj_get_style_prop',pointer('face_clock',1),0,88)&0xffffff)==mint==0x94e8c5,'Face colors remain fixed regardless of legacy customization byte')
-load(3);tap(365,287);snapshot('settings-light')
+load(3);tap(365,232);snapshot('settings-light')
 check(bytes(u.mem_read(symbols['watch_data']+913,1))==b'\x01','Light theme remains selectable')
 check(text('theme_button_label')=='Acik' and call('lv_obj_has_state',pointer('settings_switch'),1),'Theme capsule updates its value and switch together')
 load(14);snapshot('puzzle-light')
@@ -420,7 +430,7 @@ tap(240,280)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==before+200,'Notification buttons bypass double-tap delay and add one glass')
 
 # Validate the shorter arbitration window separately from the page animation.
-call('watch_navigation_show',1);call('lv_display_refr_timer',0)
+call('watch_navigation_show',1);settle(280);sample(False);call('lv_display_refr_timer',0)
 sample(True,354,104);sample(False,354,104,40)
 check(active()==screens(6),'Menu app opens at release with no added tap wait')
 sample(False,354,104,36)
@@ -430,11 +440,11 @@ sample(False,354,104,160)
 check(call('lv_obj_get_style_prop',pointer('calc_label'),0,108)==0,'Content entry animation ends within 200ms')
 before=text('calc_label')
 sample(True,126,178);sample(False,126,178,40);sample(False,126,178,119)
-check(text('calc_label')==before,'Other apps preserve double-tap arbitration for 119ms')
+check(text('calc_label')!=before,'App control responds on release without double-tap waiting')
 sample(False,126,178,1)
-check(text('calc_label')!=before,'Single control activates at 120ms instead of 260ms')
+check(active()==screens(6),'App remains open after the former arbitration window')
 
-call('watch_navigation_show',1);call('lv_display_refr_timer',0)
+call('watch_navigation_show',1);settle(280);sample(False);call('lv_display_refr_timer',0)
 sample(True,240,197);sample(False,240,197,40)
 sample(True,280,263);sample(False,280,263,40)
 check(active()==screens(1),'Tapping a game during folder expansion cannot launch it')
@@ -662,6 +672,83 @@ for page in [15,16,17]:
     load(page);call('lv_display_refr_timer',0)
     check(call('lv_obj_has_flag',pointer('page_titles',page),1),'New page %d has no visible appbar'%page)
     swipe_back();check(active()==screens(1),'New page %d edge swipe returns to menu'%page)
+
+# Launcher gestures: real raw samples, including the icon contact that starts a drag.
+load(1);call('watch_menu_reset');call('lv_display_refr_timer',0)
+def ring():return struct.unpack('<i',u.mem_read(symbols['ring_angle'],4))[0]
+def menu_centers():
+    call('lv_obj_update_layout',screens(1))
+    return [(call('lv_obj_get_x',pointer('menu_buttons',i))+40,call('lv_obj_get_y',pointer('menu_buttons',i))+40) for i in range(9)]
+fixed=set(centers)
+game_centers=[object_center(pointer('menu_games',i)) for i in range(3)]
+sample(True,240,62);sample(True,320,81,20);sample(True,366,114,20);sample(True,415,209,20)
+check(active()==screens(1) and ring()!=0,'Dragging from an outer icon rotates the ring without launching the icon')
+released_angle=ring();sample(False,415,209,20);settle(140)
+check(ring()!=released_angle,'Fast flick continues rotating after release')
+settle(700)
+check(ring()%400==0 and set(menu_centers())==fixed,'Inertia snaps every app to the original nine slot angles')
+check([object_center(pointer('menu_games',i)) for i in range(3)]==game_centers,'Three center games remain stationary during the ring rotation')
+# Reverse rotation and wrapping across the -180/+180 discontinuity.
+before=ring();sample(True,65,270);sample(True,65,209,30);sample(True,104,126,30);sample(False,104,126,20);settle(800)
+check(ring()!=before and ring()%400==0 and set(menu_centers())==fixed,'Rotation across the angle seam stays continuous and snaps correctly')
+before=ring();sample(True,240,62);sample(True,170,76,30);sample(True,114,114,30);sample(False,114,114,20);settle(800)
+check(ring()!=before and ring()%400==0 and set(menu_centers())==fixed,'Reverse flick snaps to the same slots')
+# Stop an ongoing fling with a stationary contact; it must not open a control.
+sample(True,240,62);sample(True,366,114,20);sample(False,366,114,20);settle(60)
+sample(True,240,62);sample(False,240,62,50);settle(300)
+check(active()==screens(1) and ring()%400==0,'Touching a moving ring stops and snaps it without opening an app')
+# The original icon identity follows its rotated target.
+app=pointer('menu_buttons',1);tap_object(app)
+check(active()==screens(6),'An app remains tappable at its rotated slot')
+swipe_back()
+# Long press and distant taps are not double taps.
+sample(True,240,120);sample(False,240,120,40);sample(True,240,120,100);sample(False,240,120,500)
+check(active()==screens(1),'A long second contact on empty space does not lock')
+sample(True,240,120);sample(False,240,120,40);sample(True,240,360,80);sample(False,240,360,40)
+check(active()==screens(1),'Distant empty-space taps do not lock')
+sample(False,240,360,350)
+sample(True,240,120);sample(False,240,120,40);sample(True,240,120,100);sample(False,240,120,40)
+settle(100);snapshot('home-slide',wait=0)
+check(active()==screens(0) and call('lv_display_get_screen_prev',0)==screens(1),'Empty-space double tap reveals the clock while both screens remain visible')
+check(-480<struct.unpack('<i',struct.pack('<I',call('lv_obj_get_x',screens(0))))[0]<0 and 0<call('lv_obj_get_x',screens(1))<480,'Clock and launcher occupy intermediate slide positions')
+settle(200);sample(False)
+check(active()==screens(0) and call('lv_display_get_screen_prev',0)==0,'Slide completes with one active clock screen')
+# Home and empty space within an app retain their distinct rules.
+load(10);call('lv_display_refr_timer',0)
+sample(True,240,100);sample(False,240,100,40);sample(True,240,100,100);sample(False,240,100,40)
+check(active()==screens(10),'Double tap on empty app space never returns home')
+# Analog metadata boxes are fully inside the enlarged dial.
+for name in ['face_date','face_water','face_battery']:
+    obj=pointer(name,2);x=call('lv_obj_get_x',obj);y=call('lv_obj_get_y',obj)
+    w=call('lv_obj_get_width',obj);h=call('lv_obj_get_height',obj)
+    check(all((px-240)**2+(py-240)**2<199**2 for px in [x,x+w] for py in [y,y+h]),name+' stays inside the analog tick ring')
+# Wallpaper selection is explicit, persistent and rolls back on failed saves.
+load(3);call('lv_display_refr_timer',0);tap_object(pointer('settings_rows',4))
+check(active()==screens(18),'Wallpaper settings opens the preview')
+previous=u.mem_read(symbols['watch_data']+915,1)[0]
+tap(340,330);draft=read32(symbols['wallpaper_draft'])
+check(draft==(previous+1)%3 and u.mem_read(symbols['watch_data']+915,1)[0]==previous,'Wallpaper preview does not change saved selection')
+storage_ok=False;tap(240,419)
+check(active()==screens(18) and u.mem_read(symbols['watch_data']+915,1)[0]==previous and 'basarisiz' in text('wallpaper_result'),'Failed wallpaper save keeps old selection and offers retry')
+storage_ok=True;tap(240,419)
+check(active()==screens(1) and u.mem_read(symbols['watch_data']+915,1)[0]==draft,'Wallpaper retry saves and applies selected image')
+# Render every wallpaper in the real launcher, retaining app legibility.
+for i,name in enumerate(['green','violet','rose']):
+    call('watch_settings_vm_set_wallpaper',i);call('watch_menu_wallpaper_refresh');snapshot('aurora-'+name)
+call('watch_settings_vm_set_wallpaper',0);call('watch_menu_wallpaper_refresh')
+check(call('watch_settings_vm_set_wallpaper',3)==0 and call('watch_settings_vm_wallpaper')==0,'Invalid wallpaper selection is rejected')
+# Parallax advances at distinct speeds and freezes together with game physics.
+call('flappy_open');sample(True,240,240);sample(False,240,240,16)
+cloud_before=call('lv_obj_get_x',pointer('clouds'));hill_before=call('lv_obj_get_x',pointer('hills'))
+near_before=call('lv_obj_get_x',pointer('near_hills'));step_before=read32(symbols['scenery_steps'])
+game_tick(100);call('lv_obj_update_layout',screens(15))
+check(read32(symbols['scenery_steps'])>step_before and len(set([cloud_before-call('lv_obj_get_x',pointer('clouds')),hill_before-call('lv_obj_get_x',pointer('hills')),near_before-call('lv_obj_get_x',pointer('near_hills'))]))==3,'Clouds and two hill layers move at distinct parallax speeds')
+call('watch_flappy_vm_pause');steps=read32(symbols['scenery_steps']);game_tick(160)
+check(read32(symbols['scenery_steps'])==steps,'Pausing Flappy also pauses parallax')
+# Bring a flower pipe into view for a screenshot; leave the game paused.
+u.mem_write(fp+20,struct.pack('<ff',290,245));call('flappy_render');snapshot('flappy-parallax')
+call('watch_navigation_show',1);game_tick(160)
+check(read32(symbols['scenery_steps'])==steps,'Offscreen Flappy scenery stays frozen')
 
 arcade=Image.new('RGB',(1440,960),'#171e2c')
 for i,n in enumerate(['menu','games-folder','ida','puzzle','flappy','snake']):

@@ -79,6 +79,18 @@ int main(void)
     watch_flappy_new(&f,9);f.phase=WATCH_GAME_RUNNING;f.y=110;watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
     watch_flappy_new(&f,10);f.phase=WATCH_GAME_RUNNING;f.y=393;watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
     watch_flappy_new(&f,11);assert(f.score==0 && f.phase==WATCH_GAME_READY);
+    /* Flower lip collisions use the shared visual centers, while the middle
+       of both decorated gaps remains safely passable. */
+    for(unsigned i=1;i<3;++i) {
+        watch_flappy_new(&f,20+i);f.phase=WATCH_GAME_RUNNING;
+        f.pipes[i]=(watch_pipe_t){147,240,false};
+        float fx,fy;assert(watch_flappy_flower(i,&f.pipes[i],&fx,&fy));
+        f.y=fy+(i==1 ? 15 : -15);f.velocity=-0.25f;
+        watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
+        watch_flappy_new(&f,20+i);f.phase=WATCH_GAME_RUNNING;
+        f.pipes[i]=(watch_pipe_t){147,240,false};f.y=240;f.velocity=-0.25f;
+        watch_flappy_step(&f);assert(f.phase==WATCH_GAME_RUNNING);
+    }
     watch_snake_vm_new(12);watch_snake_vm_start();watch_snake_vm_turn(0,-40);watch_snake_vm_step();assert(watch_snake_vm_state()->direction==WATCH_UP);
     watch_flappy_vm_new(13);watch_flappy_vm_flap();watch_flappy_vm_step();assert(watch_flappy_vm_state()->phase==WATCH_GAME_RUNNING);
     watch_ida_vm_init();

@@ -252,6 +252,19 @@ for step in range(1024):
 check(valid,'1024 legal moves preserve tile identity, solvability, blank position and counters')
 check(bytes(u.mem_read(symbols['watch_data'],916))==before_persistent,'Playing and restarting never change persistent notes, alarms or settings')
 
+# Wallpaper reuses the dormant color byte without changing the flash payload.
+storage_ok=True
+prior=bytes(u.mem_read(symbols['watch_data'],916))
+check(call('watch_settings_vm_set_wallpaper',2)==1,'Wallpaper command saves a valid selection')
+check(bytes(u.mem_read(symbols['watch_data'],915))==prior[:915],'Wallpaper selection preserves notes, alarms, water and face data')
+call('watch_app_vm_init',0)
+check(call('watch_settings_vm_wallpaper')==2,'Wallpaper survives a ViewModel reload from storage')
+storage_ok=False
+check(call('watch_settings_vm_set_wallpaper',1)==0 and call('watch_settings_vm_wallpaper')==2,'Failed wallpaper save restores the prior RAM selection')
+storage_ok=True
+check(call('watch_settings_vm_set_wallpaper',1)==1,'Wallpaper save can be retried after failure')
+check(call('watch_settings_vm_set_wallpaper',3)==0 and call('watch_settings_vm_wallpaper')==1,'Wallpaper command rejects an out-of-range image')
+
 report = {'passed': sum(v for v, _ in checks), 'failed': sum(not v for v, _ in checks), 'checks': checks,
           'elf_sha256': hashlib.sha256((ROOT/'Debug'/'Smartwatch.elf').read_bytes()).hexdigest(),
           'scope': 'Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes.'}

@@ -1,6 +1,24 @@
 #include "views/watch_view_internal.h"
-static lv_obj_t *format_button_label,*theme_button_label,*settings_rows[4],*settings_switch,*rtc_source_label,*clock_status_label;
+static lv_obj_t *format_button_label,*theme_button_label,*settings_rows[5],*settings_switch,*rtc_source_label,*clock_status_label;
 #include "watch_icons.h"
+#include "views/watch_art.h"
+static lv_obj_t *wallpaper_preview,*wallpaper_name,*wallpaper_result;
+static unsigned wallpaper_draft;
+static const lv_image_dsc_t *wallpapers[]={&menu_wallpaper,&menu_wallpaper_violet,&menu_wallpaper_rose};
+static const char *wallpaper_names[]={"Yesil aurora","Mavi aurora","Gul aurora"};
+
+static void wallpaper_refresh(void)
+{ lv_image_set_src(wallpaper_preview,wallpapers[wallpaper_draft]);set_label(wallpaper_name,wallpaper_names[wallpaper_draft]);set_label(wallpaper_result,""); }
+static void wallpaper_open(lv_event_t *e)
+{ (void)e;wallpaper_draft=watch_settings_vm_wallpaper();wallpaper_refresh();watch_navigation_show(WALLPAPER); }
+static void wallpaper_choose(lv_event_t *e)
+{ wallpaper_draft=(wallpaper_draft+(unsigned)(uintptr_t)lv_event_get_user_data(e))%WATCH_WALLPAPER_COUNT;wallpaper_refresh(); }
+static void wallpaper_save(lv_event_t *e)
+{
+    (void)e;if(!watch_settings_vm_set_wallpaper(wallpaper_draft)) { set_label(wallpaper_result,"Kayit basarisiz. Tekrar deneyin.");return; }
+    watch_menu_wallpaper_refresh();watch_navigation_show(MENU);
+}
+
 
 static void format_clicked(lv_event_t *e)
 {
@@ -41,7 +59,7 @@ lv_obj_t *settings_row(unsigned index, const char *title, const char *symbol,
 
 void settings_refresh(void)
 {
-    for(unsigned i=0; i<4; ++i) {
+    for(unsigned i=0; i<5; ++i) {
         lv_obj_set_style_bg_color(settings_rows[i],lv_color_hex(light_theme ? 0xFFFFFF : 0x152033),0);
         lv_obj_set_style_bg_color(settings_rows[i],lv_color_hex(light_theme ? 0xD4E3F0 : 0x344A64),LV_STATE_PRESSED);
         lv_obj_set_style_text_color(settings_rows[i],lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC),0);
@@ -56,7 +74,7 @@ void settings_refresh(void)
 
 void theme_apply(void)
 {    for(unsigned i = 0; i < SCREEN_COUNT; ++i) {
-        if(i == HOME || i == FACES || i == MENU || i == FLAPPY || i == SNAKE || i == IDA) continue;
+        if(i == WALLPAPER || i == HOME || i == FACES || i == MENU || i == FLAPPY || i == SNAKE || i == IDA) continue;
         lv_obj_set_style_bg_color(screens[i], lv_color_hex(light_theme ? 0xEAF0F8 : 0x070D18), 0);
         lv_obj_set_style_text_color(screens[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
         if(page_titles[i]) lv_obj_set_style_text_color(page_titles[i], lv_color_hex(light_theme ? 0x182238 : 0xF0F4FC), 0);
@@ -66,9 +84,9 @@ void theme_apply(void)
 
 void settings_init(void)
 {    page_header(SETTINGS, "Ayarlar", MENU);
-    lv_obj_t *row=settings_row(0,"Saat ve tarih",NULL,&icon_clock,0x9CAFFF,106,300,navigate,(void *)(uintptr_t)CLOCK_EDIT);
+    lv_obj_t *row=settings_row(0,"Saat ve tarih",NULL,&icon_clock,0x9CAFFF,60,268,navigate,(void *)(uintptr_t)CLOCK_EDIT);
     lv_obj_t *arrow=lv_label_create(row); set_label(arrow,LV_SYMBOL_RIGHT); lv_obj_align(arrow,LV_ALIGN_RIGHT_MID,-18,0);
-    row=settings_row(1,"Saat bicimi","12",NULL,0x96E1C2,180,328,format_clicked,NULL);
+    row=settings_row(1,"Saat bicimi","12",NULL,0x96E1C2,130,328,format_clicked,NULL);
     lv_obj_t *value=lv_obj_create(row); lv_obj_set_size(value,84,34); lv_obj_align(value,LV_ALIGN_RIGHT_MID,-16,0);
     lv_obj_set_style_bg_color(value,lv_color_hex(0x96E1C2),0); lv_obj_set_style_radius(value,17,0);
     lv_obj_set_style_border_width(value,0,0); lv_obj_set_style_pad_all(value,0,0);
@@ -76,7 +94,7 @@ void settings_init(void)
     format_button_label=lv_label_create(value); lv_obj_center(format_button_label);
     lv_obj_set_style_text_font(format_button_label,&lv_font_montserrat_16,0);
     lv_obj_set_style_text_color(format_button_label,lv_color_hex(0x182C2D),0);
-    row=settings_row(2,"Tema",LV_SYMBOL_EYE_OPEN,NULL,0x82D9F4,254,328,theme_clicked,NULL);
+    row=settings_row(2,"Tema",LV_SYMBOL_EYE_OPEN,NULL,0x82D9F4,200,348,theme_clicked,NULL);
     theme_button_label=lv_label_create(row); lv_obj_align(theme_button_label,LV_ALIGN_RIGHT_MID,-74,0);
     lv_obj_set_style_text_font(theme_button_label,&lv_font_montserrat_16,0);
     settings_switch=lv_switch_create(row); lv_obj_set_size(settings_switch,46,26);
@@ -85,8 +103,20 @@ void settings_init(void)
     lv_obj_set_style_anim_duration(settings_switch,120,0);
     lv_obj_set_style_bg_color(settings_switch,lv_color_hex(0x435675),LV_PART_MAIN);
     lv_obj_set_style_bg_color(settings_switch,lv_color_hex(0x96E1C2),LV_PART_INDICATOR|LV_STATE_CHECKED);
-    row=settings_row(3,"Saat arayuzleri",NULL,&icon_faces,0xD7AFF7,328,300,navigate,(void *)(uintptr_t)FACES);
+    row=settings_row(3,"Saat arayuzleri",NULL,&icon_faces,0xD7AFF7,270,328,navigate,(void *)(uintptr_t)FACES);
     arrow=lv_label_create(row); set_label(arrow,LV_SYMBOL_RIGHT); lv_obj_align(arrow,LV_ALIGN_RIGHT_MID,-18,0);
+    row=settings_row(4,"Duvar kagidi",NULL,&icon_faces,0x96E1C2,340,280,wallpaper_open,NULL);
+    arrow=lv_label_create(row);set_label(arrow,LV_SYMBOL_RIGHT);lv_obj_align(arrow,LV_ALIGN_RIGHT_MID,-18,0);
+    page_header(WALLPAPER,"",SETTINGS);
+    wallpaper_preview=lv_image_create(screens[WALLPAPER]);lv_image_set_src(wallpaper_preview,wallpapers[0]);
+    lv_obj_remove_flag(wallpaper_preview,LV_OBJ_FLAG_CLICKABLE);
+    wallpaper_name=label_at(screens[WALLPAPER],"",135,&lv_font_montserrat_24);
+    lv_obj_set_style_text_color(wallpaper_name,lv_color_hex(0xF0F4FC),0);
+    round_action(screens[WALLPAPER],LV_SYMBOL_LEFT,-100,300,60,0x253147,wallpaper_choose,(void *)2);
+    round_action(screens[WALLPAPER],LV_SYMBOL_RIGHT,100,300,60,0x253147,wallpaper_choose,(void *)1);
+    round_action(screens[WALLPAPER],LV_SYMBOL_OK,0,387,64,0x96E1C2,wallpaper_save,NULL);
+    wallpaper_result=label_at(screens[WALLPAPER],"",365,&lv_font_montserrat_14);
+    lv_obj_set_style_text_color(wallpaper_result,lv_color_hex(0xF0F4FC),0);
     rtc_source_label = label_at(screens[SETTINGS], "RTC", 407, &lv_font_montserrat_14);
     clock_status_label = label_at(screens[SETTINGS], "Saat ayari gerekli", 429, &lv_font_montserrat_14);
     settings_refresh();

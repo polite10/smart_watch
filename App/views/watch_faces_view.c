@@ -8,7 +8,7 @@
 LV_FONT_DECLARE(watch_font_clock_72);
 static void face_set_label(lv_obj_t *label, const char *value);
 enum { PASTEL, NEON, CLASSIC, ORBIT, FACE_COUNT };
-enum { DIAL_CENTER = 240, DIAL_RADIUS = 166, NUMERAL_RADIUS = 136, INFO_OFFSET = 190 };
+enum { DIAL_CENTER = 240, DIAL_RADIUS = 218, NUMERAL_RADIUS = 181, INFO_OFFSET = 105 };
 _Static_assert(FACE_COUNT==WATCH_FACE_COUNT,"Face count must match persistent model validation");
 static lv_obj_t *face_roots[FACE_COUNT], *face_clock[FACE_COUNT], *face_date[FACE_COUNT];
 static lv_obj_t *face_water[FACE_COUNT], *face_battery[FACE_COUNT], *face_alarm[FACE_COUNT];
@@ -156,9 +156,9 @@ void watch_faces_set_datetime(uint16_t year,uint8_t month,uint8_t day,uint8_t ho
     if(!state->clock_valid) return;
     lv_arc_set_value(orbit_ring,second);
     if(watch_faces_vm_style() == CLASSIC && lv_screen_active() != picker_screen) {
-        update_hand(hour_hand, hand_points[0], state->hour_angle, DIAL_CENTER, DIAL_CENTER, 85, 12);
-        update_hand(minute_hand, hand_points[1], state->minute_angle, DIAL_CENTER, DIAL_CENTER, 120, 16);
-        update_hand(second_hand, hand_points[2], state->second_angle, DIAL_CENTER, DIAL_CENTER, 134, 24);
+        update_hand(hour_hand, hand_points[0], state->hour_angle, DIAL_CENTER, DIAL_CENTER, 112, 12);
+        update_hand(minute_hand, hand_points[1], state->minute_angle, DIAL_CENTER, DIAL_CENTER, 164, 16);
+        update_hand(second_hand, hand_points[2], state->second_angle, DIAL_CENTER, DIAL_CENTER, 193, 24);
     }
     if(lv_screen_active() == picker_screen) {
         update_hand(mini_hands[0], mini_hand_points[0], state->hour_angle, 50, 50, 21, 0);
@@ -246,7 +246,7 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
     root = face_roots[CLASSIC];
     for(unsigned i = 0; i < 60; ++i) {
         float angle = i * .10471975512f;
-        float inner = i % 5 ? 158 : 149;
+        float inner = i % 5 ? 210 : 199;
         tick_points[i][0] = (lv_point_precise_t){DIAL_CENTER + inner * sinf(angle), DIAL_CENTER - inner * cosf(angle)};
         tick_points[i][1] = (lv_point_precise_t){DIAL_CENTER + DIAL_RADIUS * sinf(angle), DIAL_CENTER - DIAL_RADIUS * cosf(angle)};
         classic_ticks[i]=line(root, tick_points[i], i % 5 ? 2 : 4, i % 5 ? 0xA8B9D2 : 0xF0F4FC);
@@ -263,7 +263,7 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
     lv_obj_align(face_date[CLASSIC],LV_ALIGN_CENTER,0,-INFO_OFFSET);
     face_water[CLASSIC] = text(root, "", 0, &lv_font_montserrat_14, 0xA8B9D2);
     lv_obj_align(face_water[CLASSIC],LV_ALIGN_CENTER,0,INFO_OFFSET);
-    face_battery[CLASSIC] = text(root, "Pil --", 22, &lv_font_montserrat_14, 0xA8B9D2);
+    face_battery[CLASSIC] = text(root, "Pil --", 373, &lv_font_montserrat_14, 0xA8B9D2);
     hour_hand = line(root, hand_points[0], 10, 0x493B35);
     minute_hand = line(root, hand_points[1], 6, 0x493B35);
     second_hand = line(root, hand_points[2], 3, 0x73BEFF);

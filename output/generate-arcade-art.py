@@ -11,13 +11,6 @@ def backdrop(name,painter):
  im=im.resize((480,480),Image.Resampling.LANCZOS);im.save(ROOT/'output'/f'art-{name}.png')
  raw=b''.join(struct.pack('<H',((r>>3)<<11)|((g>>2)<<5)|(b>>3)) for r,g,b in im.getdata())
  art.append((name,raw,480,480,"RGB565",960))
-def menu(im):
- px=im.load()
- for y in range(480*S):
-  for x in range(480*S):
-   a=math.exp(-(((x/S-190)/105)**2+((y/S-210)/100)**2))
-   b=math.exp(-(((x/S-290)/110)**2+((y/S-295)/115)**2))
-   px[x,y]=(int(7+7*a+11*b),int(13+18*a+8*b),int(24+21*a+18*b))
 def sky(im):
  d=ImageDraw.Draw(im)
  for y in range(480*S):
@@ -26,12 +19,6 @@ def sky(im):
  for i in range(42):
   x,y=rng.randrange(480*S),rng.randrange(310*S);d.ellipse((x,y,x+S,y+S),fill='#527c96')
  def poly(points,c):d.polygon([(int(x*S),int(y*S)) for x,y in points],fill=c)
- for offset,c in [(0,'#24566d'),(30,'#193e56')]:
-  points=[(0,430),(0,370+offset)]+[(x,352+offset-24*math.sin(x/60)) for x in range(0,481,12)]+[(480,480),(0,480)];poly(points,c)
- for cx,cy in [(95,178),(405,252)]:
-  for dx,dy,r in [(-28,0,18),(0,-12,26),(27,0,19)]:
-   x,y=(cx+dx)*S,(cy+dy)*S;d.ellipse((x-r*S,y-r*S,x+r*S,y+r*S),fill='#2d5773')
-  d.rounded_rectangle((int((cx-48)*S),int(cy*S),int((cx+48)*S),int((cy+19)*S)),12*S,fill='#2d5773')
  d.rectangle((0,408*S,480*S,480*S),fill='#efcb8b');d.line((0,408*S,480*S,408*S),fill='#fff2cc',width=6*S)
  for x in range(40,481,62):d.ellipse((x*S,436*S,(x+15)*S,441*S),fill='#d5ae71')
 def radar(im):
@@ -54,7 +41,11 @@ def radar(im):
  d.line([xy((240,88)),xy((240,392))],fill='#245968',width=S)
  # Sweep, contacts, route, target and vessel are drawn by the live LVGL layer.
 if not ida_only:
- backdrop('menu_wallpaper',menu);backdrop('flappy_sky',sky)
+ for name,filename in [('menu_wallpaper','green'),('menu_wallpaper_violet','violet'),('menu_wallpaper_rose','rose')]:
+  im=Image.open(ROOT/'output/wallpapers'/f'aurora-{filename}.png').convert('RGB').resize((480,480),Image.Resampling.LANCZOS)
+  raw=b''.join(struct.pack('<H',((r>>3)<<11)|((g>>2)<<5)|(b>>3)) for r,g,b in im.getdata())
+  art.append((name,raw,480,480,'RGB565',960))
+ backdrop('flappy_sky',sky)
 backdrop('ida_radar',radar)
 bird=Image.new('RGBA',(56*S,56*S));bd=ImageDraw.Draw(bird)
 bd.ellipse((6*S,15*S,44*S,43*S),fill='#fff0c7');bd.ellipse((3*S,29*S,27*S,43*S),fill='#e6a05d')

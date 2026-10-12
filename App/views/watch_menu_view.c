@@ -2,46 +2,97 @@
 #include "watch_icons.h"
 #include "views/watch_art.h"
 #include <math.h>
+#include <stdlib.h>
+#include "lvgl/src/libs/lz4/lz4.h"
 #include "views/watch_folder_icons.h"
 #include "views/watch_folder_frames.h"
 
 static lv_obj_t *menu_buttons[9],*menu_folder,*menu_games[3],*menu_game_images[3];
+static lv_obj_t *menu_background;
 static bool folder_open,folder_moving;
 static unsigned folder_progress;
 static int folder_icon_stage=-1;
-static lv_obj_t *folder_backdrop,*folder_canvas;
-static uint16_t folder_pixels[WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE] __attribute__((aligned(4)));
+static lv_obj_t *folder_canvas;
+static uint16_t folder_pixels[WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE*3/2] __attribute__((aligned(4)));
 static int folder_frame=-1;
 static const lv_image_dsc_t folder_picture={
-    .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,
+    .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565A8,
         .w=WATCH_FOLDER_FRAME_SIZE,.h=WATCH_FOLDER_FRAME_SIZE,.stride=WATCH_FOLDER_FRAME_SIZE*2},
     .data_size=sizeof folder_pixels,.data=(const uint8_t *)folder_pixels
 };
-static void folder_apply_delta(unsigned frame)
-{
-    const uint16_t *source=watch_folder_frames[frame];
-    uint16_t *pixel=folder_pixels,*end=folder_pixels+WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE;
-    while(pixel<end) {
-        unsigned token=*source++,count=token&0x7FFF;
-        if(token&0x8000) {
-            uint16_t delta=*source++;
-            if(!delta) pixel+=count;
-            else while(count--) *pixel++^=delta;
-        } else while(count--) *pixel++^=*source++;
-    }
-}
 static void folder_cached_frame(unsigned progress)
 {
-    int next=(progress+4)/8;
-    if(folder_frame==next) return;
-    if(folder_frame<0) { folder_apply_delta(0);folder_frame=0; }
-    /* XOR deltas work in both directions and allow skipped animation ticks. */
-    while(folder_frame<next) folder_apply_delta((unsigned)++folder_frame);
-    while(folder_frame>next) folder_apply_delta((unsigned)folder_frame--);
-    lv_obj_invalidate(folder_canvas);
+    int next=(progress+8)/16;
+    if(folder_frame==next)return;
+    int decoded=LZ4_decompress_safe((const char *)watch_folder_frames[next],
+        (char *)folder_pixels,(int)watch_folder_frame_sizes[next],sizeof folder_pixels);
+    if(decoded!=(int)sizeof folder_pixels)return;
+    folder_frame=next;lv_obj_invalidate(folder_canvas);
 }
 static const int small_x[]={240,277,203},small_y[]={197,261,261};
 static const int large_x[]={240,305,175},large_y[]={165,278,278};
+/* Angles are tenths of a degree. Nine fixed 40-degree slots are preserved. */
+static int32_t ring_angle,ring_origin_angle,ring_last_angle,ring_velocity;
+static uint32_t ring_sample_tick;
+static bool ring_dragging,ring_interrupted;
+static int32_t point_angle(lv_point_t point)
+{ return (int32_t)lroundf(atan2f(point.y-240,point.x-240)*572.957795f); }
+static int32_t angle_delta(int32_t a,int32_t b)
+{ int32_t d=a-b;while(d>1800)d-=3600;while(d< -1800)d+=3600;return d; }
+static void ring_layout(void *unused,int32_t value)
+{
+    (void)unused;ring_angle=value;
+    for(unsigned i=0;i<9;++i) {
+        float a=(-900+400*(int)i+value)*0.001745329252f;
+        lv_obj_set_pos(menu_buttons[i],(int)lroundf(240+178*cosf(a))-40,(int)lroundf(240+178*sinf(a))-40);
+    }
+}
+static void ring_finished(lv_anim_t *a)
+{ (void)a;ring_angle%=3600;ring_layout(NULL,ring_angle); }
+static void ring_settle(bool inertia)
+{
+    int32_t travel=inertia ? ring_velocity*180/1000 : 0;
+    int32_t target=(int32_t)lroundf((ring_angle+travel)/400.0f)*400;
+    lv_anim_t a;lv_anim_init(&a);lv_anim_set_var(&a,menu_buttons);
+    lv_anim_set_exec_cb(&a,ring_layout);lv_anim_set_values(&a,ring_angle,target);
+    lv_anim_set_duration(&a,inertia && abs(ring_velocity)>800 ? 620 : 220);
+    lv_anim_set_path_cb(&a,lv_anim_path_ease_out);lv_anim_set_completed_cb(&a,ring_finished);lv_anim_start(&a);
+}
+bool watch_menu_ring_begin(lv_point_t point,uint32_t now)
+{
+    int x=point.x-240,y=point.y-240;
+    if(folder_open || folder_moving || x*x+y*y<130*130) return false;
+    ring_interrupted=lv_anim_delete(menu_buttons,ring_layout);
+    ring_dragging=false;ring_origin_angle=ring_last_angle=point_angle(point);
+    ring_velocity=0;ring_sample_tick=now;return true;
+}
+bool watch_menu_ring_drag(lv_point_t point,uint32_t now)
+{
+    int x=point.x-240,y=point.y-240;
+    if(x*x+y*y<100*100) { ring_velocity=0;return ring_dragging; }
+    int32_t a=point_angle(point),d=angle_delta(a,ring_last_angle);
+    if(!ring_dragging && abs(angle_delta(a,ring_origin_angle))<40) return false;
+    if(!ring_dragging) d=angle_delta(a,ring_origin_angle);
+    uint32_t elapsed=now-ring_sample_tick;
+    if(elapsed) {
+        int32_t velocity=d*1000/(int32_t)elapsed;
+        if(velocity>7200)velocity=7200;
+        if(velocity< -7200)velocity=-7200;
+        ring_velocity=(ring_velocity+velocity)/2;
+    }
+    ring_sample_tick=now;ring_last_angle=a;ring_dragging=true;
+    ring_layout(NULL,ring_angle+d);return true;
+}
+bool watch_menu_ring_end(uint32_t now)
+{
+    bool used=ring_dragging || ring_interrupted;
+    if(now-ring_sample_tick>100)ring_velocity=0;
+    if(used)ring_settle(ring_dragging);
+    ring_dragging=ring_interrupted=false;return used;
+}
+bool watch_menu_blank(lv_point_t point)
+{ return !folder_open && !folder_moving && lv_indev_search_obj(screens[MENU],&point)==screens[MENU]; }
+
 static void folder_layout(void *unused,int32_t value)
 {
     (void)unused; folder_progress=(unsigned)value;
@@ -63,7 +114,8 @@ static void folder_finished(lv_anim_t *animation)
 {
     (void)animation; folder_moving=false;
     folder_layout(NULL,folder_open ? 256 : 0);
-    lv_obj_add_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(menu_folder,LV_OBJ_FLAG_HIDDEN);
+    for(unsigned i=0;i<3;++i)lv_obj_remove_flag(menu_games[i],LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<3;++i) {
         lv_obj_remove_state(menu_games[i],LV_STATE_PRESSED);
@@ -74,9 +126,12 @@ static void folder_finished(lv_anim_t *animation)
 static void folder_show(bool open)
 {
     if(folder_moving || folder_open==open) return;
+    lv_anim_delete(menu_buttons,ring_layout);
+    ring_layout(NULL,(int32_t)lroundf(ring_angle/400.0f)*400);
     folder_open=open;folder_moving=true;
     folder_cached_frame(folder_progress);
-    lv_obj_remove_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(menu_folder,LV_OBJ_FLAG_HIDDEN);
+    for(unsigned i=0;i<3;++i)lv_obj_add_flag(menu_games[i],LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<9;++i) {
         lv_obj_set_style_bg_opa(menu_buttons[i],open ? 80 : LV_OPA_COVER,0);
@@ -101,8 +156,11 @@ static void game_clicked(lv_event_t *e)
 }
 void watch_menu_reset(void)
 {
+    lv_anim_delete(menu_buttons,ring_layout);ring_dragging=ring_interrupted=false;
+    ring_layout(NULL,(int32_t)lroundf(ring_angle/400.0f)*400);
     lv_anim_delete(menu_folder,folder_layout);folder_open=folder_moving=false;folder_icon_stage=-1;folder_layout(NULL,0);
-    lv_obj_add_flag(folder_backdrop,LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(menu_folder,LV_OBJ_FLAG_HIDDEN);
+    for(unsigned i=0;i<3;++i)lv_obj_remove_flag(menu_games[i],LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(folder_canvas,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<9;++i) {
         lv_obj_add_flag(menu_buttons[i],LV_OBJ_FLAG_CLICKABLE);
@@ -123,7 +181,7 @@ bool watch_menu_back(void)
 void watch_menu_init(void)
 {
     page_header(MENU,"",HOME);
-    lv_obj_t *wallpaper=lv_image_create(screens[MENU]);lv_image_set_src(wallpaper,&menu_wallpaper);
+    lv_obj_t *wallpaper=lv_image_create(screens[MENU]);menu_background=wallpaper;watch_menu_wallpaper_refresh();
     lv_obj_remove_flag(wallpaper,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(wallpaper,0,0);
     const unsigned targets[]={ALARMS,CALCULATOR,NOTES,FACES,CALENDAR,SETTINGS,HOME,WATER,IDA};
     const lv_image_dsc_t *icons[]={&icon_alarm,&icon_calculator,&icon_notes,&icon_faces,&icon_calendar,&icon_settings,&icon_clock,&icon_water,&icon_ida};
@@ -133,6 +191,7 @@ void watch_menu_init(void)
         int x=(int)lroundf(240+178*cosf(angle)),y=(int)lroundf(240+178*sinf(angle));
         lv_obj_t *label=round_action(screens[MENU],"",x-240,y-40,80,colors[i],navigate,(void *)(uintptr_t)targets[i]);
         menu_buttons[i]=lv_obj_get_parent(label);
+        lv_obj_set_align(menu_buttons[i],LV_ALIGN_TOP_LEFT);
         lv_obj_t *image=lv_image_create(menu_buttons[i]);lv_image_set_src(image,icons[i]);lv_obj_center(image);
         lv_obj_remove_flag(image,LV_OBJ_FLAG_CLICKABLE);
     }
@@ -153,15 +212,15 @@ void watch_menu_init(void)
         lv_obj_remove_flag(menu_game_images[i],LV_OBJ_FLAG_CLICKABLE);
     }
     lv_obj_add_event_cb(screens[MENU],background_clicked,LV_EVENT_CLICKED,NULL);
-    /* Opaque cached layers occlude the costly live alpha/radius objects during motion.
-     * Their non-clickable images leave existing hit targets and gesture routing intact. */
-    folder_backdrop=lv_image_create(screens[MENU]);lv_image_set_src(folder_backdrop,&watch_folder_backdrop);
-    lv_obj_remove_flag(folder_backdrop,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(folder_backdrop,0,0);
+    /* Only the folder is cached. Transparent corners preserve any wallpaper
+       and the current carousel positions underneath the animation. */
     folder_canvas=lv_image_create(screens[MENU]);lv_image_set_src(folder_canvas,&folder_picture);
     lv_obj_remove_flag(folder_canvas,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(folder_canvas,90,90);
-    /* LVGL 9.3's base-object cover check also requires an opaque background.
-     * Without this, it redraws every alpha icon below the opaque cached images. */
-    lv_obj_set_style_bg_opa(folder_backdrop,LV_OPA_COVER,0);
-    lv_obj_set_style_bg_opa(folder_canvas,LV_OPA_COVER,0);
     watch_menu_reset();
+}
+
+void watch_menu_wallpaper_refresh(void)
+{
+    const lv_image_dsc_t *images[]={&menu_wallpaper,&menu_wallpaper_violet,&menu_wallpaper_rose};
+    lv_image_set_src(menu_background,images[watch_settings_vm_wallpaper()]);
 }

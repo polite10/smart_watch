@@ -1,106 +1,74 @@
-"""Bake folder motion with the project's compiled LVGL; keep runtime to opaque blits.
+"""Pre-rasterize transparent folder motion independently of wallpaper and carousel.
 
-Build first, then run this script with the UI simulator dependencies installed.
-The captured background and icons use the real renderer, including alpha, clipping
-and the wallpaper. 33 RGB565 frames use lossless literal/run packets in flash.
+17 RGB565A8 frames use independent LZ4 blocks. A single 270 KB
+buffer is decoded in place, avoiding runtime icon scaling and baked backdrops.
 """
 from pathlib import Path
+from PIL import Image, ImageDraw
 import struct
+ROOT=Path(__file__).resolve().parents[1]
+SIZE=300
+SCALE=3
 
-ROOT = Path(__file__).resolve().parents[1]
-verifier = ROOT / 'output/verify-round-ui.py'
-context = {'__file__': str(verifier), '__name__': 'folder_asset_builder'}
-exec(verifier.read_text().split("snapshot('home')")[0], context)
-call, pointer, u = (context[key] for key in ('call', 'pointer', 'u'))
-call('lv_screen_load', context['screens'](1))
-for name in ('folder_backdrop', 'folder_canvas'):
-    if name in context['symbols']:
-        call('lv_obj_add_flag', pointer(name), 1)
-for i in range(9):
-    button = pointer('menu_buttons', i)
-    call('lv_obj_set_style_bg_opa', button, 80, 0)
-    call('lv_obj_set_style_image_opa', call('lv_obj_get_child', button, 1), 80, 0)
-call('lv_obj_add_flag', pointer('menu_folder'), 1)
-for i in range(3):
-    call('lv_obj_add_flag', pointer('menu_games', i), 1)
-call('lv_display_refr_timer', 0)
+# Use the project's bundled LZ4 compressor; no pip or network dependency.
+import ctypes, subprocess, tempfile
+native=tempfile.TemporaryDirectory(prefix='watch-folder-lz4-')
+libpath=Path(native.name)/'lz4.so'
+shim=Path(native.name)/'memory.c'
+shim.write_text('#include <string.h>\nvoid *lv_memcpy(void *d,const void *s,size_t n){return memcpy(d,s,n);}'
+                '\nvoid *lv_memmove(void *d,const void *s,size_t n){return memmove(d,s,n);}'
+                '\nvoid *lv_memset(void *d,int c,size_t n){return memset(d,c,n);}')
+subprocess.run(['cc','-shared','-fPIC','-O2','-DLV_CONF_INCLUDE_SIMPLE',
+                '-I'+str(ROOT/'Middlewares'),'-I'+str(ROOT/'Middlewares/lvgl'),
+                '-I'+str(ROOT/'App'),str(ROOT/'Middlewares/lvgl/src/libs/lz4/lz4.c'),
+                str(shim),'-o',str(libpath)],check=True)
+lz4=ctypes.CDLL(str(libpath))
+lz4.LZ4_compressBound.argtypes=[ctypes.c_int]
+lz4.LZ4_compress_default.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_int,ctypes.c_int]
+lz4.LZ4_decompress_safe.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_int,ctypes.c_int]
+def compress(raw):
+    buffer=ctypes.create_string_buffer(lz4.LZ4_compressBound(len(raw)))
+    size=lz4.LZ4_compress_default(raw,buffer,len(raw),len(buffer))
+    assert size>0
+    packed=buffer.raw[:size];decoded=ctypes.create_string_buffer(len(raw))
+    assert lz4.LZ4_decompress_safe(packed,decoded,len(packed),len(raw))==len(raw)
+    assert decoded.raw==raw
+    return packed
 
-def pixels(region=None):
-    image = context['Image'].frombytes('RGBA', (480, 480), bytes(context['frame']), 'raw', 'BGRA')
-    if region:
-        image = image.crop(region)
-    return [((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3) for r, g, b, _ in image.getdata()]
+def frame(stage):
+    t=stage/16
+    im=Image.new('RGBA',(SIZE*SCALE,SIZE*SCALE))
+    d=ImageDraw.Draw(im)
+    diameter=190+110*t;r=diameter/2
+    d.ellipse(tuple(round(v*SCALE) for v in (150-r,150-r,150+r-1,150+r-1)),
+              fill=(188,212,236,32),outline=(132,157,181,255),width=SCALE)
+    small=[(150,107),(187,171),(113,171)]
+    large=[(150,75),(215,188),(85,188)]
+    for i,name in enumerate(('puzzle','flappy','snake')):
+        size=round((64+24*t)*SCALE)
+        x=round((small[i][0]+(large[i][0]-small[i][0])*t)*SCALE-size/2)
+        y=round((small[i][1]+(large[i][1]-small[i][1])*t)*SCALE-size/2)
+        badge=Image.new('RGBA',(size,size));bd=ImageDraw.Draw(badge)
+        bd.ellipse((0,0,size-1,size-1),fill='#b7dc8b' if i==2 else '#ffd18b')
+        icon=Image.open(ROOT/'output'/f'icon-{name}.png').convert('RGBA').resize((size,size),Image.Resampling.LANCZOS)
+        badge.alpha_composite(icon);im.alpha_composite(badge,(x,y))
+    im=im.resize((SIZE,SIZE),Image.Resampling.LANCZOS)
+    rgb=bytearray();alpha=bytearray()
+    for r,g,b,a in im.getdata():
+        # Transparent pixels must be zero for useful delta compression.
+        v=((r>>3)<<11)|((g>>2)<<5)|(b>>3) if a else 0
+        rgb.extend(struct.pack('<H',v));alpha.append(a)
+    raw=rgb+alpha
+    return bytes(raw)
 
-def encode(values):
-    packets = []
-    i = 0
-    while i < len(values):
-        end = i + 1
-        while end < len(values) and end - i < 32767 and values[end] == values[i]:
-            end += 1
-        if end - i >= 3:
-            packets.extend((0x8000 | (end - i), values[i]))
-            i = end
-        else:
-            start = i
-            i = end
-            while i < len(values) and i - start < 32765:
-                if i + 2 < len(values) and values[i] == values[i + 1] == values[i + 2]:
-                    break
-                i += 1
-            packets.append(i - start)
-            packets.extend(values[start:i])
-    # Round-trip every generated frame before publishing C data.
-    decoded = []
-    at = 0
-    while at < len(packets):
-        token = packets[at]
-        at += 1
-        count = token & 0x7fff
-        if token & 0x8000:
-            decoded.extend([packets[at]] * count)
-            at += 1
-        else:
-            decoded.extend(packets[at:at + count])
-            at += count
-    assert decoded == values
-    return packets
-
-def c_array(name, values):
-    lines = [f'static const uint16_t {name}[] __attribute__((aligned(4))) = {{']
-    lines += [','.join(f'0x{x:04x}' for x in values[i:i + 20]) + ',' for i in range(0, len(values), 20)]
-    return lines + ['};']
-
-lines = ['/* Generated by output/generate-folder-frames.py using real LVGL. */', '#include "views/watch_folder_frames.h"']
-lines += c_array('backdrop_pixels', pixels())
-lines += ['const lv_image_dsc_t watch_folder_backdrop = {',
-          '.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=480,.h=480,.stride=960},',
-          '.data_size=sizeof backdrop_pixels,.data=(const uint8_t *)backdrop_pixels', '};']
-call('lv_obj_remove_flag', pointer('menu_folder'), 1)
-for i in range(3):
-    call('lv_obj_remove_flag', pointer('menu_games', i), 1)
-total = 480 * 480 * 2
-for stage in range(33):
-    progress = stage * 8
-    call('folder_layout', 0, progress)
-    # Offline resampling gives every 8/256 progress step its own smooth icon size.
-    for i in range(3):
-        image = pointer('menu_game_images', i)
-        call('lv_image_set_src', image, pointer('watch_folder_icons', i * 7 + (6 if stage == 32 else 0)))
-        call('lv_image_set_scale', image, 256 if stage == 32 else 256 + progress * 96 // 256)
-        call('lv_obj_center', image)
-    call('lv_obj_invalidate', context['screens'](1))
-    call('lv_display_refr_timer', 0)
-    values = pixels((90, 90, 390, 390))
-    if stage:
-        packed = encode([a ^ b for a, b in zip(previous, values)])
-    else:
-        packed = encode(values)
-    previous = values
-    lines += c_array(f'folder_frame_{stage}', packed)
-    total += len(packed) * 2
-    print(f'frame {stage:02d}: {len(packed) * 2} bytes', flush=True)
-lines += ['const uint16_t *const watch_folder_frames[WATCH_FOLDER_FRAME_COUNT] = {',
-          ','.join(f'folder_frame_{i}' for i in range(33)), '};']
-(ROOT / 'App/views/watch_folder_frames.c').write_text('\n'.join(lines) + '\n')
-print(f'Flash asset bytes: {total}', flush=True)
+lines=['/* Generated transparent frames: output/generate-folder-frames.py. */','#include "views/watch_folder_frames.h"']
+total=0;sizes=[]
+for stage in range(17):
+    packed=compress(frame(stage));sizes.append(len(packed));total+=len(packed)
+    lines.append(f'static const uint8_t folder_frame_{stage}[] __attribute__((aligned(4))) = {{')
+    lines += [','.join(f'0x{x:02x}' for x in packed[i:i+32])+',' for i in range(0,len(packed),32)]
+    lines.append('};')
+lines += ['const uint8_t *const watch_folder_frames[WATCH_FOLDER_FRAME_COUNT] = {',','.join(f'folder_frame_{i}' for i in range(17)),'};']
+lines += ['const uint32_t watch_folder_frame_sizes[WATCH_FOLDER_FRAME_COUNT] = {'+','.join(map(str,sizes))+'};']
+(ROOT/'App/views/watch_folder_frames.c').write_text('\n'.join(lines)+'\n')
+print(f'17 transparent LZ4 frames: {total} flash bytes; 270000 RAM bytes; round-trips passed.')

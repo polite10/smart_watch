@@ -19,6 +19,8 @@ void watch_app_vm_set_rtc_source(bool crystal);
 
 bool watch_settings_vm_twelve(void);
 bool watch_settings_vm_light(void);
+unsigned watch_settings_vm_wallpaper(void);
+bool watch_settings_vm_set_wallpaper(unsigned wallpaper);
 void watch_settings_vm_toggle_format(void);
 void watch_settings_vm_toggle_theme(void);
 

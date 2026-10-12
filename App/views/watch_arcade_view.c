@@ -2,9 +2,12 @@
 #include "viewmodels/watch_arcade_vm.h"
 #include "views/watch_art.h"
 #include "views/watch_fonts.h"
+#include <math.h>
 
 static lv_obj_t *flappy_bird,*flappy_score,*flappy_best,*flappy_hint,*flappy_pause;
 static lv_obj_t *pipe_top[3],*pipe_bottom[3],*pipe_top_cap[3],*pipe_bottom_cap[3];
+static lv_obj_t *clouds[3],*hills[3],*near_hills[3],*flowers[6],*butterflies[2],*pipe_flowers[3];
+static uint32_t scenery_steps;
 static lv_obj_t *snake_canvas,*snake_score,*snake_best,*snake_hint,*snake_pause;
 static uint16_t snake_pixels[288*288] __attribute__((aligned(4)));
 static uint32_t arcade_last_tick,arcade_accumulator;
@@ -23,6 +26,43 @@ static lv_obj_t *plain(lv_obj_t *parent,int x,int y,int w,int h,uint32_t color,i
     lv_obj_set_style_bg_color(obj,lv_color_hex(color),0);lv_obj_set_style_border_width(obj,0,0);
     lv_obj_set_style_radius(obj,radius,0);lv_obj_set_style_pad_all(obj,0,0);
     return obj;
+}
+static lv_obj_t *flower(lv_obj_t *parent,uint32_t color)
+{
+    lv_obj_t *group=plain(parent,0,0,20,20,0,0);lv_obj_set_style_bg_opa(group,LV_OPA_TRANSP,0);
+    plain(group,5,0,10,10,color,LV_RADIUS_CIRCLE);plain(group,0,5,10,10,color,LV_RADIUS_CIRCLE);
+    plain(group,10,5,10,10,color,LV_RADIUS_CIRCLE);plain(group,5,10,10,10,color,LV_RADIUS_CIRCLE);
+    plain(group,6,6,8,8,0xFFE6A0,LV_RADIUS_CIRCLE);return group;
+}
+static void scenery_render(void)
+{
+    for(unsigned i=0;i<3;++i) {
+        lv_obj_set_pos(clouds[i],(int)((i*220+660-scenery_steps*3/10%660)%660)-100,148+(int)i*47);
+        lv_obj_set_pos(hills[i],(int)((i*240+720-scenery_steps*6/10%720)%720)-240,348+(i%2)*12);
+        lv_obj_set_pos(near_hills[i],(int)((i*240+720-scenery_steps%720)%720)-240,378+(i%2)*8);
+    }
+    for(unsigned i=0;i<6;++i)
+        lv_obj_set_pos(flowers[i],(int)((i*96+576-scenery_steps*16/10%576)%576)-24,417+(i%2)*16);
+    for(unsigned i=0;i<2;++i)
+        lv_obj_set_pos(butterflies[i],(int)((i*260+520-scenery_steps*13/10%520)%520)-20,365+(int)(6*sinf((scenery_steps+i*40)*0.09f)));
+}
+static void scenery_init(void)
+{
+    for(unsigned i=0;i<3;++i) {
+        clouds[i]=plain(screens[FLAPPY],0,0,100,46,0,0);lv_obj_set_style_bg_opa(clouds[i],LV_OPA_TRANSP,0);
+        plain(clouds[i],0,20,100,26,0x2D5773,13);plain(clouds[i],18,8,40,36,0x2D5773,LV_RADIUS_CIRCLE);
+        plain(clouds[i],45,0,44,44,0x2D5773,LV_RADIUS_CIRCLE);
+    }
+    for(unsigned i=0;i<3;++i)hills[i]=plain(screens[FLAPPY],0,0,270,126,0x24566D,LV_RADIUS_CIRCLE);
+    for(unsigned i=0;i<3;++i)near_hills[i]=plain(screens[FLAPPY],0,0,270,116,0x193E56,LV_RADIUS_CIRCLE);
+    plain(screens[FLAPPY],0,408,480,72,0xEFCB8B,0);plain(screens[FLAPPY],0,408,480,5,0xFFF2CC,0);
+    for(unsigned i=0;i<6;++i)flowers[i]=flower(screens[FLAPPY],i%2 ? 0xE790A4 : 0xBFADE8);
+    for(unsigned i=0;i<2;++i) {
+        butterflies[i]=plain(screens[FLAPPY],0,0,20,14,0,0);lv_obj_set_style_bg_opa(butterflies[i],LV_OPA_TRANSP,0);
+        plain(butterflies[i],0,0,9,12,0xE5BC9C,LV_RADIUS_CIRCLE);plain(butterflies[i],11,0,9,12,0xE5BC9C,LV_RADIUS_CIRCLE);
+        plain(butterflies[i],9,3,2,11,0xFFF0C7,1);
+    }
+    scenery_render();
 }
 static void score_label(lv_obj_t *label,unsigned score)
 {
@@ -56,6 +96,7 @@ static void flappy_render(void)
     if(rotation < -240) rotation=-240;
     if(rotation > 300) rotation=300;
     lv_image_set_rotation(flappy_bird,rotation);
+    scenery_render();
     for(unsigned i=0;i<3;++i) {
         int x=(int)s->pipes[i].x,top=(int)s->pipes[i].gap_y-WATCH_FLAPPY_GAP_HALF;
         int bottom=(int)s->pipes[i].gap_y+WATCH_FLAPPY_GAP_HALF;
@@ -66,6 +107,12 @@ static void flappy_render(void)
         lv_obj_set_pos(pipe_top[i],x,100);lv_obj_set_height(pipe_top[i],top-100);
         lv_obj_set_pos(pipe_bottom[i],x,bottom);lv_obj_set_height(pipe_bottom[i],408-bottom);
         lv_obj_set_pos(pipe_top_cap[i],x-3,top-12);lv_obj_set_pos(pipe_bottom_cap[i],x-3,bottom);
+        float fx,fy;
+        if(pipe_flowers[i]) {
+            watch_flappy_flower(i,&s->pipes[i],&fx,&fy);
+            lv_obj_set_pos(pipe_flowers[i],(int)fx-WATCH_FLAPPY_FLOWER_RADIUS,(int)fy-WATCH_FLAPPY_FLOWER_RADIUS);
+            if(x>480)lv_obj_add_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);else lv_obj_remove_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);
+        }
     }
 }
 static uint16_t rgb565(uint32_t color)
@@ -160,7 +207,7 @@ static void flappy_touch(lv_event_t *e)
     (void)e;const watch_flappy_state_t *s=watch_flappy_vm_state();
     bool starting=s->phase==WATCH_GAME_READY || s->phase==WATCH_GAME_OVER;
     if(s->phase==WATCH_GAME_OVER) { save_records(flappy_best);watch_flappy_vm_new(lv_tick_get()); }
-    if(starting) { arcade_accumulator=0;arcade_last_tick=lv_tick_get(); }
+    if(starting) { scenery_steps=0;arcade_accumulator=0;arcade_last_tick=lv_tick_get(); }
     watch_flappy_vm_flap();flappy_render();
 }
 static void snake_touch(lv_event_t *e)
@@ -213,7 +260,7 @@ static void arcade_tick(lv_timer_t *timer)
     bool changed=false;
     while(arcade_accumulator>=interval) {
         arcade_accumulator-=interval;
-        if(flappy) watch_flappy_vm_step();
+        if(flappy) { watch_flappy_vm_step();++scenery_steps; }
         else {
             const watch_snake_state_t *s=watch_snake_vm_state();
             memcpy(snake_from,s->body,s->length*sizeof *snake_from);
@@ -240,7 +287,7 @@ void arcade_leave(unsigned screen)
 }
 void flappy_open(void)
 {
-    save_records(flappy_best);watch_flappy_vm_new(lv_tick_get());arcade_last_tick=lv_tick_get();arcade_accumulator=0;
+    scenery_steps=0;save_records(flappy_best);watch_flappy_vm_new(lv_tick_get());arcade_last_tick=lv_tick_get();arcade_accumulator=0;
     flappy_render();watch_navigation_show(FLAPPY);
 }
 void snake_open(void)
@@ -252,12 +299,14 @@ void arcade_init(void)
 {
     page_header(FLAPPY,"",MENU);page_header(SNAKE,"",MENU);
     lv_obj_t *sky=lv_image_create(screens[FLAPPY]);lv_image_set_src(sky,&flappy_sky);lv_obj_remove_flag(sky,LV_OBJ_FLAG_CLICKABLE);
+    scenery_init();
     lv_obj_set_style_bg_color(screens[SNAKE],lv_color_hex(0x070D18),0);
     for(unsigned i=0;i<3;++i) {
         pipe_top[i]=plain(screens[FLAPPY],0,100,46,100,0x77CD89,4);
         pipe_bottom[i]=plain(screens[FLAPPY],0,300,46,108,0x77CD89,4);
         pipe_top_cap[i]=plain(screens[FLAPPY],0,0,52,12,0xFFF0C7,4);
         pipe_bottom_cap[i]=plain(screens[FLAPPY],0,0,52,12,0xFFF0C7,4);
+        if(i)pipe_flowers[i]=flower(screens[FLAPPY],i==1 ? 0xE790A4 : 0xBFADE8);
     }
     flappy_bird=lv_image_create(screens[FLAPPY]);lv_image_set_src(flappy_bird,&bird_sprite);lv_obj_remove_flag(flappy_bird,LV_OBJ_FLAG_CLICKABLE);
     lv_image_set_pivot(flappy_bird,28,28);

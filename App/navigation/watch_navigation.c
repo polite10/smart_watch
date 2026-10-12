@@ -1,6 +1,10 @@
 #include "views/watch_view_internal.h"
 bool display_awake=true;
-enum { TAP_WAIT_MS=120 };
+/* Global interaction tuning. Views only register their parent screen. */
+enum { DOUBLE_TAP_MS=300, DOUBLE_TAP_RADIUS=32, TAP_MAX_MS=200,
+       EDGE_WIDTH=64, BACK_DISTANCE=64, HOME_DISTANCE=24, PAGE_SLIDE_MS=240 };
+static bool blank_tap_pending,slide_active;
+static uint32_t slide_started;
 
 static void enter_x(void *obj, int32_t value) { lv_obj_set_style_translate_x(obj,value,0); }
 
@@ -13,20 +17,28 @@ static void reset_motion(lv_obj_t *page)
     }
 }
 
-void watch_navigation_show(unsigned screen)
+static void navigation_show(unsigned screen,bool going_back)
 {
     if(screen>=SCREEN_COUNT) return;
     lv_obj_t *previous=lv_screen_active();
     if(previous==screens[screen]) return;
+    blank_tap_pending=false;
     if(previous==screens[MENU]) watch_menu_reset();
     if(previous==screens[PUZZLE]) (void)watch_games_vm_save_records();
     if(previous==screens[FLAPPY]) arcade_leave(FLAPPY);
     if(previous==screens[SNAKE]) arcade_leave(SNAKE);
     if(previous) reset_motion(previous);
     reset_motion(screens[screen]);
-    /* Load immediately so gesture arbitration sees the new page without a delay.
-       Small content translations need no full-screen opacity/compositing layer. */
+    /* All edge-back routes share the same two-screen slide, including games,
+       settings and editors. Forward app entry keeps the lighter content motion. */
+    if(going_back || (previous==screens[MENU] && screen==HOME) || (previous==screens[HOME] && screen==MENU)) {
+        slide_active=true;slide_started=lv_tick_get();
+        lv_screen_load_anim(screens[screen],going_back || screen==HOME ? LV_SCR_LOAD_ANIM_MOVE_RIGHT : LV_SCR_LOAD_ANIM_MOVE_LEFT,PAGE_SLIDE_MS,0,false);
+        return;
+    }
+    slide_active=false;
     lv_screen_load(screens[screen]);
+    lv_obj_update_layout(screens[screen]);
     if(screen==HOME || screen==MENU || screen==FLAPPY || screen==SNAKE || screen==IDA) return; /* Lock and notification response remain immediate. */
     for(unsigned i=0; i<lv_obj_get_child_count(screens[screen]); ++i) {
         lv_obj_t *child=lv_obj_get_child(screens[screen],i);
@@ -42,6 +54,19 @@ void watch_navigation_show(unsigned screen)
     }
 }
 
+void watch_navigation_show(unsigned screen) { navigation_show(screen,false); }
+
+void watch_navigation_back(void)
+{
+    lv_obj_t *active=lv_screen_active();
+    for(unsigned screen=0;screen<SCREEN_COUNT;++screen) {
+        if(active!=screens[screen])continue;
+        if(screen==HOME || (screen==MENU && watch_menu_back()))return;
+        navigation_show(back_targets[screen],true);
+        return;
+    }
+}
+
 void navigate(lv_event_t *e)
 {
     unsigned screen = (unsigned)(uintptr_t)lv_event_get_user_data(e);
@@ -53,76 +78,81 @@ void navigate(lv_event_t *e)
     else watch_navigation_show(screen);
 }
 
+/* One gesture policy for the whole application: only empty launcher space
+   may return home on a double tap. App controls are never delayed. */
 void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
 {
-    static bool down, consumed, home_contact, moved, pending, edge_contact;
+    static bool down,consumed,home_contact,moved,edge_contact,ring_contact,blank_contact,second_tap;
     static unsigned contact_screen;
-    static lv_point_t origin, last;
-    static uint32_t started, released;
-    bool pressed = data->state == LV_INDEV_STATE_PRESSED;
-    /* Notification controls keep their usual taps and cannot be dismissed by locking. */
-    if(displayed_notification != -2) {
-        down = pending = consumed = false;
-        if(!display_awake) { display_awake = true; watch_ui_display_power(true); }
+    static lv_point_t origin,last_tap;
+    static uint32_t started,released;
+    bool pressed=data->state==LV_INDEV_STATE_PRESSED;
+    if(displayed_notification!=-2) {
+        down=blank_tap_pending=consumed=ring_contact=false;
+        if(!display_awake) { display_awake=true;watch_ui_display_power(true); }
         return;
     }
-    if(pending && pressed && !down) {
-        int dx = data->point.x-last.x, dy = data->point.y-last.y;
-        if(now-released <= TAP_WAIT_MS && dx*dx+dy*dy <= 48*48) {
-            /* First release is still withheld: neither tap activates an app control. */
-            pending = false; consumed = true; down = true;
-            lv_indev_reset(lv_indev_active(), NULL);
-            watch_navigation_show(HOME);
-            data->state = LV_INDEV_STATE_RELEASED;
-            return;
+    if(slide_active) {
+        if(now-slide_started<PAGE_SLIDE_MS+20) {
+            /* Consume contacts begun during a transition until they release. */
+            if(pressed) { down=true;consumed=true;home_contact=false;moved=true; }
+            else down=false;
+            data->state=LV_INDEV_STATE_RELEASED;return;
         }
-        /* Deliver the first release before accepting a separate contact. */
-        pending = false;
-        data->point = last; data->state = LV_INDEV_STATE_RELEASED;
-        return;
+        slide_active=false;
+        /* Input can run before the next refresh. Resolve the final screen
+           coordinates before hit-testing the first post-transition contact. */
+        lv_obj_update_layout(lv_screen_active());
     }
     if(pressed && !down) {
-        origin = last = data->point; started = now;
-        down = true; moved = false;
-        bool waking = !display_awake;
-        home_contact = !waking && lv_screen_active() == screens[HOME];
-        consumed = waking || home_contact;
-        contact_screen = SCREEN_COUNT;
-        for(unsigned i=0; i<SCREEN_COUNT; ++i) if(lv_screen_active() == screens[i]) contact_screen = i;
-        edge_contact = !consumed && contact_screen < SCREEN_COUNT && origin.x <= 64;
-        if(!display_awake) { display_awake = true; watch_ui_display_power(true); }
+        origin=data->point;started=now;down=true;moved=false;second_tap=false;
+        bool waking=!display_awake;
+        home_contact=!waking && lv_screen_active()==screens[HOME];
+        consumed=waking || home_contact;
+        contact_screen=SCREEN_COUNT;
+        for(unsigned i=0;i<SCREEN_COUNT;++i) if(lv_screen_active()==screens[i])contact_screen=i;
+        edge_contact=!consumed && contact_screen<SCREEN_COUNT && origin.x<=EDGE_WIDTH;
+        blank_contact=!consumed && contact_screen==MENU && watch_menu_blank(origin);
+        ring_contact=!consumed && contact_screen==MENU && watch_menu_ring_begin(origin,now);
+        int dx=origin.x-last_tap.x,dy=origin.y-last_tap.y;
+        second_tap=blank_contact && blank_tap_pending && now-released<=DOUBLE_TAP_MS && dx*dx+dy*dy<=DOUBLE_TAP_RADIUS*DOUBLE_TAP_RADIUS;
+        blank_tap_pending=false;
+        if(waking) { display_awake=true;watch_ui_display_power(true); }
     }
     if(pressed) {
-        last = data->point;
-        int dx = last.x-origin.x, dy = last.y-origin.y;
-        if(edge_contact && !consumed && dx >= 64 && dy*dy <= dx*dx/2) {
-            consumed = moved = true; pending = false; edge_contact = false;
+        int dx=data->point.x-origin.x,dy=data->point.y-origin.y;
+        if(edge_contact && !consumed && dx>=BACK_DISTANCE && dy*dy<=dx*dx/2) {
+            consumed=moved=true;edge_contact=ring_contact=false;second_tap=false;
             lv_indev_reset(lv_indev_active(),NULL);
-            if(contact_screen!=MENU || !watch_menu_back())
-                watch_navigation_show(back_targets[contact_screen]);
+            watch_navigation_back();
         }
-        if(dx*dx+dy*dy >= 24*24) {
-            if(!moved && home_contact && lv_screen_active() == screens[HOME])
-                watch_navigation_show(MENU);
-            moved = true;
+        if(ring_contact && watch_menu_ring_drag(data->point,now)) {
+            if(!consumed)lv_indev_reset(lv_indev_active(),NULL);
+            consumed=moved=true;edge_contact=false;second_tap=false;
         }
-        if(consumed) data->state = LV_INDEV_STATE_RELEASED;
+        if(dx*dx+dy*dy>=HOME_DISTANCE*HOME_DISTANCE) {
+            if(!moved && home_contact && lv_screen_active()==screens[HOME])watch_navigation_show(MENU);
+            moved=true;second_tap=false;
+        }
+        if(consumed)data->state=LV_INDEV_STATE_RELEASED;
     } else if(down) {
-        down = false;
-        if(consumed) {
-            if(home_contact && !moved && lv_screen_active() == screens[HOME] && now-started < 500) {
-                display_awake = false; watch_ui_display_power(false);
-            }
-            consumed = home_contact = false;
-        } else if(!moved && now-started < 200 && contact_screen!=MENU && contact_screen!=PUZZLE && contact_screen!=FLAPPY && contact_screen!=SNAKE && contact_screen!=IDA) {
-            pending = true; released = now;
-            data->point = last; data->state = LV_INDEV_STATE_PRESSED;
+        down=false;
+        if(ring_contact && watch_menu_ring_end(now)) {
+            consumed=true;lv_indev_reset(lv_indev_active(),NULL);
         }
-    } else if(pending) {
-        data->point = last;
-        if(now-released < TAP_WAIT_MS) data->state = LV_INDEV_STATE_PRESSED;
-        else pending = false;
+        ring_contact=false;
+        if(consumed) {
+            if(home_contact && !moved && lv_screen_active()==screens[HOME] && now-started<500) {
+                display_awake=false;watch_ui_display_power(false);
+            }
+            consumed=home_contact=false;
+        } else if(!moved && now-started<TAP_MAX_MS && blank_contact && lv_screen_active()==screens[MENU] && watch_menu_blank(data->point)) {
+            if(second_tap) {
+                lv_indev_reset(lv_indev_active(),NULL);watch_navigation_show(HOME);
+            } else { blank_tap_pending=true;released=now;last_tap=origin; }
+        }
     }
 }
 
-void watch_navigation_init(void) { display_awake=true; }
+void watch_navigation_init(void)
+{ display_awake=true;blank_tap_pending=slide_active=false; }

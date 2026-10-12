@@ -6,16 +6,22 @@
 #include "services/watch_display_service.h"
 #include <stdio.h>
 #include <string.h>
-enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, PUZZLE, FLAPPY, SNAKE, IDA, SCREEN_COUNT };
+enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, PUZZLE, FLAPPY, SNAKE, IDA, WALLPAPER, SCREEN_COUNT };
 extern lv_obj_t *screens[SCREEN_COUNT], *page_titles[SCREEN_COUNT];
 extern unsigned back_targets[SCREEN_COUNT];
 void button_motion(lv_obj_t *button);
 void button_color_motion(lv_obj_t *button);
 #include "viewmodels/watch_games_vm.h"
 void watch_navigation_show(unsigned screen);
+void watch_navigation_back(void);
 void watch_menu_init(void);
+void watch_menu_wallpaper_refresh(void);
 void watch_menu_reset(void);
 bool watch_menu_back(void);
+bool watch_menu_blank(lv_point_t point);
+bool watch_menu_ring_begin(lv_point_t point,uint32_t now);
+bool watch_menu_ring_drag(lv_point_t point,uint32_t now);
+bool watch_menu_ring_end(uint32_t now);
 void arcade_init(void);
 void flappy_open(void);
 void snake_open(void);

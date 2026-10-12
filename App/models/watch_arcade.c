@@ -76,6 +76,15 @@ void watch_flappy_flap(watch_flappy_state_t *s)
     if(s->phase==WATCH_GAME_READY) s->phase=WATCH_GAME_RUNNING;
     if(s->phase==WATCH_GAME_RUNNING) s->velocity=-4.4f;
 }
+/* Flowers protrude from alternate pipe lips; view and collision use this
+   shared geometry so decoration never hides an unrelated collision box. */
+bool watch_flappy_flower(unsigned index,const watch_pipe_t *pipe,float *x,float *y)
+{
+    if(index==0)return false;
+    *x=pipe->x+23;
+    *y=pipe->gap_y+(index==1 ? -WATCH_FLAPPY_GAP_HALF+4 : WATCH_FLAPPY_GAP_HALF-4);
+    return true;
+}
 void watch_flappy_step(watch_flappy_state_t *s)
 {
     if(s->phase!=WATCH_GAME_RUNNING) return;
@@ -92,6 +101,14 @@ void watch_flappy_step(watch_flappy_state_t *s)
         /* Bird center x=170, collision half extents 14/12; gap matches the view. */
         if(p->x<184 && p->x+46>156 && (s->y-12<p->gap_y-WATCH_FLAPPY_GAP_HALF || s->y+12>p->gap_y+WATCH_FLAPPY_GAP_HALF)) {
             s->phase=WATCH_GAME_OVER; return;
+        }
+        float fx,fy;
+        if(watch_flappy_flower(i,p,&fx,&fy)) {
+            float dx=fx<156 ? 156-fx : fx>184 ? fx-184 : 0;
+            float dy=fy<s->y-12 ? s->y-12-fy : fy>s->y+12 ? fy-s->y-12 : 0;
+            if(dx*dx+dy*dy<WATCH_FLAPPY_FLOWER_RADIUS*WATCH_FLAPPY_FLOWER_RADIUS) {
+                s->phase=WATCH_GAME_OVER;return;
+            }
         }
         if(!p->scored && p->x+46<156) { p->scored=true; ++s->score; }
     }

@@ -22,7 +22,7 @@ void watch_model_reset(const watch_data_t *saved)
     }
     if(watch_data.water_goal < 200 || watch_data.water_goal > 6000) watch_data.water_goal = 2000;
     if(watch_data.face_style >= WATCH_FACE_COUNT) watch_data.face_style = 0;
-    if(watch_data.face_color >= 3) watch_data.face_color = 0;
+    if(watch_data.face_color >= WATCH_WALLPAPER_COUNT) watch_data.face_color = 0;
     if(watch_data.reminder_minutes != 0 && watch_data.reminder_minutes != 30 &&
        watch_data.reminder_minutes != 60 && watch_data.reminder_minutes != 120) watch_data.reminder_minutes = 0;
     for(unsigned i = 0; i < WATCH_ALARMS; ++i) {
@@ -160,3 +160,9 @@ bool watch_model_set_face(unsigned style)
     watch_data.face_style = style; return true;
 }
 _Static_assert(sizeof(watch_data_t) == 916, "Keep the version-1 user-data layout");
+
+bool watch_model_set_wallpaper(unsigned wallpaper)
+{
+    if(wallpaper>=WATCH_WALLPAPER_COUNT)return false;
+    watch_data.face_color=wallpaper;return true;
+}

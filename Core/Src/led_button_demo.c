@@ -2,6 +2,7 @@
 #include "led_button_demo.h"
 #include "smartwatch.h"
 #include "stm32u5x9j_discovery.h"
+#include "services/watch_dma_service.h"
 #include <stdio.h>
 
 #define TIMER_STEP_MS       10U
@@ -26,6 +27,7 @@ static volatile uint32_t status_pending;
 static volatile uint32_t uart_busy;
 static volatile uint32_t uart_error_pending;
 static volatile uint32_t uart_completed;
+static volatile uint32_t uart_bytes,uart_message_bytes;
 static uint32_t uart_errors;
 static uint32_t stable_button;
 static uint32_t blink_elapsed_ms;
@@ -189,6 +191,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *uart)
 {
     if(uart != &led_demo_uart) return;
     ++uart_completed;
+    uart_bytes+=uart_message_bytes;
     uart_busy = 0;
 }
 
@@ -228,8 +231,19 @@ void led_button_demo_poll(void)
         return;
     }
     uart_started_at = HAL_GetTick();
+    uart_message_bytes=(uint32_t)length;
     uart_busy = 1;
     __DMB();
     if(HAL_UART_Transmit_DMA(&led_demo_uart, (const uint8_t *)uart_message, (uint16_t)length) != HAL_OK)
         uart_error_pending = 1;
+}
+
+watch_dma_status_t watch_dma_service_status(void)
+{
+    uint32_t primask=__get_PRIMASK();
+    __disable_irq();
+    watch_dma_status_t status={uart_completed,uart_bytes,uart_errors,uart_message_bytes,
+        blink_intervals_ms[mode_index],led_on!=0,uart_busy!=0};
+    __set_PRIMASK(primask);
+    return status;
 }

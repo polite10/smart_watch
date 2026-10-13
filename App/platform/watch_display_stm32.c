@@ -7,7 +7,10 @@
 #include "platform/watch_dirty_rows.h"
 #include "lvgl/src/draw/sw/blend/lv_draw_sw_blend_private.h"
 #include "platform/watch_draw_dma2d.h"
-static uint32_t draw_buffer[480 * 40] __attribute__((aligned(16)));
+#include "platform/watch_gpu_stm32.h"
+/* Three strips cover a complete screen, reducing repeated GPU submissions.
+ * LVGL has its own 256 KB pool; the linker also reserves heap and stack. */
+static uint32_t draw_buffer[480 * 160] __attribute__((aligned(16)));
 static uint32_t back_framebuffer[184320] __attribute__((aligned(16)));
 static unsigned front_buffer;
 static volatile bool frame_presented;
@@ -19,6 +22,7 @@ static watch_dirty_rows_t dirty_rows;
 static lv_display_t *pending_display;
 static uint32_t present_started;
 volatile uint32_t smartwatch_sync_bytes,smartwatch_frame_total_ms;
+volatile uint32_t smartwatch_frame_total_max_ms,smartwatch_render_total_ms;
 static uint32_t render_started;
 volatile uint32_t smartwatch_rgb565_dma_transfers;
 
@@ -139,11 +143,19 @@ void watch_platform_display_poll(void)
     }
     smartwatch_frame_ms=HAL_GetTick()-frame_started;
     smartwatch_frame_total_ms=HAL_GetTick()-render_started;
+    smartwatch_render_total_ms+=smartwatch_frame_total_ms;
+    if(smartwatch_frame_total_ms>smartwatch_frame_total_max_ms) smartwatch_frame_total_max_ms=smartwatch_frame_total_ms;
     if(smartwatch_frame_ms>smartwatch_frame_max_ms) smartwatch_frame_max_ms=smartwatch_frame_ms;
     ++smartwatch_frame_count;drawing_frame=false;
     lv_display_t *display=pending_display;pending_display=NULL;
     lv_display_flush_ready(display);
-    lv_timer_resume(lv_display_get_refr_timer(display));
+    /* A blocked refresh callback can have advanced the timer's last_run while
+     * waiting for vblank. Presenting releases the buffer: service queued dirty
+     * areas immediately instead of imposing another 16 ms delay. LVGL pauses
+     * the timer itself when nothing is invalidated. */
+    lv_timer_t *refresh=lv_display_get_refr_timer(display);
+    lv_timer_ready(refresh);
+    lv_timer_resume(refresh);
 }
 static void display_refresh(lv_timer_t *timer)
 {
@@ -174,6 +186,7 @@ void watch_platform_display_init(void)
     TS_Init_t touch={.Width=480,.Height=480,.Orientation=TS_ORIENTATION_PORTRAIT,.Accuracy=2};
     if(BSP_TS_Init(0,&touch)!=BSP_ERROR_NONE) Error_Handler();
     smartwatch_status=3;
+    watch_gpu_init();
     lv_init();
     lv_tick_set_cb(HAL_GetTick);
     lv_display_t *display=lv_display_create(480,480);

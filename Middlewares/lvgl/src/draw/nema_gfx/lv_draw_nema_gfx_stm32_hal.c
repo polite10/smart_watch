@@ -25,6 +25,8 @@
 #include <string.h>
 
 #include LV_NEMA_STM32_HAL_INCLUDE
+#include "platform/watch_gpu_stm32.h"
+#include "smartwatch.h"
 
 #include "tsi_malloc.h"
 
@@ -62,7 +64,7 @@ extern GPU2D_HandleTypeDef hgpu2d;
  *  STATIC VARIABLES
  **********************/
 
-static uint8_t nemagfx_pool_mem[NEMAGFX_MEM_POOL_SIZE]; /* NemaGFX memory pool */
+static uint8_t nemagfx_pool_mem[NEMAGFX_MEM_POOL_SIZE] __attribute__((aligned(16))); /* NemaGFX memory pool */
 
 static nema_ringbuffer_t ring_buffer_str;
 static volatile int last_cl_id = -1;
@@ -84,6 +86,7 @@ static volatile int last_cl_id = -1;
     LV_UNUSED(hgpu2d);
 
     last_cl_id = CmdListID;
+    ++smartwatch_gpu_completions;
 }
 
 int32_t nema_sys_init(void)
@@ -124,6 +127,8 @@ uint32_t nema_reg_read(uint32_t reg)
 
 void nema_reg_write(uint32_t reg, uint32_t value)
 {
+    /* CPU-generated command lists and LZ4 image pixels must reach SRAM first. */
+    __DSB();
     HAL_GPU2D_WriteRegister(&hgpu2d, reg, value);
 }
 
@@ -138,10 +143,15 @@ int nema_wait_irq(void)
 
 int nema_wait_irq_cl(int cl_id)
 {
-    while(last_cl_id < cl_id) {
+    uint32_t started = HAL_GetTick();
+    while((int32_t)((uint32_t)last_cl_id - (uint32_t)cl_id) < 0) {
         (void)nema_wait_irq();
+        if(HAL_GetTick() - started > 100) {
+            ++smartwatch_gpu_timeouts;
+            Error_Handler();
+        }
     }
-
+    __DSB();
     return 0;
 }
 

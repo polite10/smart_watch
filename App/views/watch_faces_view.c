@@ -96,11 +96,15 @@ static void colors_apply(void)
     lv_obj_set_style_text_color(lv_obj_get_child(style_buttons[CLASSIC],1),lv_color_hex(ink),0);
     lv_obj_set_style_line_color(hour_hand,lv_color_hex(ink),0);
     lv_obj_set_style_line_color(minute_hand,lv_color_hex(ink),0);
+    lv_obj_set_style_line_opa(hour_hand,160,0);
+    lv_obj_set_style_line_opa(minute_hand,160,0);
     lv_obj_set_style_line_color(second_hand,lv_color_hex(0x73BEFF),0);
     lv_obj_set_style_bg_color(center_pin,lv_color_hex(0x73BEFF),0);
     lv_obj_set_style_text_color(face_date[CLASSIC],lv_color_hex(ink),0);
     lv_obj_set_style_text_color(face_water[CLASSIC],lv_color_hex(muted),0);
     lv_obj_set_style_text_color(face_battery[CLASSIC],lv_color_hex(muted),0);
+    lv_obj_t *info[]={face_date[CLASSIC],face_water[CLASSIC],face_battery[CLASSIC]};
+    for(unsigned i=0;i<3;++i)lv_obj_set_style_bg_color(info[i],lv_color_hex(background),0);
 }
 void watch_faces_apply_saved(void)
 {
@@ -269,6 +273,14 @@ void watch_faces_init(lv_obj_t *home, lv_obj_t *picker, lv_event_cb_t navigate, 
     second_hand = line(root, hand_points[2], 3, 0x73BEFF);
     center_pin = shape(root, 0, 0, 14, 14, LV_RADIUS_CIRCLE, 0x73BEFF);
     lv_obj_center(center_pin);
+    /* Information is drawn above the hands, with a quiet translucent backing. */
+    lv_obj_t *info[]={face_date[CLASSIC],face_water[CLASSIC],face_battery[CLASSIC]};
+    for(unsigned i=0;i<3;++i) {
+        lv_obj_set_style_bg_opa(info[i],220,0);
+        lv_obj_set_style_radius(info[i],7,0);
+        lv_obj_set_style_pad_hor(info[i],6,0);lv_obj_set_style_pad_ver(info[i],3,0);
+        lv_obj_move_foreground(info[i]);
+    }
 
     root=face_roots[ORBIT];
     orbit_ring=arc(root,408,36,6,0x293A51); lv_arc_set_range(orbit_ring,0,59);

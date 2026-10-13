@@ -25,6 +25,7 @@ OUT = ROOT / 'Debug'
 OUT.mkdir(exist_ok=True)
 config = ET.parse(ROOT / '.cproject').getroot().find('.//cconfiguration')
 includes = ['Core/Inc', 'App', 'Middlewares', 'Middlewares/lvgl', 'Drivers/CMSIS/Include',
+            'Middlewares/NemaGFX/include',
             'Drivers/CMSIS/Device/ST/STM32U5xx/Include', 'Drivers/STM32U5xx_HAL_Driver/Inc',
             'Drivers/BSP/STM32U5x9J-DK', 'Drivers/BSP/Components/Common']
 flags = ['-mcpu=cortex-m33', '-mthumb', '-mfpu=fpv5-sp-d16', '-mfloat-abi=hard', '-O2', '-g3',
@@ -74,8 +75,9 @@ elf = OUT / 'Smartwatch.elf'
 command = [str(BIN / 'arm-none-eabi-gcc'), *flags, '@' + str(OUT / 'objects.rsp'),
            '-T' + str(ROOT / 'STM32U5A9NJHXQ_FLASH.ld'), '--specs=nano.specs', '--specs=nosys.specs',
            '-Wl,--gc-sections,-Map=' + str(OUT / 'Smartwatch.map'), '-Wl,-u,_printf_float',
-           '-Wl,-u,_scanf_float', '-Wl,-z,noexecstack', '-Wl,--start-group', '-lc', '-lm',
-           '-Wl,--end-group', '-o', str(elf)]
+           '-Wl,-u,_scanf_float', '-Wl,-z,noexecstack', '-Wl,--start-group',
+           str(ROOT / 'Middlewares/NemaGFX/lib/core/cortex_m33_revC/gcc/libnemagfx-float-abi-hard.a'),
+           '-lc', '-lm', '-Wl,--end-group', '-o', str(elf)]
 subprocess.run(command, check=True)
 size = subprocess.run([str(BIN / 'arm-none-eabi-size'), str(elf)], check=True, capture_output=True, text=True).stdout
 print(size, end='')

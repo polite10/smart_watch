@@ -1,0 +1,153 @@
+{
+  "passed": 25,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Clock swipe follows (-70,0) finger direction"
+    ],
+    [
+      true,
+      "Clock swipe follows (70,0) finger direction"
+    ],
+    [
+      true,
+      "Clock swipe follows (0,-70) finger direction"
+    ],
+    [
+      true,
+      "Clock swipe follows (0,70) finger direction"
+    ],
+    [
+      true,
+      "Classic information labels are drawn above the hands"
+    ],
+    [
+      true,
+      "App content remains visibly displaced after 100 ms"
+    ],
+    [
+      true,
+      "App opening retains a visible intermediate position halfway through"
+    ],
+    [
+      true,
+      "App opening finishes cleanly after its 440 ms motion"
+    ],
+    [
+      true,
+      "Puzzle has its fifteen stones and no new-game button"
+    ],
+    [
+      true,
+      "Stone moves still follow the original puzzle rules"
+    ],
+    [
+      true,
+      "Former new-game area does not reset the puzzle"
+    ],
+    [
+      true,
+      "Leaving and reopening starts a new puzzle"
+    ],
+    [
+      true,
+      "Ready screen visibly scrolls clouds and two hill layers at distinct speeds"
+    ],
+    [
+      true,
+      "Pausing preserves physics and parallax"
+    ],
+    [
+      true,
+      "Touching a flower awards exactly one bonus point and keeps flying"
+    ],
+    [
+      true,
+      "A collected flower cannot award again"
+    ],
+    [
+      true,
+      "Passing the same pipe still awards the normal point"
+    ],
+    [
+      true,
+      "Contact with a bee ends the run"
+    ],
+    [
+      true,
+      "Collectible flowers appear every two to five newly spawned obstacles"
+    ],
+    [
+      true,
+      "DMA UI reads real completed transfers, message length and byte counters"
+    ],
+    [
+      true,
+      "Former clock button opens DMA details"
+    ],
+    [
+      true,
+      "DMA details retain the existing swipe-back navigation"
+    ],
+    [
+      true,
+      "Snake insects spawn separately, clear of the starting body and food"
+    ],
+    [
+      true,
+      "Snake contact with an insect ends the game"
+    ],
+    [
+      true,
+      "Existing Snake edge wrapping still works"
+    ]
+  ],
+  "elf_sha256": "be2c8df3f10ae891a3b59eac9ce0e541538196dabab74357065bb6f3f07c25ad",
+  "firmware_sha256": "27084e446ef5885601112881eea9bfa8875c3d78171a363919b42cd2ef41757a",
+  "scope": "Focused real ARM model/input/UI checks; software render for previews, no exhaustive regression rerun.",
+  "hardware": {
+    "board": "STM32U5A9J-DK",
+    "flashed": true,
+    "download_verified": true,
+    "measurements": {
+      "FOLDER": {
+        "elapsed_ms": 362,
+        "frames": 8,
+        "max_total_ms": 37
+      },
+      "FLAPPY": {
+        "elapsed_ms": 1021,
+        "frames": 40,
+        "max_total_ms": 26
+      },
+      "SNAKE": {
+        "elapsed_ms": 1000,
+        "frames": 40,
+        "max_total_ms": 14
+      },
+      "DMA": {
+        "completed_before": 39,
+        "completed_after": 40,
+        "bytes_before": 4252,
+        "bytes_after": 4362,
+        "message_bytes": 110,
+        "errors": 0
+      },
+      "FINAL": {
+        "UI_STATUS": 4,
+        "HEARTBEAT_BEFORE": 39,
+        "HEARTBEAT_AFTER": 40,
+        "GPU_TIMEOUTS": 0
+      }
+    },
+    "journal_matches_2026_10_12_backup": false,
+    "prior_committed_slots_preserved": true,
+    "journal_crc_valid": true,
+    "additional_snapshots_since_2026_10_12_backup": 4,
+    "scope": "One short device sample for each game and folder; real LED/UART counters and framebuffer previews."
+  },
+  "gpu_configuration_unchanged_during_refinements": true,
+  "firmware_bytes": 4049056,
+  "date": "2026-10-13"
+}

@@ -5,6 +5,7 @@ enum { TILE_SIZE=62, TILE_PITCH=70, BOARD_X=104, BOARD_Y=118 };
 static lv_obj_t *puzzle_tiles[16], *puzzle_blank, *puzzle_status;
 static bool puzzle_moving;
 static lv_obj_t *puzzle_best;
+static lv_obj_t *tile_top[16],*tile_bottom[16];
 static uint32_t tile_colors[16];
 static bool tile_theme[16];
 
@@ -16,11 +17,12 @@ static void tile_y(void *obj, int32_t value) { lv_obj_set_y(obj,value); }
 void puzzle_refresh(void)
 {
     if(!puzzle_status) return;
+    lv_obj_set_style_bg_color(screens[PUZZLE],lv_color_hex(light_theme ? 0xEAE5DA : 0x2B424D),0);
     const watch_puzzle_state_t *state=watch_puzzle_vm_state();
     char text[48];
     snprintf(text,sizeof text,state->won ? "Tebrikler! / %lu hamle" : "Hamle: %lu / 1 - 15",(unsigned long)state->moves);
     set_label(puzzle_status,text);
-    uint32_t status_color=state->won ? 0x68CCA9 : (light_theme ? 0x435675 : 0xA8B9D2);
+    uint32_t status_color=state->won ? 0x96E1C2 : (light_theme ? 0x435675 : 0xDCE8E8);
     if(lv_color_to_u32(lv_obj_get_style_text_color(puzzle_status,0))!=status_color)
         lv_obj_set_style_text_color(puzzle_status,lv_color_hex(status_color),0);
     uint32_t best=watch_games_vm_records()->puzzle_moves;
@@ -33,11 +35,16 @@ void puzzle_refresh(void)
         if(!value) continue;
         lv_obj_t *tile=puzzle_tiles[value];
         bool correct=value==slot+1;
-        uint32_t color=correct ? 0x96E1C2 : (light_theme ? 0xD4E3F0 : 0x26344C);
+        const uint32_t stone[]={0xE6D7BF,0xC8DDE0,0xE9CDA9,0xD8D0E8};
+        uint32_t color=correct ? 0xA6D8B8 : stone[(value-1)/4];
         if(tile_colors[value]!=color || tile_theme[value]!=light_theme) {
             tile_colors[value]=color;tile_theme[value]=light_theme;
             lv_obj_set_style_bg_color(tile,lv_color_hex(color),0);
-            lv_obj_set_style_text_color(tile,lv_color_hex(correct || light_theme ? 0x182C2D : 0xF0F4FC),0);
+            lv_obj_set_style_text_color(tile,lv_color_hex(correct ? 0x193B2D : 0x35444B),0);
+            lv_obj_set_style_border_color(tile,lv_color_hex(correct ? 0xCFF0D7 : 0xF5EFE1),0);
+            lv_obj_set_style_bg_color(tile,lv_color_hex(correct ? 0x89C79D : 0xB7C4C6),LV_STATE_PRESSED);
+            lv_obj_set_style_bg_color(tile_top[value],lv_color_hex(correct ? 0xD5F0DB : 0xFFF6E7),0);
+            lv_obj_set_style_bg_color(tile_bottom[value],lv_color_hex(correct ? 0x6DA586 : 0x99A7A9),0);
         }
     }
 }
@@ -82,7 +89,6 @@ static void new_game(void)
         lv_obj_set_pos(puzzle_tiles[state->tiles[slot]],slot_x(slot),slot_y(slot));
     puzzle_refresh();
 }
-static void restart_clicked(lv_event_t *e) { (void)e; new_game(); }
 void puzzle_open(void) { new_game(); watch_navigation_show(PUZZLE); }
 
 void puzzle_init(void)
@@ -105,10 +111,18 @@ void puzzle_init(void)
         lv_obj_set_style_transform_scale_x(tile,256,LV_STATE_PRESSED);
         lv_obj_set_style_transform_scale_y(tile,256,LV_STATE_PRESSED);
         lv_obj_set_align(tile,LV_ALIGN_TOP_LEFT);
-        lv_obj_set_height(tile,TILE_SIZE); lv_obj_set_style_radius(tile,14,0);
+        lv_obj_set_height(tile,TILE_SIZE); lv_obj_set_style_radius(tile,11,0);
+        lv_obj_set_style_border_width(tile,2,0);
         lv_obj_set_style_text_font(label,&lv_font_montserrat_24,0);
+        /* Shallow top and lower stone facets give depth without new draw layers. */
+        lv_obj_t **facets[]={&tile_top[value],&tile_bottom[value]};
+        for(unsigned j=0;j<2;++j) {
+            lv_obj_t *facet=lv_obj_create(tile);*facets[j]=facet;
+            lv_obj_set_size(facet,48,3);lv_obj_set_pos(facet,5,j ? 53 : 3);
+            lv_obj_set_style_radius(facet,2,0);lv_obj_set_style_border_width(facet,0,0);
+            lv_obj_set_style_pad_all(facet,0,0);lv_obj_set_style_bg_opa(facet,180,0);
+            lv_obj_remove_flag(facet,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_SCROLLABLE);
+        }
     }
-    lv_obj_t *restart=lv_obj_get_parent(button_at(screens[PUZZLE],"Yeni oyun",0,404,176,restart_clicked,NULL));
-    lv_obj_set_height(restart,48); lv_obj_set_style_radius(restart,24,0);
     new_game();
 }

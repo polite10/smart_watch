@@ -230,13 +230,13 @@
 #endif
 
 /*Use TSi's aka (Think Silicon) NemaGFX */
-#define LV_USE_NEMA_GFX 0
+#define LV_USE_NEMA_GFX 1
 
 #if LV_USE_NEMA_GFX
     /** Select which NemaGFX HAL to use. Possible options:
      * - LV_NEMA_HAL_CUSTOM
      * - LV_NEMA_HAL_STM32 */
-    #define LV_USE_NEMA_HAL LV_NEMA_HAL_CUSTOM
+    #define LV_USE_NEMA_HAL LV_NEMA_HAL_STM32
     #if LV_USE_NEMA_HAL == LV_NEMA_HAL_STM32
         #define LV_NEMA_STM32_HAL_INCLUDE <stm32u5xx_hal.h>
     #endif

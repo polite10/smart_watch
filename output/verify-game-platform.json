@@ -1,5 +1,5 @@
 {
-  "passed": 15,
+  "passed": 16,
   "failed": 0,
   "checks": [
     [
@@ -17,6 +17,10 @@
     [
       true,
       "Reload completion releases exactly one pending frame in the main loop"
+    ],
+    [
+      true,
+      "Queued refresh is immediately eligible after vblank even if its callback was recently gated"
     ],
     [
       true,
@@ -63,6 +67,6 @@
       "Opacity, masks and unsupported strides return to software without starting DMA"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
   "scope": "Real ARM scheduling/dirty copies; DMA/LTDC primitives simulated. Hardware timing and GFXMMU mapping are not verified."
 }

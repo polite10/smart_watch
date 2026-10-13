@@ -61,6 +61,7 @@ uint32_t lv_nemagfx_cf_to_nema(lv_color_format_t cf)
         case LV_COLOR_FORMAT_I8:
             return NEMA_L8;
         case LV_COLOR_FORMAT_RGB565:
+        case LV_COLOR_FORMAT_RGB565A8:
             return NEMA_RGB565;
         case LV_COLOR_FORMAT_RGB888:
             return NEMA_BGR24;
@@ -132,7 +133,6 @@ bool lv_nemagfx_is_cf_supported(lv_color_format_t cf)
 
     switch(cf) {
         case LV_COLOR_FORMAT_ARGB8565:
-        case LV_COLOR_FORMAT_RGB565A8:
             return false;
         default:
             break;

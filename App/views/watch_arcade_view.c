@@ -3,11 +3,40 @@
 #include "views/watch_art.h"
 #include "views/watch_fonts.h"
 #include <math.h>
+#include "lvgl/src/libs/lz4/lz4.h"
+#include "views/watch_flappy_scenery.h"
+#include "views/watch_folder_frames.h"
+
+_Static_assert(WATCH_SCENERY_BYTES <= WATCH_FOLDER_FRAME_SIZE * WATCH_FOLDER_FRAME_SIZE * 3,
+    "Flappy scenery must fit the shared folder cache");
 
 static lv_obj_t *flappy_bird,*flappy_score,*flappy_best,*flappy_hint,*flappy_pause;
 static lv_obj_t *pipe_top[3],*pipe_bottom[3],*pipe_top_cap[3],*pipe_bottom_cap[3];
-static lv_obj_t *clouds[3],*hills[3],*near_hills[3],*flowers[6],*butterflies[2],*pipe_flowers[3];
+static lv_obj_t *clouds[3],*hills[3],*near_hills[3],*bees[WATCH_FLAPPY_BEES],*pipe_flowers[3];
 static uint32_t scenery_steps;
+static lv_image_dsc_t scenery_pictures[WATCH_SCENERY_COUNT];
+static void scenery_cache(void)
+{
+    uint8_t *pixels=watch_menu_scenery_buffer();
+    int size=LZ4_decompress_safe((const char *)watch_flappy_scenery,
+        (char *)pixels,watch_flappy_scenery_size,WATCH_SCENERY_BYTES);
+    if(size!=WATCH_SCENERY_BYTES) return;
+    uint32_t offset=0;
+    for(unsigned i=0;i<WATCH_SCENERY_COUNT;++i) {
+        unsigned w=watch_scenery_widths[i],h=watch_scenery_heights[i];
+        scenery_pictures[i]=(lv_image_dsc_t){
+            .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565A8,.w=w,.h=h,.stride=w*2},
+            .data_size=w*h*3,.data=pixels+offset};
+        offset+=w*h*3;
+    }
+    for(unsigned i=0;i<3;++i) {
+        lv_image_set_src(clouds[i],&scenery_pictures[0]);
+        lv_image_set_src(hills[i],&scenery_pictures[1]);
+        lv_image_set_src(near_hills[i],&scenery_pictures[2]);
+    }
+    for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i)lv_image_set_src(bees[i],&scenery_pictures[5]);
+    for(unsigned i=0;i<3;++i)lv_image_set_src(pipe_flowers[i],&scenery_pictures[i%2 ? 3 : 4]);
+}
 static lv_obj_t *snake_canvas,*snake_score,*snake_best,*snake_hint,*snake_pause;
 static uint16_t snake_pixels[288*288] __attribute__((aligned(4)));
 static uint32_t arcade_last_tick,arcade_accumulator;
@@ -27,40 +56,28 @@ static lv_obj_t *plain(lv_obj_t *parent,int x,int y,int w,int h,uint32_t color,i
     lv_obj_set_style_radius(obj,radius,0);lv_obj_set_style_pad_all(obj,0,0);
     return obj;
 }
-static lv_obj_t *flower(lv_obj_t *parent,uint32_t color)
-{
-    lv_obj_t *group=plain(parent,0,0,20,20,0,0);lv_obj_set_style_bg_opa(group,LV_OPA_TRANSP,0);
-    plain(group,5,0,10,10,color,LV_RADIUS_CIRCLE);plain(group,0,5,10,10,color,LV_RADIUS_CIRCLE);
-    plain(group,10,5,10,10,color,LV_RADIUS_CIRCLE);plain(group,5,10,10,10,color,LV_RADIUS_CIRCLE);
-    plain(group,6,6,8,8,0xFFE6A0,LV_RADIUS_CIRCLE);return group;
-}
 static void scenery_render(void)
 {
     for(unsigned i=0;i<3;++i) {
-        lv_obj_set_pos(clouds[i],(int)((i*220+660-scenery_steps*3/10%660)%660)-100,148+(int)i*47);
-        lv_obj_set_pos(hills[i],(int)((i*240+720-scenery_steps*6/10%720)%720)-240,348+(i%2)*12);
-        lv_obj_set_pos(near_hills[i],(int)((i*240+720-scenery_steps%720)%720)-240,378+(i%2)*8);
+        lv_obj_set_pos(clouds[i],(int)((i*220+660-scenery_steps*9/10%660)%660)-100,148+(int)i*47);
+        lv_obj_set_pos(hills[i],(int)((i*240+720-scenery_steps*13/10%720)%720)-240,348+(i%2)*12);
+        lv_obj_set_pos(near_hills[i],(int)((i*240+720-scenery_steps*18/10%720)%720)-240,378+(i%2)*8);
     }
-    for(unsigned i=0;i<6;++i)
-        lv_obj_set_pos(flowers[i],(int)((i*96+576-scenery_steps*16/10%576)%576)-24,417+(i%2)*16);
-    for(unsigned i=0;i<2;++i)
-        lv_obj_set_pos(butterflies[i],(int)((i*260+520-scenery_steps*13/10%520)%520)-20,365+(int)(6*sinf((scenery_steps+i*40)*0.09f)));
 }
 static void scenery_init(void)
 {
     for(unsigned i=0;i<3;++i) {
-        clouds[i]=plain(screens[FLAPPY],0,0,100,46,0,0);lv_obj_set_style_bg_opa(clouds[i],LV_OPA_TRANSP,0);
-        plain(clouds[i],0,20,100,26,0x2D5773,13);plain(clouds[i],18,8,40,36,0x2D5773,LV_RADIUS_CIRCLE);
-        plain(clouds[i],45,0,44,44,0x2D5773,LV_RADIUS_CIRCLE);
+        clouds[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(clouds[i],LV_OBJ_FLAG_CLICKABLE);
+        hills[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(hills[i],LV_OBJ_FLAG_CLICKABLE);
+        near_hills[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(near_hills[i],LV_OBJ_FLAG_CLICKABLE);
     }
-    for(unsigned i=0;i<3;++i)hills[i]=plain(screens[FLAPPY],0,0,270,126,0x24566D,LV_RADIUS_CIRCLE);
-    for(unsigned i=0;i<3;++i)near_hills[i]=plain(screens[FLAPPY],0,0,270,116,0x193E56,LV_RADIUS_CIRCLE);
+    /* Preserve layer order: all clouds, then distant hills, then near hills. */
+    for(unsigned i=0;i<3;++i)lv_obj_move_foreground(clouds[i]);
+    for(unsigned i=0;i<3;++i)lv_obj_move_foreground(hills[i]);
+    for(unsigned i=0;i<3;++i)lv_obj_move_foreground(near_hills[i]);
     plain(screens[FLAPPY],0,408,480,72,0xEFCB8B,0);plain(screens[FLAPPY],0,408,480,5,0xFFF2CC,0);
-    for(unsigned i=0;i<6;++i)flowers[i]=flower(screens[FLAPPY],i%2 ? 0xE790A4 : 0xBFADE8);
-    for(unsigned i=0;i<2;++i) {
-        butterflies[i]=plain(screens[FLAPPY],0,0,20,14,0,0);lv_obj_set_style_bg_opa(butterflies[i],LV_OPA_TRANSP,0);
-        plain(butterflies[i],0,0,9,12,0xE5BC9C,LV_RADIUS_CIRCLE);plain(butterflies[i],11,0,9,12,0xE5BC9C,LV_RADIUS_CIRCLE);
-        plain(butterflies[i],9,3,2,11,0xFFF0C7,1);
+    for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i) {
+        bees[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(bees[i],LV_OBJ_FLAG_CLICKABLE);
     }
     scenery_render();
 }
@@ -97,6 +114,13 @@ static void flappy_render(void)
     if(rotation > 300) rotation=300;
     lv_image_set_rotation(flappy_bird,rotation);
     scenery_render();
+    for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i) {
+        float x,y;
+        if(watch_flappy_bee(s,i,&x,&y)) {
+            lv_obj_set_pos(bees[i],(int)x-14,(int)y-11);
+            lv_obj_remove_flag(bees[i],LV_OBJ_FLAG_HIDDEN);
+        } else lv_obj_add_flag(bees[i],LV_OBJ_FLAG_HIDDEN);
+    }
     for(unsigned i=0;i<3;++i) {
         int x=(int)s->pipes[i].x,top=(int)s->pipes[i].gap_y-WATCH_FLAPPY_GAP_HALF;
         int bottom=(int)s->pipes[i].gap_y+WATCH_FLAPPY_GAP_HALF;
@@ -109,9 +133,12 @@ static void flappy_render(void)
         lv_obj_set_pos(pipe_top_cap[i],x-3,top-12);lv_obj_set_pos(pipe_bottom_cap[i],x-3,bottom);
         float fx,fy;
         if(pipe_flowers[i]) {
-            watch_flappy_flower(i,&s->pipes[i],&fx,&fy);
-            lv_obj_set_pos(pipe_flowers[i],(int)fx-WATCH_FLAPPY_FLOWER_RADIUS,(int)fy-WATCH_FLAPPY_FLOWER_RADIUS);
-            if(x>480)lv_obj_add_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);else lv_obj_remove_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);
+            bool flower=watch_flappy_flower(i,&s->pipes[i],&fx,&fy);
+            if(!flower || x>480)lv_obj_add_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);
+            else {
+                lv_obj_set_pos(pipe_flowers[i],(int)fx-WATCH_FLAPPY_FLOWER_RADIUS,(int)fy-WATCH_FLAPPY_FLOWER_RADIUS);
+                lv_obj_remove_flag(pipe_flowers[i],LV_OBJ_FLAG_HIDDEN);
+            }
         }
     }
 }
@@ -119,6 +146,35 @@ static uint16_t rgb565(uint32_t color)
 { return (uint16_t)(((color>>19)<<11)|(((color>>10)&63)<<5)|((color>>3)&31)); }
 static int snake_wrap_pixel(int value)
 { return value<0 ? value+288 : value>=288 ? value-288 : value; }
+static uint16_t snake_ground_pixel(unsigned x,unsigned y)
+{
+    unsigned tx=x/16,ty=y/16,dx=x%16,dy=y%16,hash=tx*37+ty*19;
+    /* Light on the upper edges and shaded lower edges give the existing 2D
+     * grid depth. Restore this procedural surface only under moving cells. */
+    uint32_t color=(hash%3==0) ? 0x658D58 : hash%3==1 ? 0x709961 : 0x789F69;
+    if(dy==0 || dx==0)color=0x91B579;
+    if(dy>=14 || dx>=15)color=0x426C43;
+    if(hash%7==0 && dx>=3 && dx<=10 && dy>=4 && dy<=10) {
+        int a=(int)dx-6,b=(int)dy-7;
+        if(a*a+b*b<16)color=dy<7 ? 0x87BA64 : 0x477D40;
+        if(dx==6 && dy>=8)color=0x355F36;
+    }
+    if(hash%11==0 && dx>=5 && dx<=9 && dy>=7 && dy<=10)color=dy==7 ? 0xC8C7A2 : 0x8B9778;
+    return rgb565(color);
+}
+static void snake_bug(watch_cell_t cell)
+{
+    for(int y=2;y<14;++y)for(int x=2;x<14;++x) {
+        uint32_t color=0;
+        int dx=x-8,dy=y-8;
+        if((x==3 || x==12) && (y==5 || y==8 || y==11))color=0x24372D;
+        if(dx*dx*2+dy*dy<27)color=x<8 ? 0xFFBA74 : 0xDB7548;
+        if(x==8 && y>=5 && y<=11)color=0x543829;
+        if((x==6 || x==10) && (y==7 || y==10))color=0x543829;
+        if(y==3 && x>=6 && x<=9)color=0x24372D;
+        if(color)snake_pixels[(cell.y*16+y)*288+cell.x*16+x]=rgb565(color);
+    }
+}
 static int snake_motion(int from,int to,unsigned fraction)
 {
     int delta=to-from;
@@ -142,16 +198,19 @@ static void snake_invalidate(int x,int y)
 static void snake_clear(int x,int y)
 {
     for(int dy=0;dy<16;++dy) for(int dx=0;dx<16;++dx) {
-        snake_pixels[snake_wrap_pixel(y+dy)*288+snake_wrap_pixel(x+dx)]=rgb565(0x061421);
+        unsigned px=snake_wrap_pixel(x+dx),py=snake_wrap_pixel(y+dy);
+        snake_pixels[py*288+px]=snake_ground_pixel(px,py);
         ++smartwatch_snake_pixel_writes;
     }
     snake_invalidate(x,y);
 }
 static void snake_segment(int x,int y,uint16_t color)
 {
+    uint16_t shade=(color>>1)&0x7BEF;
     for(int dy=0;dy<14;++dy) for(int dx=0;dx<14;++dx) {
         if((dx<2 || dx>11) && (dy<2 || dy>11)) continue;
-        snake_pixels[snake_wrap_pixel(y+dy+1)*288+snake_wrap_pixel(x+dx+1)]=color;
+        uint16_t surface=dy>=11 ? shade : dy<=2 && dx>=3 && dx<=10 ? rgb565(0xDCF2B2) : color;
+        snake_pixels[snake_wrap_pixel(y+dy+1)*288+snake_wrap_pixel(x+dx+1)]=surface;
         ++smartwatch_snake_pixel_writes;
     }
     snake_invalidate(x,y);
@@ -171,13 +230,14 @@ static void snake_render(unsigned fraction)
     }
     if(changed) {
         if(!snake_picture_valid) {
-            for(int i=0;i<288*288;++i) snake_pixels[i]=rgb565(0x061421);
+            for(unsigned y=0;y<288;++y)for(unsigned x=0;x<288;++x)snake_pixels[y*288+x]=snake_ground_pixel(x,y);
             smartwatch_snake_pixel_writes=288*288;
             lv_obj_invalidate(snake_canvas);
         } else {
             for(unsigned i=0;i<snake_drawn_length;++i) snake_clear(snake_drawn[i].x,snake_drawn[i].y);
             if(snake_food_visible) snake_clear(snake_picture_food.x*16,snake_picture_food.y*16);
         }
+        for(unsigned i=0;i<s->bug_count;++i)snake_bug(s->bugs[i]);
         if(food) snake_segment(s->food.x*16,s->food.y*16,rgb565(0xFF797F));
         for(unsigned i=s->length;i>0;--i) snake_segment(positions[i-1].x,positions[i-1].y,rgb565(i==1 ? 0xBCF5D0 : 0x80DEA7));
         int x=positions[0].x,y=positions[0].y;
@@ -207,7 +267,7 @@ static void flappy_touch(lv_event_t *e)
     (void)e;const watch_flappy_state_t *s=watch_flappy_vm_state();
     bool starting=s->phase==WATCH_GAME_READY || s->phase==WATCH_GAME_OVER;
     if(s->phase==WATCH_GAME_OVER) { save_records(flappy_best);watch_flappy_vm_new(lv_tick_get()); }
-    if(starting) { scenery_steps=0;arcade_accumulator=0;arcade_last_tick=lv_tick_get(); }
+    if(starting) { arcade_accumulator=0;arcade_last_tick=lv_tick_get(); }
     watch_flappy_vm_flap();flappy_render();
 }
 static void snake_touch(lv_event_t *e)
@@ -254,6 +314,13 @@ static void arcade_tick(lv_timer_t *timer)
     }
     bool flappy=screen==screens[FLAPPY];
     watch_game_phase_t phase=flappy ? watch_flappy_vm_state()->phase : watch_snake_vm_state()->phase;
+    if(flappy && phase==WATCH_GAME_READY) {
+        arcade_accumulator+=elapsed>160 ? 160 : elapsed;
+        bool changed=false;
+        while(arcade_accumulator>=20) { arcade_accumulator-=20;++scenery_steps;changed=true; }
+        if(changed)scenery_render();
+        return;
+    }
     if(phase!=WATCH_GAME_RUNNING) { arcade_accumulator=0;return; }
     arcade_accumulator+=elapsed>160 ? 160 : elapsed;
     unsigned interval=flappy ? 20 : 160-(watch_snake_vm_state()->score>40 ? 80 : watch_snake_vm_state()->score*2);
@@ -287,6 +354,7 @@ void arcade_leave(unsigned screen)
 }
 void flappy_open(void)
 {
+    scenery_cache();
     scenery_steps=0;save_records(flappy_best);watch_flappy_vm_new(lv_tick_get());arcade_last_tick=lv_tick_get();arcade_accumulator=0;
     flappy_render();watch_navigation_show(FLAPPY);
 }
@@ -300,13 +368,13 @@ void arcade_init(void)
     page_header(FLAPPY,"",MENU);page_header(SNAKE,"",MENU);
     lv_obj_t *sky=lv_image_create(screens[FLAPPY]);lv_image_set_src(sky,&flappy_sky);lv_obj_remove_flag(sky,LV_OBJ_FLAG_CLICKABLE);
     scenery_init();
-    lv_obj_set_style_bg_color(screens[SNAKE],lv_color_hex(0x070D18),0);
+    lv_obj_set_style_bg_color(screens[SNAKE],lv_color_hex(0x243F35),0);
     for(unsigned i=0;i<3;++i) {
         pipe_top[i]=plain(screens[FLAPPY],0,100,46,100,0x77CD89,4);
         pipe_bottom[i]=plain(screens[FLAPPY],0,300,46,108,0x77CD89,4);
         pipe_top_cap[i]=plain(screens[FLAPPY],0,0,52,12,0xFFF0C7,4);
         pipe_bottom_cap[i]=plain(screens[FLAPPY],0,0,52,12,0xFFF0C7,4);
-        if(i)pipe_flowers[i]=flower(screens[FLAPPY],i==1 ? 0xE790A4 : 0xBFADE8);
+        pipe_flowers[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(pipe_flowers[i],LV_OBJ_FLAG_CLICKABLE);
     }
     flappy_bird=lv_image_create(screens[FLAPPY]);lv_image_set_src(flappy_bird,&bird_sprite);lv_obj_remove_flag(flappy_bird,LV_OBJ_FLAG_CLICKABLE);
     lv_image_set_pivot(flappy_bird,28,28);

@@ -1,11 +1,30 @@
 #include "views/watch_view_internal.h"
 #include "watch_icons.h"
 #include "views/watch_art.h"
+#include "views/watch_fonts.h"
 #include <math.h>
 #include <stdlib.h>
 #include "lvgl/src/libs/lz4/lz4.h"
 #include "views/watch_folder_icons.h"
 #include "views/watch_folder_frames.h"
+#include "services/watch_dma_service.h"
+
+static lv_obj_t *dma_badge,*dma_details;
+static void dma_refresh(lv_timer_t *timer)
+{
+    (void)timer;
+    lv_obj_t *active=lv_screen_active();
+    if(!display_awake || (active!=screens[MENU] && active!=screens[DMA_STATUS]))return;
+    watch_dma_status_t s=watch_dma_service_status();
+    char text[224];
+    snprintf(text,sizeof text,"DMA\n%lu B",(unsigned long)s.message_bytes);set_label(dma_badge,text);
+    snprintf(text,sizeof text,"RAM > UART\n1 mesaj / saniye\nSon mesaj: %lu bayt\nAktarım: %lu\nToplam: %lu bayt\nHata: %lu\nLED: %s / %lu ms",
+        (unsigned long)s.message_bytes,(unsigned long)s.completed,(unsigned long)s.bytes,
+        (unsigned long)s.errors,s.led_on ? "AÇIK" : "KAPALI",(unsigned long)s.toggle_ms);
+    set_label(dma_details,text);
+}
+static void dma_clicked(lv_event_t *event)
+{ navigate(event);dma_refresh(NULL); }
 
 static lv_obj_t *menu_buttons[9],*menu_folder,*menu_games[3],*menu_game_images[3];
 static lv_obj_t *menu_background;
@@ -15,6 +34,8 @@ static int folder_icon_stage=-1;
 static lv_obj_t *folder_canvas;
 static uint16_t folder_pixels[WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE*3/2] __attribute__((aligned(4)));
 static int folder_frame=-1;
+void *watch_menu_scenery_buffer(void)
+{ folder_frame=-1;return folder_pixels; }
 static const lv_image_dsc_t folder_picture={
     .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565A8,
         .w=WATCH_FOLDER_FRAME_SIZE,.h=WATCH_FOLDER_FRAME_SIZE,.stride=WATCH_FOLDER_FRAME_SIZE*2},
@@ -51,11 +72,11 @@ static void ring_finished(lv_anim_t *a)
 { (void)a;ring_angle%=3600;ring_layout(NULL,ring_angle); }
 static void ring_settle(bool inertia)
 {
-    int32_t travel=inertia ? ring_velocity*180/1000 : 0;
+    int32_t travel=inertia ? ring_velocity*210/1000 : 0;
     int32_t target=(int32_t)lroundf((ring_angle+travel)/400.0f)*400;
     lv_anim_t a;lv_anim_init(&a);lv_anim_set_var(&a,menu_buttons);
     lv_anim_set_exec_cb(&a,ring_layout);lv_anim_set_values(&a,ring_angle,target);
-    lv_anim_set_duration(&a,inertia && abs(ring_velocity)>800 ? 620 : 220);
+    lv_anim_set_duration(&a,inertia && abs(ring_velocity)>800 ? 720 : 260);
     lv_anim_set_path_cb(&a,lv_anim_path_ease_out);lv_anim_set_completed_cb(&a,ring_finished);lv_anim_start(&a);
 }
 bool watch_menu_ring_begin(lv_point_t point,uint32_t now)
@@ -71,8 +92,10 @@ bool watch_menu_ring_drag(lv_point_t point,uint32_t now)
     int x=point.x-240,y=point.y-240;
     if(x*x+y*y<100*100) { ring_velocity=0;return ring_dragging; }
     int32_t a=point_angle(point),d=angle_delta(a,ring_last_angle);
-    if(!ring_dragging && abs(angle_delta(a,ring_origin_angle))<40) return false;
+    if(!ring_dragging && abs(angle_delta(a,ring_origin_angle))<30) return false;
     if(!ring_dragging) d=angle_delta(a,ring_origin_angle);
+    /* A small gain makes the wheel follow a lighter finger movement. */
+    d=d*110/100;
     uint32_t elapsed=now-ring_sample_tick;
     if(elapsed) {
         int32_t velocity=d*1000/(int32_t)elapsed;
@@ -137,13 +160,14 @@ static void folder_show(bool open)
         lv_obj_set_style_bg_opa(menu_buttons[i],open ? 80 : LV_OPA_COVER,0);
         lv_obj_t *image=lv_obj_get_child(menu_buttons[i],1);
         lv_obj_set_style_image_opa(image,open ? 80 : LV_OPA_COVER,0);
+        lv_obj_set_style_text_opa(lv_obj_get_child(menu_buttons[i],0),open ? 80 : LV_OPA_COVER,0);
         if(open) lv_obj_remove_flag(menu_buttons[i],LV_OBJ_FLAG_CLICKABLE);
         else lv_obj_add_flag(menu_buttons[i],LV_OBJ_FLAG_CLICKABLE);
     }
     for(unsigned i=0;i<3;++i) lv_obj_remove_flag(menu_games[i],LV_OBJ_FLAG_CLICKABLE);
     lv_anim_t a;lv_anim_init(&a);lv_anim_set_var(&a,menu_folder);
     lv_anim_set_exec_cb(&a,folder_layout);lv_anim_set_values(&a,(int32_t)folder_progress,open ? 256 : 0);
-    lv_anim_set_duration(&a,260);lv_anim_set_path_cb(&a,lv_anim_path_ease_out);
+    lv_anim_set_duration(&a,340);lv_anim_set_path_cb(&a,lv_anim_path_ease_in_out);
     lv_anim_set_completed_cb(&a,folder_finished);lv_anim_start(&a);
 }
 static void folder_clicked(lv_event_t *e) { (void)e;folder_show(!folder_open); }
@@ -166,6 +190,7 @@ void watch_menu_reset(void)
         lv_obj_add_flag(menu_buttons[i],LV_OBJ_FLAG_CLICKABLE);
         lv_obj_set_style_bg_opa(menu_buttons[i],LV_OPA_COVER,0);
         lv_obj_set_style_image_opa(lv_obj_get_child(menu_buttons[i],1),LV_OPA_COVER,0);
+        lv_obj_set_style_text_opa(lv_obj_get_child(menu_buttons[i],0),LV_OPA_COVER,0);
     }
     for(unsigned i=0;i<3;++i) {
         lv_obj_remove_state(menu_games[i],LV_STATE_PRESSED);
@@ -183,18 +208,31 @@ void watch_menu_init(void)
     page_header(MENU,"",HOME);
     lv_obj_t *wallpaper=lv_image_create(screens[MENU]);menu_background=wallpaper;watch_menu_wallpaper_refresh();
     lv_obj_remove_flag(wallpaper,LV_OBJ_FLAG_CLICKABLE);lv_obj_set_pos(wallpaper,0,0);
-    const unsigned targets[]={ALARMS,CALCULATOR,NOTES,FACES,CALENDAR,SETTINGS,HOME,WATER,IDA};
+    const unsigned targets[]={ALARMS,CALCULATOR,NOTES,FACES,CALENDAR,SETTINGS,DMA_STATUS,WATER,IDA};
     const lv_image_dsc_t *icons[]={&icon_alarm,&icon_calculator,&icon_notes,&icon_faces,&icon_calendar,&icon_settings,&icon_clock,&icon_water,&icon_ida};
     const uint32_t colors[]={0xFF9B9E,0x96E1C2,0xE5C191,0xD7AFF7,0xFFC5A2,0xADC4D6,0x9CAFFF,0x82D9F4,0x96E1C2};
     for(unsigned i=0;i<9;++i) {
         float angle=(-90.0f+40.0f*i)*0.01745329252f;
         int x=(int)lroundf(240+178*cosf(angle)),y=(int)lroundf(240+178*sinf(angle));
-        lv_obj_t *label=round_action(screens[MENU],"",x-240,y-40,80,colors[i],navigate,(void *)(uintptr_t)targets[i]);
+        lv_obj_t *label=round_action(screens[MENU],"",x-240,y-40,80,colors[i],i==6 ? dma_clicked : navigate,(void *)(uintptr_t)targets[i]);
         menu_buttons[i]=lv_obj_get_parent(label);
         lv_obj_set_align(menu_buttons[i],LV_ALIGN_TOP_LEFT);
         lv_obj_t *image=lv_image_create(menu_buttons[i]);lv_image_set_src(image,icons[i]);lv_obj_center(image);
         lv_obj_remove_flag(image,LV_OBJ_FLAG_CLICKABLE);
+        if(i==6) {
+            lv_obj_add_flag(image,LV_OBJ_FLAG_HIDDEN);
+            dma_badge=label;set_label(label,"DMA\n0 B");
+            lv_obj_set_style_text_font(label,&watch_font_turkish_16,0);
+            lv_obj_set_style_text_color(label,lv_color_hex(0x17283B),0);
+            lv_obj_set_style_text_align(label,LV_TEXT_ALIGN_CENTER,0);lv_obj_center(label);
+        }
     }
+    page_header(DMA_STATUS,"LED / DMA",MENU);
+    label_at(screens[DMA_STATUS],"LED / DMA",56,&lv_font_montserrat_24);
+    dma_details=label_at(screens[DMA_STATUS],"",132,&watch_font_turkish_20);
+    lv_obj_set_style_text_align(dma_details,LV_TEXT_ALIGN_CENTER,0);
+    lv_obj_set_style_text_line_space(dma_details,12,0);
+    lv_timer_create(dma_refresh,1000,NULL);
     menu_folder=lv_button_create(screens[MENU]);lv_obj_remove_flag(menu_folder,LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_radius(menu_folder,LV_RADIUS_CIRCLE,0);lv_obj_set_style_bg_color(menu_folder,lv_color_hex(0xBCD4EC),0);
     lv_obj_set_style_bg_opa(menu_folder,32,0);lv_obj_set_style_border_width(menu_folder,1,0);

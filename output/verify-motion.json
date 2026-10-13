@@ -1,0 +1,104 @@
+{
+  "passed": 24,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Outer ring accepts a contact"
+    ],
+    [
+      true,
+      "Tiny 1.9 degree jitter remains a tap"
+    ],
+    [
+      true,
+      "A light 3.2 degree gesture starts rotation"
+    ],
+    [
+      true,
+      "Drag applies the modest ten percent gain"
+    ],
+    [
+      true,
+      "Slow release settles in one of the original slots"
+    ],
+    [
+      true,
+      "A fast flick keeps gliding beyond the previous 620 ms duration"
+    ],
+    [
+      true,
+      "Extended glide stops cleanly by 740 ms without looping"
+    ],
+    [
+      true,
+      "Folder has distinct closed and intermediate alpha frames"
+    ],
+    [
+      true,
+      "Opening Flappy invalidates the folder cache tag, cycle 0"
+    ],
+    [
+      true,
+      "Flappy decals replace the shared pixels, cycle 0"
+    ],
+    [
+      true,
+      "Returning from Flappy restores the exact closed folder pixels, cycle 0"
+    ],
+    [
+      true,
+      "Reopening restores the exact transparent intermediate frame, cycle 0"
+    ],
+    [
+      true,
+      "Opening Flappy invalidates the folder cache tag, cycle 1"
+    ],
+    [
+      true,
+      "Flappy decals replace the shared pixels, cycle 1"
+    ],
+    [
+      true,
+      "Returning from Flappy restores the exact closed folder pixels, cycle 1"
+    ],
+    [
+      true,
+      "Reopening restores the exact transparent intermediate frame, cycle 1"
+    ],
+    [
+      true,
+      "Opening Flappy invalidates the folder cache tag, cycle 2"
+    ],
+    [
+      true,
+      "Flappy decals replace the shared pixels, cycle 2"
+    ],
+    [
+      true,
+      "Returning from Flappy restores the exact closed folder pixels, cycle 2"
+    ],
+    [
+      true,
+      "Reopening restores the exact transparent intermediate frame, cycle 2"
+    ],
+    [
+      true,
+      "Opening Flappy invalidates the folder cache tag, cycle 3"
+    ],
+    [
+      true,
+      "Flappy decals replace the shared pixels, cycle 3"
+    ],
+    [
+      true,
+      "Returning from Flappy restores the exact closed folder pixels, cycle 3"
+    ],
+    [
+      true,
+      "Reopening restores the exact transparent intermediate frame, cycle 3"
+    ]
+  ],
+  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
+  "scope": "Compiled ARM input and LZ4 decoding; panel timing verified on hardware."
+}

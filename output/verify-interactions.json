@@ -1,5 +1,5 @@
 {
-  "passed": 367,
+  "passed": 407,
   "failed": 0,
   "suites": {
     "ui": {
@@ -17,11 +17,176 @@
     "ida": {
       "passed": 24,
       "failed": 0
+    },
+    "motion": {
+      "passed": 24,
+      "failed": 0
+    },
+    "display": {
+      "passed": 16,
+      "failed": 0
     }
   },
-  "native_arcade_assertions": "passed; 512 boards, wrapping Snake, Flappy flower collision and safe gaps",
-  "elf_sha256": "435402bd250ccb5a14cafeda29790d272a1e5961cf10c59bc18a555343db2eca",
-  "firmware_sha256": "b3e37fd323aaf481333ba8e830b9a5798e8a57bf861fcdfea1862afb15aa8ed3",
-  "firmware_bytes": 4011268,
-  "hardware": "No ST-LINK detected; not flashed; FPS not measured."
+  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
+  "firmware_sha256": "f44b47e66a2f461505114bb594063422eb6fd2a57b9761201f0d351af8d27f86",
+  "firmware_bytes": 4045464,
+  "hardware": {
+    "board": "STM32U5A9J-DK",
+    "flashed": true,
+    "flash_verification": "Download verified successfully",
+    "measurements": {
+      "FOLDER_OPEN": [
+        {
+          "round": 0,
+          "elapsed_ms": 341,
+          "frames": 8,
+          "max_flush_ms": 31,
+          "max_total_ms": 37,
+          "gpu_commands": 621,
+          "presented_fps": 23.46
+        },
+        {
+          "round": 1,
+          "elapsed_ms": 341,
+          "frames": 8,
+          "max_flush_ms": 31,
+          "max_total_ms": 37,
+          "gpu_commands": 621,
+          "presented_fps": 23.46
+        },
+        {
+          "round": 2,
+          "elapsed_ms": 341,
+          "frames": 8,
+          "max_flush_ms": 33,
+          "max_total_ms": 39,
+          "gpu_commands": 621,
+          "presented_fps": 23.46
+        }
+      ],
+      "FOLDER_CLOSE": [
+        {
+          "round": 0,
+          "elapsed_ms": 355,
+          "frames": 9,
+          "max_flush_ms": 32,
+          "max_total_ms": 37,
+          "gpu_commands": 621,
+          "presented_fps": 25.35
+        },
+        {
+          "round": 1,
+          "elapsed_ms": 355,
+          "frames": 9,
+          "max_flush_ms": 32,
+          "max_total_ms": 37,
+          "gpu_commands": 621,
+          "presented_fps": 25.35
+        },
+        {
+          "round": 2,
+          "elapsed_ms": 355,
+          "frames": 9,
+          "max_flush_ms": 32,
+          "max_total_ms": 37,
+          "gpu_commands": 621,
+          "presented_fps": 25.35
+        }
+      ],
+      "WHEEL": [
+        {
+          "elapsed_ms": 724,
+          "frames": 28,
+          "max_total_ms": 27,
+          "presented_fps": 38.67
+        }
+      ],
+      "APP_ENTRY": [
+        {
+          "window_ms": 1009,
+          "frames": 11,
+          "max_total_ms": 36
+        }
+      ],
+      "FLAPPY": [
+        {
+          "round": 0,
+          "elapsed_ms": 1000,
+          "frames": 35,
+          "max_flush_ms": 32,
+          "max_total_ms": 38,
+          "render_total_ms": 944,
+          "gpu_commands": 2449,
+          "scenery_steps": 49,
+          "presented_fps": 35.0
+        },
+        {
+          "round": 1,
+          "elapsed_ms": 1002,
+          "frames": 36,
+          "max_flush_ms": 33,
+          "max_total_ms": 38,
+          "render_total_ms": 956,
+          "gpu_commands": 2571,
+          "scenery_steps": 48,
+          "presented_fps": 35.93
+        },
+        {
+          "round": 2,
+          "elapsed_ms": 1001,
+          "frames": 35,
+          "max_flush_ms": 33,
+          "max_total_ms": 38,
+          "render_total_ms": 956,
+          "gpu_commands": 2448,
+          "scenery_steps": 50,
+          "presented_fps": 34.97
+        }
+      ],
+      "FINAL": [
+        {
+          "UI_STATUS": 4,
+          "GPU_TIMEOUTS": 0,
+          "UART_ERRORS": 0
+        }
+      ]
+    },
+    "baseline": {
+      "elf_sha256": "7314ae7b78df0af7213638d9278775fe94549294a1bec5f26d8471e8f8dac773",
+      "flappy": {
+        "elapsed_ms": 1001,
+        "frames": 14,
+        "max_total_ms": 70
+      },
+      "folder_open": {
+        "elapsed_ms": 345,
+        "frames": 2,
+        "max_total_ms": 101
+      },
+      "folder_close": {
+        "elapsed_ms": 303,
+        "frames": 2,
+        "max_total_ms": 85
+      },
+      "source": "Measured before these changes on the same attached STM32U5A9J-DK."
+    },
+    "settings_journal_unchanged": true,
+    "scope": "Hardware presentation counters during three opening/closing and first-second Flappy runs; GPU-rendered framebuffer captures visually checked. Not camera or physical finger measurements.",
+    "captures": [
+      "output/device-gpu-menu.png",
+      "output/device-gpu-folder.png",
+      "output/device-gpu-flappy.png",
+      "output/device-gpu-flappy-tilt.png"
+    ],
+    "runtime": {
+      "ui_status": 4,
+      "heartbeat_advances": true,
+      "uart_advances": true,
+      "uart_errors": 0,
+      "rtc_lse": 1,
+      "gpu_timeouts": 0
+    },
+    "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
+    "firmware_sha256": "f44b47e66a2f461505114bb594063422eb6fd2a57b9761201f0d351af8d27f86"
+  }
 }

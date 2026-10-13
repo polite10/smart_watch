@@ -44,6 +44,7 @@ int main(void)
     /* Every edge wraps; a long straight run remains alive across repeated seams. */
     for(unsigned direction=0;direction<4;++direction) {
         watch_snake_new(&s,3);s.phase=WATCH_GAME_RUNNING;s.direction=direction;
+        s.bug_count=0; /* Isolate legacy edge-wrap rules from insect collisions. */
         for(unsigned i=0;i<4;++i) s.body[i]=(watch_cell_t){
             direction==WATCH_RIGHT ? 17-i : direction==WATCH_LEFT ? i : 9,
             direction==WATCH_DOWN ? 17-i : direction==WATCH_UP ? i : 9};
@@ -60,12 +61,14 @@ int main(void)
     s.body[0]=(watch_cell_t){17,9};s.body[1]=(watch_cell_t){0,9};s.food=(watch_cell_t){1,1};watch_snake_step(&s);
     assert(s.phase==WATCH_GAME_OVER); /* Wrapping into the body is still fatal. */
     watch_snake_new(&s,4);s.phase=WATCH_GAME_RUNNING;s.direction=WATCH_UP;
+    s.bug_count=0;
     s.body[0]=(watch_cell_t){2,2};s.body[1]=(watch_cell_t){3,2};s.body[2]=(watch_cell_t){3,1};s.body[3]=(watch_cell_t){2,1};s.food=(watch_cell_t){10,10};
     watch_snake_step(&s);assert(s.phase==WATCH_GAME_RUNNING && s.body[0].y==1); /* old tail is legal */
     s.body[0]=(watch_cell_t){2,2};s.body[1]=(watch_cell_t){2,1};s.body[2]=(watch_cell_t){3,1};s.body[3]=(watch_cell_t){3,2};
     watch_snake_step(&s);assert(s.phase==WATCH_GAME_OVER);
     /* Hamiltonian body fills all but the next head cell; eating it wins safely. */
     watch_snake_new(&s,5);s.phase=WATCH_GAME_RUNNING;s.length=323;s.direction=WATCH_LEFT;
+    s.bug_count=0;
     s.body[0]=(watch_cell_t){1,0};unsigned at=1;
     for(unsigned y=0;y<18;++y) for(unsigned x=0;x<18;++x) if(!(y==0 && x<2)) s.body[at++]=(watch_cell_t){x,y};
     s.food=(watch_cell_t){0,0};watch_snake_step(&s);assert(s.phase==WATCH_GAME_WON && s.length==324);
@@ -79,16 +82,16 @@ int main(void)
     watch_flappy_new(&f,9);f.phase=WATCH_GAME_RUNNING;f.y=110;watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
     watch_flappy_new(&f,10);f.phase=WATCH_GAME_RUNNING;f.y=393;watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
     watch_flappy_new(&f,11);assert(f.score==0 && f.phase==WATCH_GAME_READY);
-    /* Flower lip collisions use the shared visual centers, while the middle
-       of both decorated gaps remains safely passable. */
+    /* A collectible flower awards once; passing the gap still remains safe. */
     for(unsigned i=1;i<3;++i) {
         watch_flappy_new(&f,20+i);f.phase=WATCH_GAME_RUNNING;
-        f.pipes[i]=(watch_pipe_t){147,240,false};
+        f.pipes[i]=(watch_pipe_t){.x=62.2f,.gap_y=240,.scored=true,.flower=true};
         float fx,fy;assert(watch_flappy_flower(i,&f.pipes[i],&fx,&fy));
-        f.y=fy+(i==1 ? 15 : -15);f.velocity=-0.25f;
-        watch_flappy_step(&f);assert(f.phase==WATCH_GAME_OVER);
+        f.y=fy;f.velocity=-0.25f;
+        watch_flappy_step(&f);assert(f.phase==WATCH_GAME_RUNNING && f.score==1 && f.pipes[i].collected);
+        watch_flappy_step(&f);assert(f.score==1);
         watch_flappy_new(&f,20+i);f.phase=WATCH_GAME_RUNNING;
-        f.pipes[i]=(watch_pipe_t){147,240,false};f.y=240;f.velocity=-0.25f;
+        f.pipes[i]=(watch_pipe_t){.x=62.2f,.gap_y=240,.scored=true,.flower=true};f.y=240;f.velocity=-0.25f;
         watch_flappy_step(&f);assert(f.phase==WATCH_GAME_RUNNING);
     }
     watch_snake_vm_new(12);watch_snake_vm_start();watch_snake_vm_turn(0,-40);watch_snake_vm_step();assert(watch_snake_vm_state()->direction==WATCH_UP);

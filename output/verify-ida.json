@@ -99,7 +99,7 @@
       "Large time jumps are capped instead of teleporting"
     ]
   ],
-  "elf_sha256": "435402bd250ccb5a14cafeda29790d272a1e5961cf10c59bc18a555343db2eca",
-  "firmware_sha256": "b3e37fd323aaf481333ba8e830b9a5798e8a57bf861fcdfea1862afb15aa8ed3",
+  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
+  "firmware_sha256": "f44b47e66a2f461505114bb594063422eb6fd2a57b9761201f0d351af8d27f86",
   "scope": "Actual ARM IDA ViewModel, no LVGL or physical sensors initialized."
 }

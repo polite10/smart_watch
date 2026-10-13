@@ -16,7 +16,8 @@ with (ROOT/'Debug/Smartwatch.elf').open('rb') as f:
  for cu in dwarf.iter_CUs():
   for die in cu.iter_DIEs():
    if die.tag in ('DW_TAG_typedef','DW_TAG_structure_type') and 'DW_AT_name' in die.attributes:
-    types.setdefault(die.attributes['DW_AT_name'].value.decode(),die)
+    name=die.attributes['DW_AT_name'].value.decode()
+    if name not in types or (die.tag=='DW_TAG_structure_type' and die.has_children):types[name]=die
  def resolve(die):
   while die.tag in ('DW_TAG_typedef','DW_TAG_const_type'):die=die.get_DIE_from_attribute('DW_AT_type')
   return die
@@ -34,6 +35,7 @@ with (ROOT/'Debug/Smartwatch.elf').open('rb') as f:
  dma_format=offset('DMA2D_HandleTypeDef','LayerCfg[1].InputColorMode')
  blend_fields={name:offset('lv_draw_sw_blend_image_dsc_t',name) for name in ['dest_buf','dest_w','dest_h','dest_stride','mask_buf','src_buf','src_stride','src_color_format','opa','blend_mode']}
  gfx0=offset('GFXMMU_HandleTypeDef','Init.Buffers.Buf0Address');gfx1=offset('GFXMMU_HandleTypeDef','Init.Buffers.Buf1Address')
+ timer_last_run=offset('_lv_timer_t','last_run')
 u.reg_write(UC_ARM_REG_C1_C0_2,0xf00000);u.reg_write(UC_ARM_REG_FPEXC,0x40000000)
 regs=[UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3];tick=1000
 checks=[]
@@ -77,6 +79,7 @@ def render():
  global render_count
  render_count+=1;ret()
 replace('lv_display_flush_ready',ready);replace('lv_display_refr_timer',render)
+replace('lv_draw_nema_gfx_init',lambda:ret()) # GPU rendering is measured on the physical board.
 call('lv_init');call('lv_tick_set_cb',symbols['HAL_GetTick']);display=call('lv_display_create',480,480);timer=call('lv_display_get_refr_timer',display)
 u.mem_write(symbols['hlcd_gfxmmu']+gfx0,struct.pack('<I',0x21000000));u.mem_write(symbols['hlcd_gfxmmu']+gfx1,struct.pack('<I',symbols['back_framebuffer']))
 AREA=0x210f0000;PIXELS=symbols['draw_buffer']
@@ -85,8 +88,12 @@ call('flush',display,AREA,PIXELS)
 check(read32(symbols['pending_display'])==display and ready_count==0,'Last flush returns without waiting for vblank and retains buffer ownership')
 call('watch_platform_display_poll');check(len(copies)==1 and ready_count==0,'Polling before reload neither copies nor releases a pending frame')
 call('display_refresh',timer);check(render_count==0,'Refresh callback cannot render over a pending hidden buffer')
-call('HAL_LTDC_ReloadEventCallback',symbols['hlcd_ltdc']);tick+=16;call('watch_platform_display_poll')
+call('HAL_LTDC_ReloadEventCallback',symbols['hlcd_ltdc']);tick+=16
+# A callback gated just before presentation must not add a fresh refresh period.
+u.mem_write(timer+timer_last_run,struct.pack('<I',tick))
+call('watch_platform_display_poll')
 check(ready_count==1 and read32(symbols['pending_display'])==0,'Reload completion releases exactly one pending frame in the main loop')
+check(tick-read32(timer+timer_last_run)>16,'Queued refresh is immediately eligible after vblank even if its callback was recently gated')
 check(read32(symbols['smartwatch_sync_bytes'])==1024,'A 16x16 update synchronizes 1024 bytes instead of the entire 737280-byte buffer')
 check(copies[-1][2:]==(16,16,752,752),'Dirty synchronization uses correct input and output virtual strides')
 check(bytes(u.mem_read(0x24000000+(104*768+96)*4,64))==bytes(range(64)),'The hidden buffer contains the presented pixels for the next partial frame')

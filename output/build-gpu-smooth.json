@@ -1,0 +1,14 @@
+{
+  "compiled_sources": 511,
+  "errors": 0,
+  "warnings": 0,
+  "clean_build": true,
+  "text_bytes": 4044624,
+  "data_bytes": 832,
+  "bss_bytes": 2517536,
+  "ram_free_after_reserved_heap_stack": 37536,
+  "flash_settings_start": "0x083FC000",
+  "nema_files_verified_against_v9_3_0": 28,
+  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
+  "firmware_sha256": "f44b47e66a2f461505114bb594063422eb6fd2a57b9761201f0d351af8d27f86"
+}

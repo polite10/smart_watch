@@ -155,8 +155,11 @@ static void _draw_nema_gfx_img(lv_draw_task_t * t, const lv_draw_image_dsc_t * d
                       lv_area_get_height(&(layer->buf_area)), dst_nema_cf, stride);
 
     if(!LV_COLOR_FORMAT_IS_INDEXED(src_cf)) {
+        /* At 1:1 scale the assets already contain antialiased edge pixels.
+         * Bilinear filtering needlessly fetches four texels per output pixel
+         * from internal flash. Reserve it for actual rotation or scaling. */
         nema_bind_src_tex((uintptr_t)(src_buf), tex_w, tex_h, src_nema_cf, src_stride,
-                          dsc->antialias ? NEMA_FILTER_BL : NEMA_FILTER_PS);
+                          has_transform && dsc->antialias ? NEMA_FILTER_BL : NEMA_FILTER_PS);
     }
     else {
         nema_bind_lut_tex((uintptr_t)((uint8_t *)src_buf + LV_COLOR_INDEXED_PALETTE_SIZE(src_cf) * 4), tex_w, tex_h,
@@ -179,6 +182,17 @@ static void _draw_nema_gfx_img(lv_draw_task_t * t, const lv_draw_image_dsc_t * d
                                                                                                                       uint32_t)dsc->opa);
         nema_set_const_color(rgba);
         blending_mode |= NEMA_BLOP_MODULATE_A;
+    }
+
+    if(src_cf == LV_COLOR_FORMAT_RGB565A8) {
+        /* LVGL stores RGB565 followed by an A8 plane, each with its own stride.
+         * TEX3 follows source texture coordinates, including clipped/rotated
+         * blits, so transparent folder corners and sprite edges stay intact. */
+        uint32_t color_stride = img_dsc->header.stride ? img_dsc->header.stride : img_dsc->header.w * 2U;
+        const uint8_t * alpha = (const uint8_t *)src_buf + color_stride * img_dsc->header.h;
+        nema_bind_tex(NEMA_TEX3, (uintptr_t)alpha, tex_w, tex_h, NEMA_A8,
+                      color_stride / 2U, has_transform && dsc->antialias ? NEMA_FILTER_BL : NEMA_FILTER_PS);
+        blending_mode |= NEMA_BLOP_STENCIL_TXTY;
     }
 
     if(!has_transform && masked && !recolor) {

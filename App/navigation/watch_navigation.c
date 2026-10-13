@@ -2,9 +2,10 @@
 bool display_awake=true;
 /* Global interaction tuning. Views only register their parent screen. */
 enum { DOUBLE_TAP_MS=300, DOUBLE_TAP_RADIUS=32, TAP_MAX_MS=200,
-       EDGE_WIDTH=64, BACK_DISTANCE=64, HOME_DISTANCE=24, PAGE_SLIDE_MS=240 };
+       EDGE_WIDTH=64, BACK_DISTANCE=64, HOME_DISTANCE=24, PAGE_SLIDE_MS=320 };
 static bool blank_tap_pending,slide_active;
 static uint32_t slide_started;
+static lv_screen_load_anim_t home_slide=LV_SCR_LOAD_ANIM_MOVE_LEFT;
 
 static void enter_x(void *obj, int32_t value) { lv_obj_set_style_translate_x(obj,value,0); }
 
@@ -33,23 +34,26 @@ static void navigation_show(unsigned screen,bool going_back)
        settings and editors. Forward app entry keeps the lighter content motion. */
     if(going_back || (previous==screens[MENU] && screen==HOME) || (previous==screens[HOME] && screen==MENU)) {
         slide_active=true;slide_started=lv_tick_get();
-        lv_screen_load_anim(screens[screen],going_back || screen==HOME ? LV_SCR_LOAD_ANIM_MOVE_RIGHT : LV_SCR_LOAD_ANIM_MOVE_LEFT,PAGE_SLIDE_MS,0,false);
+        lv_screen_load_anim_t direction=going_back || screen==HOME ? LV_SCR_LOAD_ANIM_MOVE_RIGHT : home_slide;
+        lv_screen_load_anim(screens[screen],direction,PAGE_SLIDE_MS,0,false);
         return;
     }
     slide_active=false;
     lv_screen_load(screens[screen]);
     lv_obj_update_layout(screens[screen]);
-    if(screen==HOME || screen==MENU || screen==FLAPPY || screen==SNAKE || screen==IDA) return; /* Lock and notification response remain immediate. */
+    if(screen==HOME || screen==MENU) return;
     for(unsigned i=0; i<lv_obj_get_child_count(screens[screen]); ++i) {
         lv_obj_t *child=lv_obj_get_child(screens[screen],i);
         if(child==page_titles[screen] || lv_obj_has_flag(child,LV_OBJ_FLAG_HIDDEN)) continue;
+        /* Full-screen artwork stays put while the app's content arrives. */
+        if(lv_obj_get_width(child)>=480 && lv_obj_get_height(child)>=480) continue;
         lv_anim_t animation; lv_anim_init(&animation);
         lv_anim_set_var(&animation,child);
         lv_anim_set_exec_cb(&animation,enter_x);
-        lv_anim_set_values(&animation,24,0);
-        lv_anim_set_duration(&animation,180);
+        lv_anim_set_values(&animation,64,0);
+        lv_anim_set_duration(&animation,440);
 
-        lv_anim_set_path_cb(&animation,lv_anim_path_ease_out);
+        lv_anim_set_path_cb(&animation,lv_anim_path_ease_in_out);
         lv_anim_start(&animation);
     }
 }
@@ -131,7 +135,11 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
             consumed=moved=true;edge_contact=false;second_tap=false;
         }
         if(dx*dx+dy*dy>=HOME_DISTANCE*HOME_DISTANCE) {
-            if(!moved && home_contact && lv_screen_active()==screens[HOME])watch_navigation_show(MENU);
+            if(!moved && home_contact && lv_screen_active()==screens[HOME]) {
+                if(dx*dx>=dy*dy)home_slide=dx>0 ? LV_SCR_LOAD_ANIM_MOVE_RIGHT : LV_SCR_LOAD_ANIM_MOVE_LEFT;
+                else home_slide=dy>0 ? LV_SCR_LOAD_ANIM_MOVE_BOTTOM : LV_SCR_LOAD_ANIM_MOVE_TOP;
+                watch_navigation_show(MENU);
+            }
             moved=true;second_tap=false;
         }
         if(consumed)data->state=LV_INDEV_STATE_RELEASED;
@@ -155,4 +163,4 @@ void watch_ui_touch(lv_indev_data_t *data, uint32_t now)
 }
 
 void watch_navigation_init(void)
-{ display_awake=true;blank_tap_pending=slide_active=false; }
+{ display_awake=true;blank_tap_pending=slide_active=false;home_slide=LV_SCR_LOAD_ANIM_MOVE_LEFT; }

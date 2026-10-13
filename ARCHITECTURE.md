@@ -12,9 +12,15 @@ oluşturma, yerleşim, renkler ve çizim yalnız View katmanındadır. RTOS ekle
 | `App/viewmodels/` | Ekran durumu, düzenleme taslakları, kullanıcı komutları, ekrana hazır metinler |
 | `App/views/` | LVGL ekranları, ortak widget yardımcıları, kadran çizimi, ikon/font varlıkları |
 | `App/services/` | Kalıcı kayıt ve saat servisi sözleşmeleri, saat değişimi bildirimi |
-| `App/platform/` | STM32 RTC, flash günlüğü, DMA2D/LTDC ekran ve dokunmatik bağlantıları |
+| `App/platform/` | STM32 RTC, flash günlüğü, NeoChrom/DMA2D/LTDC ekran ve dokunmatik bağlantıları |
 | `App/navigation/` | Sayfa geçişleri, kenar kaydırması, çift dokunma, kilit/ekran açık-kapalı davranışı |
 | `Core/Src/main.c` | Donanımı başlatır, uygulamayı bağlar, RTC/LVGL/LED ana döngüsünü çalıştırır |
+
+LED/DMA durum ekranı, `watch_dma_service.h` salt okunur telemetri sözleşmesini
+kullanır. STM32 uygulaması mevcut UART tamamlama callback'inde baytları sayar;
+View saniyede bir, yalnız menü veya ayrıntı ekranı açıkken metinleri yeniler.
+Aktarım sıklığını, LED zamanlayıcısını veya DMA yapılandırmasını değiştirmez.
+Bu donanım göstergesi View'den okunur; oyun Model/ViewModel'lerine HAL eklenmez.
 
 Bağımlılık yönü: **View → ViewModel → Model/Servis**. Platform, servislerin donanım
 işlevlerini uygular. Saat servisi bir callback ile uygulama ViewModel'ine sonucu
@@ -129,7 +135,8 @@ fiziği ilerletmez.
 statik görseldir; SIM etiketi gerçek telemetri olmadığı bilgisini verir.
 `watch_art.c` flash RGB565 arka planları ve ARGB8888 kuş içerir;
 `output/generate-arcade-art.py` ve `output/generate-menu-icons.py` varlıkları üretir.
-GPU2D/NemaGFX sürücüsü eklenmedi; var olan yazılım çizimi/DMA2D kopyası kullanılır.
+GPU2D/NemaGFX çizim birimi etkin; desteklenmeyen işlemler yazılım birimine düşer.
+DMA2D flush ve çift framebuffer eşitleme kopyalarını yürütür.
 
 ## Doğrulama
 
@@ -239,10 +246,12 @@ atan2 geçişi ±180° etrafında normalize edilir. Hız sınırlıdır; bırak�
 bırakışa hız verilmez. Klasör açma/ekran değiştirme yarım animasyonu sonlandırır.
 İkon merkezleri her zaman 178 px yarıçapındadır; merkez oyunlar bu hesaba girmez.
 
-Saat/menü için LVGL MOVE_LEFT/MOVE_RIGHT kullanılır, ekranlar silinmez.
+Saatten menüye geçişte baskın parmak yönüne göre LVGL MOVE_LEFT/MOVE_RIGHT/
+MOVE_TOP/MOVE_BOTTOM kullanılır, ekranlar silinmez.
 Bütün kenar-geri işlemleri `watch_navigation_back()` üzerinden aynı MOVE_RIGHT
 geçişini kullanır; sayfalar yalnız `back_targets` ile üst sayfalarını tanımlar.
-İleri uygulama açılışlarındaki 180 ms içerik hareketi korunur. LVGL ekran geçişi süresince
+İleri uygulama açılışlarında 64 px / 440 ms yumuşak içerik hareketi kullanılır.
+LVGL ekran geçişi süresince
 indev okumayı durdurur; geçiş sonrasında hâlâ basılı görünen temas bırakılana
 kadar tüketilir. Testler animasyon sonunda gerçek okuma döngüsündeki boşta
 bırakma örneğini de gönderir. Ekran yükleme/geçiş bitişinde layout çözülür;
@@ -254,25 +263,58 @@ modeldedir; VM başarısız kayıtta önceki seçimi geri yükler. `face_color`,
 Üç bitmap flash'ta RGB565 tutulur; PNG kaynakları ve üretim istemleri
 `output/wallpapers/` içindedir. `generate-arcade-art.py` yeniden üretir.
 
-Flappy'nin dekoratif katmanları küçük LVGL nesneleri olarak taşınır; çalışma
-anında tüm ekranlık yeni canvas veya dönüşüm tamponu ayrılmaz. Görsel adımlar
-fizik adımlarıyla ilerler ve oyunla birlikte donar. `watch_flappy_flower`,
-çiçek engelinin merkezini hem çizime hem modelin daire/dikdörtgen çarpışma
-hesabına sağlar. Kelebekler ve zemindeki çiçekler çarpışmaya dahil değildir.
+Flappy'nin dekoratif katmanları önceden rasterize edilmiş RGB565A8 görsellerdir.
+Altı görsel açılışta LZ4'ten 214.068 bayta çözülür; 270.000 baytlık klasör
+tamponunu paylaşır. Bu iki ekran aynı anda görünmez. Tampon devralınınca klasörün
+önbellek etiketi geçersiz kılınır; menüye dönüş eski pikseli kullanmaz. Boyut sınırı
+derleme sırasında denetlenir. Yeni tam ekran canvas ayrılmaz. Görsel adımlar
+fizik adımlarıyla ilerler ve oyunla birlikte donar; başlangıç ekranında yalnız
+dekoratif katmanlar kayar. `watch_flappy_flower`, borudan 110 px sonraki boş
+koridorun merkezini çizim ve bonus çarpışmasına sağlar. Her 2–5 yeni boruda bir
+çiçek doğar, yalnız bir kez +1 puan verir. `watch_flappy_bee` ayrı koridorlarda,
+merkez rotadan 32 px yana küçük salınımla konum sağlar; temas oyunu bitirir.
+Bir koridorda arı ve çiçek birlikte doğmaz. Boru aralığı, boşluğu ve fiziği korunur.
+
+Yılanın üç böceği RAM'deki oyun durumunda saklanır. Yem seçimi böcekleri ve
+gövdeyi dışlar; kazanma için kullanılabilir 321 hücre dikkate alınır. View,
+ışık/gölge ve küçük çalı/taş ayrıntıları olan zemini mevcut RGB565 tamponuna
+prosedürel çizer. Hareket eden hücrelerin altında aynı zemin geri yüklenir;
+ayrı büyük görsel veya tampon ayrılmaz. Kenar sarma ve gövde çarpışması korunur.
 
 ### Değişen arka planlarla klasör animasyonu
 
 Önceki 11 Ekim opak karelerinin yerini 17 bağımsız RGB565A8/LZ4 kare aldı.
 Opak kareler duvar kâğıdını ve ikon yuvalarını içerdiğinden yeni çarkla uyumsuzdu.
-Yeni kareler yalnız yarı saydam klasör ve oyun ikonlarını içerir; 260 ms harekete
-16 ms civarında örneklenir. Önceki kareleri çözmeden doğrudan hedef kareye gidilir;
+Yeni kareler yalnız yarı saydam klasör ve oyun ikonlarını içerir; 340 ms harekete
+göre örneklenir. Önceki kareleri çözmeden doğrudan hedef kareye gidilir;
 ileri/geri ve atlanan tick'ler aynı sonucu verir. Animasyon sırasında canlı
 klasör/oyun nesneleri gizlenir, hedef kare sonunda yeniden etkinleşir. Tek tampon
 270.000 bayttır; 17 kare flash'ta 497.420 bayt kullanır. Eski tam ekran backdrop
-kaldırılmıştır. Opak RGB565 arka planlar DMA2D yolunu kullanmayı sürdürür.
+kaldırılmıştır. Opak ve RGB565A8 görseller NeoChrom yolunu kullanır; yazılımın
+opak RGB565 geri dönüş yolu DMA2D renk dönüştürücüsünü kullanabilir.
 
 `generate-folder-frames.py` mevcut ikon kaynaklarını Pillow ile rasterize eder;
 projeye dahil BSD lisanslı LZ4'ü yerel C derleyicisiyle geçici kütüphaneye derler.
 Ek pip/ağ bağımlılığı olmadan her kareyi sıkıştırıp birebir açılabildiğini doğrular.
-Yeni firmware için eski donanım klasör süreleri geçerli kabul edilmez; kartta
-FPS ölçümü henüz yapılmamıştır.
+Güncel kart ölçümleri `output/verify-graphics-performance.json` içindedir;
+önceki sürümlerin donanım süreleri yeni sürüme ait kabul edilmez.
+
+### NeoChrom komutları ve kare sunumu
+
+`watch_gpu_stm32.c` GPU2D saatini ve tamamlanma kesmesini başlatır. LVGL 9.3.0
+ile eşleşen Cortex-M33 hard-float NemaGFX kütüphanesi `Middlewares/NemaGFX`
+içindedir; kaynak ve Git blob bilgisi oradaki README'de kayıtlıdır.
+RGB565A8 renk düzlemi TEX1, alfa düzlemi A8/TEX3 üzerinden çizilir. Ek bitmap
+maskesi gereken işlem yazılıma bırakılır. 1:1 görsellerde nokta örnekleme,
+dönüş/ölçeklemede bilinear filtre kullanılır. CPU D-cache etkinleştirilmemiştir;
+komut ve piksel yazıları donanım başlatılmadan önce DSB ile tamamlanır.
+Komut listesi beklemesi 100 ms ile sınırlıdır; tamamlanma kimliği karşılaştırması
+sayaç taşmasını da karşılar. GPU tamamlanmaları ve zaman aşımları sayılır.
+
+480×160 ARGB8888 çizim tamponu tam ekranı üç şeritte işler. DMA2D gizli ekran
+tamponunu doldurur; LTDC vblank sunumundan sonra yalnız kirli bölgeler diğer
+tampona eşitlenir. Bu sırada gelen bir refresh callback'i engellenip zamanını
+ilerletse bile sunum bitince timer hemen hazır edilir. Böylece güvenli tampon
+devri korunur ve yeni çizime fazladan 16 ms bekleme eklenmez.
+`smartwatch_frame_total_ms` ve birikimli/max sayaçları çizim, vblank beklemesi ve
+eşitleme dahil uçtan uca kare süresini gösterir; saf GPU süresi değildir.

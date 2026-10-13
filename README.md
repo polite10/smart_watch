@@ -2,7 +2,84 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
-## Kadran, uygulama çarkı ve aurora — 12 Ekim 2026
+## Arayüz ve oyun yenilikleri — 13 Ekim 2026
+
+- Klasik saatte tarih, su ve pil bilgisi ibrelerin üzerinde okunur; ibreler yarı
+  saydamdır. Saatten uygulamalara geçiş, parmağın dört yöndeki kaydırmasını izler.
+- Uygulama içeriğinin açılışı 64 px hareket ve 440 ms yumuşak geçiş kullanır.
+  Çarkın hafif sürüklenmesi ve 720 ms savurma, 340 ms klasör animasyonu korunur.
+- Bulmaca taşları daha açık renkler ve kabartma kenarlar kullanır; doğru konum
+  yeşildir. Yeni oyun düğmesi kaldırıldı; çıkıp yeniden açmak yeni oyun başlatır.
+- Flappy çiçekleri her 2–5 yeni engelde bir, borular arasındaki boş koridorun
+  ortasında gelir. Dokunmak bir bonus puan, boruyu geçmek normal puan kazandırır.
+  Arılar ayrı koridorlarda, merkez rotanın yanında görünür; temas oyunu bitirir.
+  Bulutlar ve iki tepe katmanı farklı hızlarda, başlangıç ekranında da hareket eder.
+- Yılanın 2D zemini ışıklı kenarlar, gölge, çalı ve taş ayrıntılarıyla derinlik
+  kazanır. Üç böcek başlangıç gövdesi ve yemden ayrı doğar; temas oyunu bitirir.
+  Kenardan karşı tarafa geçiş ve küçük alanları yeniden çizme davranışı korunur.
+- Uygulamalar çarkındaki saat düğmesinin yerine canlı **DMA / bayt** göstergesi
+  geldi. Dokununca tamamlanan aktarım, toplam bayt, hata ve LED durumu açılır.
+  Mevcut TIM6 LED yönetimi ve RAM → USART1 TX DMA aktarımı değiştirilmedi:
+  hedef sıklık saniyede bir mesaj, 192 bayt tampon, 115200 baud. Mesaj boyu canlı
+  sayaçların basamak sayısına göre değişir. Bu bilgi CPU kullanım ölçümü değildir.
+
+Bu yeniliklerde GPU/ekran sürücüsü ayarları değiştirilmedi. Odaklı ARM/UI
+kontrolleri [yenilik raporunda](output/verify-refinements.json) bulunur.
+Son derleme 0 hata / 0 uyarı; 25 odaklı kontrol ve kısa kart kontrolü geçti.
+Kartta tek örnekte Flappy 40 kare / 1021 ms, Yılan 40 kare / 1000 ms verdi;
+klasör açılışı 362 ms içinde 8 kare sundu. En uzun kare süreleri sırasıyla
+26, 14 ve 37 ms idi. Son DMA mesajı 110 bayt; UART hatası ve GPU zaman aşımı
+sıfır. Firmware doğrulanarak yüklendi ve kart saat ekranında çalışır bırakıldı.
+Kullanıcı kayıt formatı korunur; günlükteki kayıtların CRC kontrolü geçmiştir.
+12 Ekim yedeğindeki bütün kayıtlı yuvalar günlükte aynı içerikle durur;
+o yedekten sonra eklenen dört geçerli kayıt nedeniyle ham günlük birebir aynı değildir.
+Aşağıdaki performans ve kapsamlı test sonuçları önceki GPU sürümüne aittir.
+
+## GPU ve akıcı animasyonlar — 12 Ekim 2026, önceki sürüm
+
+NeoChrom GPU2D artık LVGL'nin NemaGFX çizim birimi üzerinden çalışır. RGB565A8
+görsellerin ayrı alfa düzlemi GPU'da işlenir; DMA2D ekran kopyalarını yürütür.
+Flappy'nin bulut, tepe, çiçek ve kelebekleri her karede yeniden rasterize edilmek
+yerine GPU'ya hazır görsellerden çizilir. Mevcut klasör tamponu oyunla paylaşılır;
+oyundan menüye dönüşte klasör karesi yeniden çözülür. Ekran sunumundan sonra
+bekleyen çizimin gereksiz bir 16 ms daha gecikmesi de kaldırıldı.
+
+Aynı STM32U5A9J-DK üzerindeki önce/sonra ölçümü:
+
+| Ölçüm | Önce | Güncel sürüm |
+|---|---:|---:|
+| Flappy'nin ilk saniyesinde sunulan kare hızı | yaklaşık 14 FPS | 35–36 FPS |
+| Klasör açılışında sunulan kare | 2 | 8 |
+| Klasör kapanışında sunulan kare | 2 | 9 |
+| Klasör açılışındaki en uzun kare süresi | 101 ms | 37–39 ms |
+
+Flappy ve klasör ölçümleri üçer kez tekrarlandı. Çarkın hızlı savurma hareketi
+724 ms içinde 28 kare sundu; uygulama girişinde 11 kare ve en fazla 36 ms kare
+süresi ölçüldü. Uygulama girişinin ardından durağan ekran da ölçüm penceresine
+dahildir; bu satır sürekli oyun FPS'si olarak yorumlanmaz.
+
+Çarkta sürükleme kazancı %10 arttı, dönüş eşiği 4° yerine 3° oldu. Savurma
+süresi 620 → 720 ms, tahmini süzülme mesafesi yaklaşık %17 arttı. Uygulama
+açılışları 180 → 280 ms, ekran kaymaları 240 → 320 ms, klasör açılış/kapanışı
+260 → 340 ms oldu. Klasör hareketi yumuşak hızlanma ve yavaşlama kullanır.
+
+Temiz ARM derlemesi **511 kaynak, 0 hata, 0 uyarı** ile tamamlandı. Aynı son ELF
+üzerinde **407 kontrol geçti**: 266 UI/dokunma, 60 Model/ViewModel, 17 Flappy,
+24 İDA, 24 çark/ortak tampon ve 16 ekran sürücüsü kontrolü. Son firmware karta
+yüklendi, flash doğrulaması geçti ve uygulama çalışır durumda bırakıldı.
+GPU zaman aşımı ve UART hata sayacı sıfır; heartbeat ve RTC çalışıyor.
+16 KB kullanıcı kayıt günlüğü yükleme öncesi yedekle birebir aynı kaldı.
+
+[Birleşik test raporu](output/verify-interactions.json),
+[donanım performans raporu](output/verify-graphics-performance.json),
+[temiz derleme raporu](output/build-gpu-smooth.json).
+Donanım ölçümleri kare sunum sayaçlarından alınır; görseller kartın gerçek
+framebuffer'ından okunmuştur. Fiziksel parmak hissi otomatik olarak ölçülmez.
+`output/Verify-Graphics-Performance.ps1` donanım denetimini tekrar çalıştırır;
+ardından `output/render-device-graphics.py` yakalanan ekranları PNG'ye dönüştürür.
+Aşağıdaki bölümler önceki sürümlerin tarihli notlarıdır.
+
+## Kadran, uygulama çarkı ve aurora — 12 Ekim 2026, önceki sürüm
 
 - **Klasik kadran:** işaretlerin yarıçapı 166 → 218 px oldu. Tarih ve su bilgisi
   kadranın içine alındı; rakamlar, ibreler ve pil etiketi yeni çembere göre hizalandı.

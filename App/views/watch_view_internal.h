@@ -6,7 +6,7 @@
 #include "services/watch_display_service.h"
 #include <stdio.h>
 #include <string.h>
-enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, PUZZLE, FLAPPY, SNAKE, IDA, WALLPAPER, SCREEN_COUNT };
+enum { HOME, MENU, CALENDAR, SETTINGS, ALARMS, ALARM_EDIT, CALCULATOR, NOTES, NOTE_EDIT, FACES, WATER, WATER_SETTINGS, HISTORY, CLOCK_EDIT, PUZZLE, FLAPPY, SNAKE, IDA, WALLPAPER, DMA_STATUS, SCREEN_COUNT };
 extern lv_obj_t *screens[SCREEN_COUNT], *page_titles[SCREEN_COUNT];
 extern unsigned back_targets[SCREEN_COUNT];
 void button_motion(lv_obj_t *button);
@@ -24,6 +24,9 @@ bool watch_menu_ring_drag(lv_point_t point,uint32_t now);
 bool watch_menu_ring_end(uint32_t now);
 void arcade_init(void);
 void flappy_open(void);
+/* Folder motion and Flappy scenery are never visible together. Reuse their
+ * large decoded-pixel storage; borrowing invalidates the folder's frame tag. */
+void *watch_menu_scenery_buffer(void);
 void snake_open(void);
 void arcade_leave(unsigned screen);
 void ida_init(void);

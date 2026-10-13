@@ -195,6 +195,10 @@ static int32_t nema_gfx_evaluate(lv_draw_unit_t * draw_unit, lv_draw_task_t * ta
                     break;
 #endif
                 const lv_image_dsc_t * img_dsc = draw_image_dsc->src;
+                /* TEX3 supplies the separate RGB565A8 alpha plane. An additional
+                 * bitmap mask would need a second mask stage; keep that in SW. */
+                if(img_dsc->header.cf == LV_COLOR_FORMAT_RGB565A8 && draw_image_dsc->bitmap_mask_src)
+                    break;
                 if(!lv_nemagfx_is_cf_supported(img_dsc->header.cf))
                     break;
 

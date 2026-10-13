@@ -40,6 +40,9 @@ def replace(name,callback):
     u.hook_add(UC_HOOK_CODE,lambda uc,a,size,d: callback(),begin=addr,end=addr)
 replace('HAL_GetTick',lambda:ret(tick))
 replace('watch_display_blend_rgb565',lambda:ret(0)) # LV_RESULT_INVALID: fallback; DMA tested separately
+# The simulator exercises the same LVGL tasks with its software unit. Actual
+# NeoChrom rendering, alpha masks and timing are checked on the attached board.
+replace('lv_draw_nema_gfx_init',lambda:ret())
 replace('watch_storage_load',lambda:ret(0))
 storage_ok=True
 replace('watch_storage_save',lambda:ret(int(storage_ok)))
@@ -83,13 +86,13 @@ def cstring(addr):
 def text(name):return cstring(call('lv_label_get_text',pointer(name)))
 screens=lambda i:pointer('screens',i)
 def load(i):call('lv_screen_load',screens(i))
-def settle(milliseconds=400):
+def settle(milliseconds=500):
     global tick
     for _ in range(0,milliseconds,20):
         tick+=20
         call('anim_timer',0)
 
-def snapshot(name,wait=400):
+def snapshot(name,wait=500):
     settle(wait)
     call('lv_display_refr_timer',0)
     im=Image.frombytes('RGBA',(480,480),bytes(frame),'raw','BGRA').convert('RGB')
@@ -121,7 +124,7 @@ def active():return call('lv_screen_active')
 call('lv_init');call('lv_tick_set_cb',symbols['HAL_GetTick'])
 display=call('lv_display_create',480,480)
 call('lv_display_set_color_format',display,0x10)
-call('lv_display_set_buffers',display,symbols['draw_buffer'],0,480*40*4,0)
+call('lv_display_set_buffers',display,symbols['draw_buffer'],0,sizes['draw_buffer'],0)
 call('lv_display_set_flush_cb',display,symbols['flush'])
 input_device=call('lv_indev_create');call('lv_indev_set_type',input_device,1)
 call('lv_indev_set_read_cb',input_device,symbols['read_touch'])
@@ -137,7 +140,7 @@ check(power[-1] is False,'Single tap turns the panel off')
 sample(True);sample(False,delta=50)
 check(power[-1] is True and active()==screens(0),'Wake tap shows clock and is consumed')
 sample(True);sample(True,280,240)
-settle(280)
+settle(400)
 check(active()==screens(1),'Moving 40px slides from clock to menu')
 sample(False,280,240)
 snapshot('menu')
@@ -156,7 +159,7 @@ sample(True,240,197)
 check(not call('lv_obj_has_state',pointer('menu_games'),0x20),'Closed folder icon never enters pressed state')
 check(call('lv_obj_get_style_prop',pointer('menu_games'),0,110)==256,'Closed folder icon never scales on contact')
 sample(False,240,197,48)
-check(active()==screens(1) and u.mem_read(symbols['folder_moving'],1)[0], 'Folder opens on release without a 260ms wait')
+check(active()==screens(1) and u.mem_read(symbols['folder_moving'],1)[0], 'Folder animation starts on first release')
 check(not call('lv_obj_has_flag',pointer('menu_games'),2),'Game selection is disabled during expansion')
 settle(80);call('lv_obj_update_layout',screens(1))
 check(0<read32(symbols['folder_frame'])<16 and not call('lv_obj_has_flag',pointer('folder_canvas'),1),'Expansion presents an intermediate cached frame without live widget scaling')
@@ -212,7 +215,7 @@ settle(180);call('lv_obj_update_layout',screens(14))
 check((call('lv_obj_get_x',tile),call('lv_obj_get_y',tile))==destination and not u.mem_read(symbols['puzzle_moving'],1)[0],
       'Tile finishes exactly at the empty-cell destination and releases the input guard')
 old=board();tap(240,428)
-check(board()!=old and moves()==0,'New game button reshuffles and clears the move count')
+check(board()==old,'The removed new-game area cannot reset a puzzle')
 old=board()
 swipe_back();tap(240,197);tap(240,165)
 check(board()!=old and moves()==0,'Opening the puzzle from the menu starts a new game')
@@ -229,8 +232,8 @@ check(board()==list(range(1,16))+[0] and text('puzzle_status')=='Tebrikler! / 8 
 check(text('puzzle_best')=='En iyi: 8 hamle','Completed puzzle shows the best completed move count')
 tap_object(pointer('puzzle_tiles',15))
 check(moves()==8,'Completed puzzle ignores tile taps')
-tap(240,428)
-check(not u.mem_read(puzzle_state+17,1)[0] and moves()==0 and 'Tebrikler' not in text('puzzle_status'),'Restart dismisses the win state')
+call('watch_navigation_show',1);call('puzzle_open');settle()
+check(not u.mem_read(puzzle_state+17,1)[0] and moves()==0 and 'Tebrikler' not in text('puzzle_status'),'Reopening dismisses the win state')
 
 swipe_back()
 # Interrupt menu motion by entering and immediately leaving an app.
@@ -430,25 +433,25 @@ tap(240,280)
 check(struct.unpack('<H',u.mem_read(water_offset,2))[0]==before+200,'Notification buttons bypass double-tap delay and add one glass')
 
 # Validate the shorter arbitration window separately from the page animation.
-call('watch_navigation_show',1);settle(280);sample(False);call('lv_display_refr_timer',0)
+call('watch_navigation_show',1);settle(400);sample(False);call('lv_display_refr_timer',0)
 sample(True,354,104);sample(False,354,104,40)
 check(active()==screens(6),'Menu app opens at release with no added tap wait')
 sample(False,354,104,36)
 translation=call('lv_obj_get_style_prop',pointer('calc_label'),0,108)
-check(0<translation<24,'Ordinary content has a visible intermediate 180ms entry frame')
-sample(False,354,104,160)
-check(call('lv_obj_get_style_prop',pointer('calc_label'),0,108)==0,'Content entry animation ends within 200ms')
+check(0<translation<64,'Content has a visible intermediate frame during its slower entry')
+sample(False,354,104,440)
+check(call('lv_obj_get_style_prop',pointer('calc_label'),0,108)==0,'Content entry animation settles after 440ms')
 before=text('calc_label')
 sample(True,126,178);sample(False,126,178,40);sample(False,126,178,119)
 check(text('calc_label')!=before,'App control responds on release without double-tap waiting')
 sample(False,126,178,1)
 check(active()==screens(6),'App remains open after the former arbitration window')
 
-call('watch_navigation_show',1);settle(280);sample(False);call('lv_display_refr_timer',0)
+call('watch_navigation_show',1);settle(400);sample(False);call('lv_display_refr_timer',0)
 sample(True,240,197);sample(False,240,197,40)
 sample(True,280,263);sample(False,280,263,40)
 check(active()==screens(1),'Tapping a game during folder expansion cannot launch it')
-settle(200);call('lv_display_refr_timer',0)
+settle(300);call('lv_display_refr_timer',0)
 sample(True,305,278);sample(False,305,278,40)
 check(active()==screens(15),'Expanded Flappy icon opens on first release')
 fp=call('watch_flappy_vm_state')
@@ -496,9 +499,8 @@ check('snake_controls' not in symbols and 'watch_motion_start' not in symbols,'S
 frozen=bytes(u.mem_read(sp,664));game_tick(160)
 check(bytes(u.mem_read(sp,664))==frozen,'The ready board waits for the first touch before moving')
 snapshot('snake-ready')
-background=0x00A4
 canvas=lambda:struct.unpack('<82944H',u.mem_read(symbols['snake_pixels'],288*288*2))
-check(all(canvas()[y*288+x]==background for x,y in ((0,0),(16,0),(0,16),(32,16))),'Snake background is solid with no grid lines')
+check(len(set(canvas()[y*288+x] for x,y in ((0,0),(2,2),(2,14),(15,8))))>=3,'Snake ground has illuminated edges and shaded depth')
 sample(True,240,240);sample(True,244,234,16)
 check(sphase()==1 and not u.mem_read(sp+656,1)[0],'Snake starts immediately and ignores small finger jitter')
 sample(True,240,190,16)
@@ -563,7 +565,7 @@ for direction in range(4):
     expected=(0,9) if direction==0 else (9,0) if direction==1 else (17,9) if direction==2 else (9,17)
     check(head()==expected and sphase()==1,'Snake wraps across edge %d without losing'%direction)
     pic=canvas()
-    def lit(x,y):return pic[y*288+x]!=background
+    def lit(x,y):return pic[y*288+x]!=call('snake_ground_pixel',x,y)
     if direction in (0,2):
         edges=any(lit(x,150) for x in range(8)) and any(lit(x,150) for x in range(280,288))
         middle=all(not lit(x,150) for x in range(80,208))
@@ -711,7 +713,7 @@ sample(True,240,120);sample(False,240,120,40);sample(True,240,120,100);sample(Fa
 settle(100);snapshot('home-slide',wait=0)
 check(active()==screens(0) and call('lv_display_get_screen_prev',0)==screens(1),'Empty-space double tap reveals the clock while both screens remain visible')
 check(-480<struct.unpack('<i',struct.pack('<I',call('lv_obj_get_x',screens(0))))[0]<0 and 0<call('lv_obj_get_x',screens(1))<480,'Clock and launcher occupy intermediate slide positions')
-settle(200);sample(False)
+settle(260);sample(False)
 check(active()==screens(0) and call('lv_display_get_screen_prev',0)==0,'Slide completes with one active clock screen')
 # Home and empty space within an app retain their distinct rules.
 load(10);call('lv_display_refr_timer',0)

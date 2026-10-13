@@ -1,0 +1,20 @@
+[
+  {
+    "name": "DeviceBoot",
+    "url": "https://github.com/polite10/DeviceBoot",
+    "private": true,
+    "commit": "7a3d99fc75ede66ab44e6763bc0b3ce8a57e22dd"
+  },
+  {
+    "name": "Duello",
+    "url": "https://github.com/polite10/Duello",
+    "private": true,
+    "commit": "b03bf83a608a229f5448824ac75d94ea1b82fc1b"
+  },
+  {
+    "name": "DeviceStudio",
+    "url": "https://github.com/polite10/DeviceStudio",
+    "private": true,
+    "commit": "488148a5e572071f415e4c33da3fde4322824b09"
+  }
+]

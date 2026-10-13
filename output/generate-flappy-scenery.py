@@ -8,27 +8,48 @@ import sys,struct
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tmp/art-libs'))
 from PIL import Image,ImageDraw
+import math
 import lz4.block
 SCALE=4
-dimensions=[(100,46),(270,126),(270,116),(20,20),(20,20),(28,22)]
+dimensions=[(128,52),(270,96),(270,80),(20,20),(20,20),(28,22),(28,22),(576,6)]
 raw=bytearray()
 for i,(w,h) in enumerate(dimensions):
-    im=Image.new('RGBA',(w*SCALE,h*SCALE));d=ImageDraw.Draw(im)
+    design_h=128 if i==1 else 116 if i==2 else h
+    im=Image.new('RGBA',(w*SCALE,design_h*SCALE));d=ImageDraw.Draw(im)
     def rect(x,y,width,height,radius,color):
         d.rounded_rectangle((x*SCALE,y*SCALE,(x+width)*SCALE-1,(y+height)*SCALE-1),radius=radius*SCALE,fill=color)
     if i==0:
-        rect(0,20,100,26,13,'#2d5773');rect(18,8,40,36,18,'#2d5773');rect(45,0,44,44,22,'#2d5773')
-    elif i in (1,2):rect(0,0,w,h,h/2,'#24566d' if i==1 else '#193e56')
+        rect(0,24,128,28,14,'#7faac4');rect(15,16,40,35,18,'#9fc2d1')
+        rect(38,2,51,48,24,'#c4d9dc');rect(75,12,39,38,19,'#abcbd7')
+        rect(8,29,112,15,8,'#d2e3df')
+    elif i==1:
+        points=[(0,128),(0,72),(29,57),(58,18),(92,52),(136,9),(177,53),(215,32),(270,72),(270,128)]
+        d.polygon([(x*SCALE,y*SCALE) for x,y in points],fill='#659aaa')
+        for peak,left,right in [((58,18),(35,51),(84,43)),((136,9),(110,39),(164,42)),((215,32),(196,53),(240,58))]:
+            d.polygon([(x*SCALE,y*SCALE) for x,y in [left,peak,right,(peak[0]+2,peak[1]+21)]],fill='#c8d8d2')
+        d.polygon([(x*SCALE,y*SCALE) for x,y in [(0,100),(40,75),(86,89),(128,67),(177,85),(223,70),(270,100),(270,128),(0,128)]],fill='#447c8b')
+    elif i==2:
+        d.polygon([(x*SCALE,y*SCALE) for x,y in [(0,116),(0,68),(45,43),(95,66),(140,47),(188,63),(236,46),(270,70),(270,116)]],fill='#356d66')
+        for n,x in enumerate(range(-8,280,26)):
+            height=36+(n*19)%37;base=101+(n%3)*4
+            d.rectangle(((x+10)*SCALE,(base-height+8)*SCALE,(x+14)*SCALE,base*SCALE),fill='#274d49')
+            for level in range(3):
+                top=base-height+level*height*.23;bottom=top+height*.52;half=8+level*4
+                d.polygon([((x+12)*SCALE,top*SCALE),((x+12-half)*SCALE,bottom*SCALE),((x+12+half)*SCALE,bottom*SCALE)],fill=['#3e8370','#2f6b5e','#245c51'][level])
+        d.polygon([(x*SCALE,y*SCALE) for x,y in [(0,112),(30,96),(80,111),(128,98),(178,110),(220,95),(270,110),(270,116),(0,116)]],fill='#294f48')
     elif i in (3,4):
         color='#e790a4' if i==3 else '#bfade8'
         for x,y in [(5,0),(0,5),(10,5),(5,10)]:rect(x,y,10,10,5,color)
         rect(6,6,8,8,4,'#ffe6a0')
-    else:
-        rect(8,0,9,11,5,'#eefaff');rect(14,1,9,10,5,'#c9eaf4')
+    elif i in (5,6):
+        rect(8,0 if i==5 else 10,9,11,5,'#eefaff');rect(14,1 if i==5 else 11,9,10,5,'#c9eaf4')
         rect(2,7,22,13,6,'#ffd465')
         rect(8,8,3,11,1,'#493b35');rect(15,8,3,11,1,'#493b35')
         rect(20,7,7,11,4,'#ffe69a');rect(23,9,2,3,1,'#222c35')
         rect(0,11,4,3,1,'#493b35');rect(24,4,1,4,0,'#493b35')
+    else:
+        for x in range(0,576,96):
+            rect(x+1,1,16,4,2,'#cbac79');rect(x+3,1,10,2,1,'#d9ba86')
     im=im.resize((w,h),Image.Resampling.LANCZOS)
     colors=bytearray();alpha=bytearray()
     for r,g,b,a in im.get_flattened_data():
@@ -41,7 +62,7 @@ assert lz4.block.decompress(packed,uncompressed_size=len(raw))==raw
 header='''#ifndef WATCH_FLAPPY_SCENERY_H
 #define WATCH_FLAPPY_SCENERY_H
 #include <stdint.h>
-enum { WATCH_SCENERY_COUNT=6, WATCH_SCENERY_BYTES=%d };
+enum { WATCH_SCENERY_COUNT=8, WATCH_SCENERY_BYTES=%d };
 extern const uint8_t watch_flappy_scenery[];
 extern const uint32_t watch_flappy_scenery_size;
 extern const uint16_t watch_scenery_widths[WATCH_SCENERY_COUNT],watch_scenery_heights[WATCH_SCENERY_COUNT];

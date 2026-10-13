@@ -264,21 +264,33 @@ modeldedir; VM başarısız kayıtta önceki seçimi geri yükler. `face_color`,
 `output/wallpapers/` içindedir. `generate-arcade-art.py` yeniden üretir.
 
 Flappy'nin dekoratif katmanları önceden rasterize edilmiş RGB565A8 görsellerdir.
-Altı görsel açılışta LZ4'ten 214.068 bayta çözülür; 270.000 baytlık klasör
-tamponunu paylaşır. Bu iki ekran aynı anda görünmez. Tampon devralınınca klasörün
+Sekiz görsel (iki arı kanat pozu ve tek tekrarlanan zemin şeridi dahil) açılışta
+LZ4'ten 178.992 bayta çözülür; 270.000 baytlık klasör tamponunu paylaşır. Bu iki
+ekran aynı anda görünmez. Tampon devralınınca klasörün
 önbellek etiketi geçersiz kılınır; menüye dönüş eski pikseli kullanmaz. Boyut sınırı
 derleme sırasında denetlenir. Yeni tam ekran canvas ayrılmaz. Görsel adımlar
 fizik adımlarıyla ilerler ve oyunla birlikte donar; başlangıç ekranında yalnız
 dekoratif katmanlar kayar. `watch_flappy_flower`, borudan 110 px sonraki boş
 koridorun merkezini çizim ve bonus çarpışmasına sağlar. Her 2–5 yeni boruda bir
 çiçek doğar, yalnız bir kez +1 puan verir. `watch_flappy_bee` ayrı koridorlarda,
-merkez rotadan 32 px yana küçük salınımla konum sağlar; temas oyunu bitirir.
+merkez rotanın bir yanında 38 px temel uzaklık ve puana bağlı 10–14 px salınımla
+konum sağlar; temas oyunu bitirir. Yatay salınım ±6 px'tir. Yeni arılar 0–29,
+30–59 ve 60+ puanda sırasıyla 6–8, 4–6 ve 3–4 yeni engel aralığıyla planlanır;
+çiçekle çakışma bir engel ertelenir. Zorluk yalnız sonraki doğumları etkiler.
 Bir koridorda arı ve çiçek birlikte doğmaz. Boru aralığı, boşluğu ve fiziği korunur.
+
+Bulmaca ve Yılan çevresi 320×320 RGB565/LZ4 arka planlardır. Aynı klasör önbelleği
+204.800 baytlık tek görsel için devralınır; Flappy de aynı alanı kullanır. Bu
+oyunlar birlikte görünmez. Arka plan 480×480 LVGL image stretch ile çizilir ve
+uygulama girişindeki içerik animasyonuna katılmaz. Her oyun açılışı kendi
+görselini yeniden çözer ve klasör etiketi geçersiz kalır.
 
 Yılanın üç böceği RAM'deki oyun durumunda saklanır. Yem seçimi böcekleri ve
 gövdeyi dışlar; kazanma için kullanılabilir 321 hücre dikkate alınır. View,
-ışık/gölge ve küçük çalı/taş ayrıntıları olan zemini mevcut RGB565 tamponuna
-prosedürel çizer. Hareket eden hücrelerin altında aynı zemin geri yüklenir;
+ince toprak/çim dokusunu mevcut RGB565 tamponuna prosedürel çizer. Bağlı gövde,
+gölgeli yuvarlak kapsüllerle çizilir; baş açısı dönüş boyunca interpolasyonla
+değişir. Böceklerin ayak pozu 160 ms'de değişir ve yalnız çalışırken ilerler.
+Hareket eden hücrelerin altında aynı zemin geri yüklenir;
 ayrı büyük görsel veya tampon ayrılmaz. Kenar sarma ve gövde çarpışması korunur.
 
 ### Değişen arka planlarla klasör animasyonu

@@ -56,7 +56,7 @@ c['load'](1);call('puzzle_open');c['settle']()
 puzzle=call('watch_puzzle_vm_state')
 board=bytes(u.mem_read(puzzle,16));blank=board.index(0)
 children=[call('lv_obj_get_child',c['screens'](14),i) for i in range(call('lv_obj_get_child_count',c['screens'](14)))]
-check(len(children)==19,'Puzzle has its fifteen stones and no new-game button')
+check(len(children)==20,'Puzzle has its backdrop and fifteen stones without a new-game button')
 slot=next(i for i in range(16) if abs(i//4-blank//4)+abs(i%4-blank%4)==1)
 value=board[slot];call('lv_obj_send_event',pointer('puzzle_tiles',value),10,0);c['settle'](200)
 check(u.mem_read(puzzle+blank,1)[0]==value and c['read32'](puzzle+20)==1,'Stone moves still follow the original puzzle rules')
@@ -78,8 +78,8 @@ deltas=[(signed(v)-signed(call('lv_obj_get_x',pointer(n))))%period for n,v,perio
 check(phase()==0 and deltas[0]>=18 and len(set(deltas))==3,
       'Ready screen visibly scrolls clouds and two hill layers at distinct speeds')
 call('watch_flappy_vm_flap');call('watch_flappy_vm_pause')
-frozen=bytes(u.mem_read(state,64));step=c['read32'](symbols['scenery_steps']);tick(160)
-check(bytes(u.mem_read(state,64))==frozen and c['read32'](symbols['scenery_steps'])==step,'Pausing preserves physics and parallax')
+frozen=bytes(u.mem_read(state,68));step=c['read32'](symbols['scenery_steps']);tick(160)
+check(bytes(u.mem_read(state,68))==frozen and c['read32'](symbols['scenery_steps'])==step,'Pausing preserves physics and parallax')
 
 # Safe pipe fixture: the collectible's visible center is shared with the model.
 call('watch_flappy_vm_new',23);call('watch_flappy_vm_flap')

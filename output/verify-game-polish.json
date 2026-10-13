@@ -1,0 +1,167 @@
+{
+  "passed": 22,
+  "failed": 0,
+  "checks": [
+    [
+      true,
+      "Score 0 schedules bees every 6--8 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Score 29 schedules bees every 6--8 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Score 30 schedules bees every 4--6 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Score 59 schedules bees every 4--6 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Score 60 schedules bees every 3--4 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Score 90 schedules bees every 3--4 obstacles and keeps flower corridors free"
+    ],
+    [
+      true,
+      "Actual bee density rises at 30 and 60, then stays capped"
+    ],
+    [
+      true,
+      "Score 0 bee patrol moves in both axes while preserving center escape lane"
+    ],
+    [
+      true,
+      "Score 30 bee patrol moves in both axes while preserving center escape lane"
+    ],
+    [
+      true,
+      "Score 60 bee patrol moves in both axes while preserving center escape lane"
+    ],
+    [
+      true,
+      "Cloud, mountain, forest and ground layers scroll at four distinct speeds"
+    ],
+    [
+      true,
+      "Pause freezes the new bee schedule and parallax"
+    ],
+    [
+      true,
+      "Flowers retain their safe +1 bonus"
+    ],
+    [
+      true,
+      "Moving bee contact still ends the run"
+    ],
+    [
+      true,
+      "Puzzle workshop covers the area around the board"
+    ],
+    [
+      true,
+      "Snake garden replaces the shared backdrop and invalidates folder cache"
+    ],
+    [
+      true,
+      "Snake moves between grid ticks with bounded incremental drawing"
+    ],
+    [
+      true,
+      "Continuous Snake body wraps cleanly without leaving streaks at any seam"
+    ],
+    [
+      true,
+      "Curved Snake turns restore the same pixels as a fresh drawing"
+    ],
+    [
+      true,
+      "Detailed insects retain the original fatal collision rule"
+    ],
+    [
+      true,
+      "Reopening Puzzle restores its exact workshop backdrop"
+    ],
+    [
+      true,
+      "Returning to Flappy reloads its scenery without stale shared pixels"
+    ]
+  ],
+  "bee_counts_over_84_spawns": {
+    "0": 11,
+    "29": 11,
+    "30": 16,
+    "59": 16,
+    "60": 22,
+    "90": 22
+  },
+  "elf_sha256": "4cc2811c8e9242a26eeeb0acc0213a7a293cda8b7587c93dca06feb7c069863b",
+  "firmware_sha256": "de0ed698aea1614bc9b02c5a863daf68e83a1f1f17be6bd32991e4d972854e49",
+  "scope": "Focused real ARM model and LVGL drawing; device timing is measured separately.",
+  "hardware": {
+    "board": "STM32U5A9J-DK",
+    "flashed": true,
+    "download_verified": true,
+    "measurements": {
+      "FOLDER": {
+        "elapsed_ms": 364,
+        "frames": 8,
+        "max_total_ms": 39
+      },
+      "FLAPPY": {
+        "elapsed_ms": 1000,
+        "frames": 39,
+        "max_total_ms": 28
+      },
+      "SNAKE": {
+        "elapsed_ms": 1000,
+        "frames": 42,
+        "max_total_ms": 17
+      },
+      "DMA": {
+        "completed_before": 61,
+        "completed_after": 62,
+        "bytes_before": 6323,
+        "bytes_after": 6425,
+        "message_bytes": 102,
+        "errors": 0
+      },
+      "FINAL": {
+        "UI_STATUS": 4,
+        "HEARTBEAT_BEFORE": 61,
+        "HEARTBEAT_AFTER": 62,
+        "GPU_TIMEOUTS": 0
+      }
+    },
+    "journal_matches_before_final_flash": true,
+    "prior_committed_slots_preserved": true,
+    "journal_crc_valid": true,
+    "scope": "One short device sample per game and folder; actual UART/DMA counters and framebuffer previews. Hardware input restored, clock screen active."
+  },
+  "gpu_configuration_unchanged_during_game_polish": true,
+  "build": {
+    "errors": 0,
+    "warnings": 0,
+    "text": 4101448,
+    "data": 832,
+    "bss": 2517792,
+    "ram_free_bytes_after_heap_and_stack": 37280
+  },
+  "firmware_bytes": 4102288,
+  "date": "2026-10-13",
+  "serial": {
+    "port": "COM5",
+    "baud": 115200,
+    "format": "8N1",
+    "flow_control": "none",
+    "sample_lines": [
+      "LED=LD3 mode=OFF state=OFF toggle_ms=0 cycle_ms=0 presses=1 uptime_ms=131627 uart_ok=130 uart_errors=0",
+      "LED=LD3 mode=OFF state=OFF toggle_ms=0 cycle_ms=0 presses=1 uptime_ms=132626 uart_ok=131 uart_errors=0"
+    ],
+    "target_period_ms": 1000
+  }
+}

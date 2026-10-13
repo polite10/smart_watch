@@ -27,6 +27,8 @@ void flappy_open(void);
 /* Folder motion and Flappy scenery are never visible together. Reuse their
  * large decoded-pixel storage; borrowing invalidates the folder's frame tag. */
 void *watch_menu_scenery_buffer(void);
+void watch_game_background_init(unsigned screen);
+void watch_game_background_load(unsigned screen);
 void snake_open(void);
 void arcade_leave(unsigned screen);
 void ida_init(void);

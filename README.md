@@ -2,7 +2,56 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
-## Arayüz ve oyun yenilikleri — 13 Ekim 2026
+## Oyun hareketi, manzaralar ve zorluk — 13 Ekim 2026
+
+- Flappy arıları 0–29 puanda 6–8, 30–59 puanda 4–6, 60 ve üstünde 3–4
+  yeni engel aralığıyla planlanır. Çiçekle çakışan arı bir engel ertelenir.
+  Yeni arılar yalnız yeni engellerle gelir; görünen koridorlarda aniden belirmez.
+  Yoğunluk 60'tan sonra sınırlıdır. İki eksendeki küçük salınım, kanat çırpışı
+  ve yatış görünür; merkezde kaçış yolu korunur.
+- Bulutlar 80, uzak dağlar 35, yakın orman 95 ve zemin ayrıntıları 135 px/s
+  kayar. Başlangıç ekranı da hareketlidir; duraklatma manzarayı dondurur.
+- Bulmaca çevresi ahşap bir masa, Yılan çevresi eğrelti otları, taş ve çiçekli
+  bir bahçedir. 320×320 RGB565 arka planlar mevcut klasör tamponunda tek tek
+  açılıp 480×480 ekrana ölçeklenir; ayrı büyük RAM tamponu yoktur.
+- Yılan gövdesi yuvarlak ve bağlıdır; daralan kuyruk, gölgeli deri, gözler ve
+  dönüşle birlikte dönen baş kullanır. Toprakta ince doku ve alçak çimler,
+  böceklerde kabuk, göz, anten ve hareketli ayaklar bulunur. 18×18 oyun alanı,
+  dokunma yönleri, kenar sarma ve ölümcül böcek çarpışması korunur.
+
+GPU/ekran sürücüsü ayarları bu değişikliklerde aynı kaldı. Odaklı ARM kontrolleri
+ve kısa cihaz ölçümü [oyun raporunda](output/verify-game-polish.json) bulunur.
+[LVGL'den hareketli parallax önizlemesi](output/flappy-polish-parallax.gif).
+
+Son derleme 0 hata / 0 uyarı; 22 odaklı ARM/UI kontrolü ve son kart kontrolü
+geçti. Kartta tek kısa örnekte Flappy 39 kare / 1000 ms, Yılan 42 kare / 1000 ms
+verdi; en uzun kareleri 28 ve 17 ms idi. Klasör açılışı 364 ms içinde 8 kare,
+en fazla 39 ms kare süresi sundu. Son DMA mesajı 102 bayt; UART hatası ve GPU
+zaman aşımı sıfır. Zemin ayrıntıları tek kaydırılan görsel şeritte birleştirilerek
+ayrı çizim bölgelerinin maliyeti azaltıldı. Firmware doğrulanarak karta yüklendi;
+kart saat ekranında çalışır bırakıldı. Kayıt alanı son yükleme öncesiyle birebir
+aynıdır ve kayıt CRC kontrolleri geçmiştir. Ölçümler uzun süreli performans testi değildir.
+
+### PuTTY'de LED/DMA çıktısı
+
+ST-LINK Virtual COM Port için **115200 baud, 8 veri biti, parity yok, 1 stop
+biti, flow control yok** seçilir. Bu bilgisayarda port COM5'tir. Mevcut firmware
+saniyede bir satır gönderir; son yüklemeden sonra gerçekten okunan örnek:
+
+```text
+LED=LD3 mode=OFF state=OFF toggle_ms=0 cycle_ms=0 presses=1 uptime_ms=131627 uart_ok=130 uart_errors=0
+LED=LD3 mode=OFF state=OFF toggle_ms=0 cycle_ms=0 presses=1 uptime_ms=132626 uart_ok=131 uart_errors=0
+```
+
+LED durumu, aralık, tamamlanan aktarım ve hata sayaçları ekrandaki göstergeyle
+aynı kaynaktan gelir. Terminal ayrıca mod, tam yanıp sönme döngüsü, buton basma
+sayısı ve çalışma süresini gösterir. Ekrandaki son mesaj boyu ve toplam bayt
+sayacı UART metninde yoktur; yerel DMA telemetrisinden hesaplanır. `uart_ok`,
+o satır gönderilmeden önce tamamlanan aktarım sayısıdır; ekranla bir aktarım
+fark görülebilir. DMA, RAM'deki bu metni USART1'e taşır; CPU yükü ölçülmez.
+Seri mesaj biçimi ve LED zamanlayıcısı değiştirilmedi.
+
+## Arayüz ve oyun yenilikleri — 13 Ekim 2026, önceki sürüm
 
 - Klasik saatte tarih, su ve pil bilgisi ibrelerin üzerinde okunur; ibreler yarı
   saydamdır. Saatten uygulamalara geçiş, parmağın dört yöndeki kaydırmasını izler.

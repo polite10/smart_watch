@@ -6,15 +6,38 @@
 #include "lvgl/src/libs/lz4/lz4.h"
 #include "views/watch_flappy_scenery.h"
 #include "views/watch_folder_frames.h"
+#include "views/watch_game_backdrops.h"
 
 _Static_assert(WATCH_SCENERY_BYTES <= WATCH_FOLDER_FRAME_SIZE * WATCH_FOLDER_FRAME_SIZE * 3,
     "Flappy scenery must fit the shared folder cache");
 
 static lv_obj_t *flappy_bird,*flappy_score,*flappy_best,*flappy_hint,*flappy_pause;
 static lv_obj_t *pipe_top[3],*pipe_bottom[3],*pipe_top_cap[3],*pipe_bottom_cap[3];
-static lv_obj_t *clouds[3],*hills[3],*near_hills[3],*bees[WATCH_FLAPPY_BEES],*pipe_flowers[3];
+static lv_obj_t *clouds[3],*hills[3],*near_hills[3],*bees[WATCH_FLAPPY_BEES],*pipe_flowers[3],*ground_details[1];
 static uint32_t scenery_steps;
 static lv_image_dsc_t scenery_pictures[WATCH_SCENERY_COUNT];
+static lv_obj_t *game_backgrounds[2];
+static lv_image_dsc_t game_background_picture;
+_Static_assert(WATCH_GAME_BACKDROP_BYTES<=WATCH_FOLDER_FRAME_SIZE*WATCH_FOLDER_FRAME_SIZE*3,"Game backdrop fits shared cache");
+void watch_game_background_init(unsigned screen)
+{
+    unsigned index=screen==SNAKE ? 1 : 0;
+    game_background_picture=(lv_image_dsc_t){
+        .header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=320,.h=320,.stride=640},
+        .data_size=WATCH_GAME_BACKDROP_BYTES,.data=watch_menu_scenery_buffer()};
+    lv_obj_t *image=lv_image_create(screens[screen]);game_backgrounds[index]=image;
+    lv_image_set_src(image,&game_background_picture);lv_obj_set_pos(image,0,0);lv_obj_set_size(image,480,480);
+    lv_image_set_inner_align(image,LV_IMAGE_ALIGN_STRETCH);
+    lv_obj_remove_flag(image,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_SCROLLABLE);
+}
+void watch_game_background_load(unsigned screen)
+{
+    unsigned index=screen==SNAKE ? 1 : 0;
+    void *pixels=watch_menu_scenery_buffer();
+    int decoded=LZ4_decompress_safe((const char *)watch_game_backdrops[index],pixels,
+        watch_game_backdrop_sizes[index],WATCH_GAME_BACKDROP_BYTES);
+    if(decoded==WATCH_GAME_BACKDROP_BYTES)lv_obj_invalidate(game_backgrounds[index]);
+}
 static void scenery_cache(void)
 {
     uint8_t *pixels=watch_menu_scenery_buffer();
@@ -36,6 +59,7 @@ static void scenery_cache(void)
     }
     for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i)lv_image_set_src(bees[i],&scenery_pictures[5]);
     for(unsigned i=0;i<3;++i)lv_image_set_src(pipe_flowers[i],&scenery_pictures[i%2 ? 3 : 4]);
+    lv_image_set_src(ground_details[0],&scenery_pictures[7]);
 }
 static lv_obj_t *snake_canvas,*snake_score,*snake_best,*snake_hint,*snake_pause;
 static uint16_t snake_pixels[288*288] __attribute__((aligned(4)));
@@ -46,6 +70,8 @@ static watch_cell_t snake_from[WATCH_SNAKE_CELLS],snake_picture_food;
 static lv_point_t snake_drawn[WATCH_SNAKE_CELLS];
 static unsigned snake_drawn_length;
 static watch_direction_t snake_drawn_direction;
+static watch_direction_t snake_from_direction;
+static unsigned snake_bug_frame;
 volatile uint32_t smartwatch_snake_pixel_writes;
 
 static lv_obj_t *plain(lv_obj_t *parent,int x,int y,int w,int h,uint32_t color,int radius)
@@ -59,10 +85,11 @@ static lv_obj_t *plain(lv_obj_t *parent,int x,int y,int w,int h,uint32_t color,i
 static void scenery_render(void)
 {
     for(unsigned i=0;i<3;++i) {
-        lv_obj_set_pos(clouds[i],(int)((i*220+660-scenery_steps*9/10%660)%660)-100,148+(int)i*47);
-        lv_obj_set_pos(hills[i],(int)((i*240+720-scenery_steps*13/10%720)%720)-240,348+(i%2)*12);
-        lv_obj_set_pos(near_hills[i],(int)((i*240+720-scenery_steps*18/10%720)%720)-240,378+(i%2)*8);
+        lv_obj_set_pos(clouds[i],(int)((i*220+660-scenery_steps*16/10%660)%660)-128,126+(int)i*49);
+        lv_obj_set_pos(hills[i],(int)((i*240+720-scenery_steps*7/10%720)%720)-270,260+(i%2)*6);
+        lv_obj_set_pos(near_hills[i],(int)((i*240+720-scenery_steps*19/10%720)%720)-270,336+(i%2)*5);
     }
+    if(ground_details[0])lv_obj_set_x(ground_details[0],-(int)(scenery_steps*27/10%96));
 }
 static void scenery_init(void)
 {
@@ -76,8 +103,14 @@ static void scenery_init(void)
     for(unsigned i=0;i<3;++i)lv_obj_move_foreground(hills[i]);
     for(unsigned i=0;i<3;++i)lv_obj_move_foreground(near_hills[i]);
     plain(screens[FLAPPY],0,408,480,72,0xEFCB8B,0);plain(screens[FLAPPY],0,408,480,5,0xFFF2CC,0);
+    /* One repeating strip keeps the ground in one dirty region, rather than
+     * six separate GPU submissions. Its extra 96 pixels cover the wrap. */
+    ground_details[0]=lv_image_create(screens[FLAPPY]);
+    lv_obj_set_pos(ground_details[0],0,428);
+    lv_obj_remove_flag(ground_details[0],LV_OBJ_FLAG_CLICKABLE);
     for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i) {
         bees[i]=lv_image_create(screens[FLAPPY]);lv_obj_remove_flag(bees[i],LV_OBJ_FLAG_CLICKABLE);
+        lv_image_set_pivot(bees[i],14,11);
     }
     scenery_render();
 }
@@ -117,7 +150,9 @@ static void flappy_render(void)
     for(unsigned i=0;i<WATCH_FLAPPY_BEES;++i) {
         float x,y;
         if(watch_flappy_bee(s,i,&x,&y)) {
+            lv_image_set_src(bees[i],&scenery_pictures[5+(s->steps/4+i)%2]);
             lv_obj_set_pos(bees[i],(int)x-14,(int)y-11);
+            lv_image_set_rotation(bees[i],(int)(70*sinf((s->steps%6000)*0.07f+i)));
             lv_obj_remove_flag(bees[i],LV_OBJ_FLAG_HIDDEN);
         } else lv_obj_add_flag(bees[i],LV_OBJ_FLAG_HIDDEN);
     }
@@ -149,29 +184,34 @@ static int snake_wrap_pixel(int value)
 static uint16_t snake_ground_pixel(unsigned x,unsigned y)
 {
     unsigned tx=x/16,ty=y/16,dx=x%16,dy=y%16,hash=tx*37+ty*19;
-    /* Light on the upper edges and shaded lower edges give the existing 2D
-     * grid depth. Restore this procedural surface only under moving cells. */
-    uint32_t color=(hash%3==0) ? 0x658D58 : hash%3==1 ? 0x709961 : 0x789F69;
-    if(dy==0 || dx==0)color=0x91B579;
-    if(dy>=14 || dx>=15)color=0x426C43;
-    if(hash%7==0 && dx>=3 && dx<=10 && dy>=4 && dy<=10) {
-        int a=(int)dx-6,b=(int)dy-7;
-        if(a*a+b*b<16)color=dy<7 ? 0x87BA64 : 0x477D40;
-        if(dx==6 && dy>=8)color=0x355F36;
+    const uint32_t earth[]={0x586443,0x5C6745,0x626C49,0x566141};
+    uint32_t color=earth[((x*13)^(y*29)^(x*y*7))%4];
+    /* Fine soil grain and low grass keep the board readable; taller ferns
+     * live outside the playable area in the garden backdrop. */
+    if(hash%9==0 && dy>=6 && dy<=12) {
+        if(dx==5+(12-dy)/2 || dx==10-(12-dy)/3 || (dx==8 && dy>=8))
+            color=dy<10 ? 0x9BAC66 : 0x71894E;
     }
-    if(hash%11==0 && dx>=5 && dx<=9 && dy>=7 && dy<=10)color=dy==7 ? 0xC8C7A2 : 0x8B9778;
+    if(hash%13==0 && dx>=5 && dx<=8 && dy>=7 && dy<=9)color=dy==7 ? 0xA19D77 : 0x7C8060;
     return rgb565(color);
 }
-static void snake_bug(watch_cell_t cell)
+static void snake_bug(watch_cell_t cell,unsigned frame)
 {
-    for(int y=2;y<14;++y)for(int x=2;x<14;++x) {
+    for(int y=1;y<16;++y)for(int x=0;x<16;++x) {
         uint32_t color=0;
-        int dx=x-8,dy=y-8;
-        if((x==3 || x==12) && (y==5 || y==8 || y==11))color=0x24372D;
-        if(dx*dx*2+dy*dy<27)color=x<8 ? 0xFFBA74 : 0xDB7548;
-        if(x==8 && y>=5 && y<=11)color=0x543829;
-        if((x==6 || x==10) && (y==7 || y==10))color=0x543829;
-        if(y==3 && x>=6 && x<=9)color=0x24372D;
+        int dx=x-8,dy=y-9,leg=frame%2;
+        if((x>=1 && x<=4) || (x>=12 && x<=15)) {
+            if(y==5+leg || y==9 || y==13-leg)color=0x151F1B;
+            if((x==1 || x==15) && (y==4+leg || y==14-leg))color=0xC3B18B;
+        }
+        if(dx*dx*2+dy*dy<39)color=dx< -2 ? 0xF3B871 : dx<1 ? 0xDCA15F : 0xAC653E;
+        if(dx*dx*2+dy*dy>=29 && dx*dx*2+dy*dy<39)color=0x523F2D;
+        if(x==8 && y>=5 && y<=14)color=0x533C29;
+        if((x==5 || x==11) && (y==8 || y==11))color=0x453726;
+        if(x==5 && y==6)color=0xFFE0A0;
+        if(y>=2 && y<=4 && x>=5 && x<=10)color=0x223B30;
+        if(y==1 && (x==3 || x==12))color=0x17251E;
+        if(y==3 && (x==6 || x==9))color=0xF1EACB;
         if(color)snake_pixels[(cell.y*16+y)*288+cell.x*16+x]=rgb565(color);
     }
 }
@@ -204,16 +244,55 @@ static void snake_clear(int x,int y)
     }
     snake_invalidate(x,y);
 }
-static void snake_segment(int x,int y,uint16_t color)
+static void snake_pixel(int x,int y,uint32_t color)
 {
-    uint16_t shade=(color>>1)&0x7BEF;
-    for(int dy=0;dy<14;++dy) for(int dx=0;dx<14;++dx) {
-        if((dx<2 || dx>11) && (dy<2 || dy>11)) continue;
-        uint16_t surface=dy>=11 ? shade : dy<=2 && dx>=3 && dx<=10 ? rgb565(0xDCF2B2) : color;
-        snake_pixels[snake_wrap_pixel(y+dy+1)*288+snake_wrap_pixel(x+dx+1)]=surface;
-        ++smartwatch_snake_pixel_writes;
+    snake_pixels[snake_wrap_pixel(y)*288+snake_wrap_pixel(x)]=rgb565(color);
+    ++smartwatch_snake_pixel_writes;
+}
+static int snake_delta(int from,int to)
+{
+    int delta=to-from;
+    if(delta>144)delta-=288;
+    if(delta< -144)delta+=288;
+    return delta;
+}
+static void snake_tube(lv_point_t tail,lv_point_t front,unsigned radius,unsigned skin)
+{
+    int vx=snake_delta(tail.x,front.x),vy=snake_delta(tail.y,front.y);
+    int length=vx*vx+vy*vy;
+    int x1=(vx<0 ? vx : 0)-(int)radius,x2=(vx>0 ? vx : 0)+(int)radius;
+    int y1=(vy<0 ? vy : 0)-(int)radius,y2=(vy>0 ? vy : 0)+(int)radius;
+    for(int y=y1;y<=y2;++y)for(int x=x1;x<=x2;++x) {
+        int along=length ? (x*vx+y*vy)*256/length : 0;
+        if(along<0)along=0;
+        if(along>256)along=256;
+        int dx=x-vx*along/256,dy=y-vy*along/256,dist=dx*dx+dy*dy;
+        if(dist>(int)(radius*radius))continue;
+        uint32_t color=dist>(int)((radius-1)*(radius-1)) ? 0x244A34 :
+            dy>2 ? 0x387347 : dy< -2 ? 0xA2C979 : 0x69AA5B;
+        if(dist<9 && ((x+y*2+(int)skin*3)&7)==0)color=0x4E8A4C;
+        snake_pixel(tail.x+8+x,tail.y+8+y,color);
     }
-    snake_invalidate(x,y);
+}
+static void snake_head(lv_point_t position,float angle)
+{
+    float c=cosf(angle),s=sinf(angle);
+    for(int y=-7;y<=7;++y)for(int x=-7;x<=7;++x) {
+        float hx=x*c+y*s,hy=-x*s+y*c;
+        if(hx*hx+hy*hy*1.4f>49)continue;
+        uint32_t color=y>3 ? 0x3D7744 : y< -2 ? 0xB9D88B : 0x87BD6F;
+        if(hx>1 && hx<4 && (hy>2 || hy< -2))color=0xE9E8BB;
+        if(hx>2 && hx<4 && (hy>3 || hy< -3))color=0x192F27;
+        if(hx>5 && hy> -1 && hy<1)color=0x39513C;
+        snake_pixel(position.x+8+x,position.y+8+y,color);
+    }
+}
+static void snake_food_draw(watch_cell_t food)
+{
+    int cx=food.x*16+8,cy=food.y*16+9;
+    for(int y=-5;y<=5;++y)for(int x=-5;x<=5;++x)if(x*x+y*y<=25)
+        snake_pixel(cx+x,cy+y,x< -1 && y<0 ? 0xFFB095 : y>2 ? 0xA74640 : 0xE76F59);
+    snake_pixel(cx,cy-6,0x57462E);snake_pixel(cx+1,cy-7,0xA1BF71);
 }
 static void snake_render(unsigned fraction)
 {
@@ -221,6 +300,8 @@ static void snake_render(unsigned fraction)
     lv_point_t positions[WATCH_SNAKE_CELLS];
     smartwatch_snake_pixel_writes=0;
     bool changed=!snake_picture_valid || snake_drawn_length!=s->length || snake_drawn_direction!=s->direction;
+    unsigned bug_frame=s->phase==WATCH_GAME_RUNNING ? lv_tick_get()/160 : snake_bug_frame;
+    bool bugs_changed=bug_frame!=snake_bug_frame;
     bool food=s->phase!=WATCH_GAME_WON;
     changed|=snake_food_visible!=food || (food && (snake_picture_food.x!=s->food.x || snake_picture_food.y!=s->food.y));
     for(unsigned i=0;i<s->length;++i) {
@@ -228,7 +309,7 @@ static void snake_render(unsigned fraction)
         positions[i].y=snake_motion(snake_from[i].y,s->body[i].y,fraction);
         if(i>=snake_drawn_length || positions[i].x!=snake_drawn[i].x || positions[i].y!=snake_drawn[i].y) changed=true;
     }
-    if(changed) {
+    if(changed || bugs_changed) {
         if(!snake_picture_valid) {
             for(unsigned y=0;y<288;++y)for(unsigned x=0;x<288;++x)snake_pixels[y*288+x]=snake_ground_pixel(x,y);
             smartwatch_snake_pixel_writes=288*288;
@@ -236,20 +317,22 @@ static void snake_render(unsigned fraction)
         } else {
             for(unsigned i=0;i<snake_drawn_length;++i) snake_clear(snake_drawn[i].x,snake_drawn[i].y);
             if(snake_food_visible) snake_clear(snake_picture_food.x*16,snake_picture_food.y*16);
+            if(bugs_changed)for(unsigned i=0;i<s->bug_count;++i)snake_clear(s->bugs[i].x*16,s->bugs[i].y*16);
         }
-        for(unsigned i=0;i<s->bug_count;++i)snake_bug(s->bugs[i]);
-        if(food) snake_segment(s->food.x*16,s->food.y*16,rgb565(0xFF797F));
-        for(unsigned i=s->length;i>0;--i) snake_segment(positions[i-1].x,positions[i-1].y,rgb565(i==1 ? 0xBCF5D0 : 0x80DEA7));
-        int x=positions[0].x,y=positions[0].y;
-        bool horizontal=s->direction==WATCH_RIGHT || s->direction==WATCH_LEFT;
-        int a=(s->direction==WATCH_RIGHT || s->direction==WATCH_DOWN) ? 10 : 4;
-        for(int eye=0;eye<2;++eye) for(int j=0;j<2;++j) for(int k=0;k<2;++k) {
-            int ex=horizontal ? a : 4+eye*6,ey=horizontal ? 4+eye*6 : a;
-            snake_pixels[snake_wrap_pixel(y+ey+j)*288+snake_wrap_pixel(x+ex+k)]=rgb565(0x061421);
+        for(unsigned i=0;i<s->bug_count;++i)snake_bug(s->bugs[i],bug_frame+i);
+        if(food) snake_food_draw(s->food);
+        for(unsigned i=s->length-1;i>0;--i) {
+            snake_tube(positions[i],positions[i-1],i==s->length-1 ? 4 : 6,i);
         }
+        int turn=(int)s->direction-(int)snake_from_direction;
+        if(turn>2)turn-=4;
+        if(turn< -2)turn+=4;
+        snake_head(positions[0],(snake_from_direction+turn*fraction/256.0f)*1.57079633f);
+        for(unsigned i=0;i<s->length;++i)snake_invalidate(positions[i].x,positions[i].y);
         memcpy(snake_drawn,positions,s->length*sizeof *positions);
         snake_drawn_length=s->length;snake_drawn_direction=s->direction;
         snake_picture_food=s->food;snake_food_visible=food;snake_picture_valid=true;
+        snake_bug_frame=bug_frame;
     }
     score_label(snake_score,s->score);best_label(snake_best,watch_games_vm_records()->snake_score);
     hint(snake_hint,s->phase,true);
@@ -259,6 +342,7 @@ static void snake_new(void)
 {
     save_records(snake_best);watch_snake_vm_new(lv_tick_get());
     const watch_snake_state_t *s=watch_snake_vm_state();memcpy(snake_from,s->body,s->length*sizeof *snake_from);
+    snake_from_direction=s->direction;snake_bug_frame=0;
     snake_picture_valid=false;arcade_last_tick=lv_tick_get();arcade_accumulator=0;
     snake_render(256);
 }
@@ -330,6 +414,7 @@ static void arcade_tick(lv_timer_t *timer)
         if(flappy) { watch_flappy_vm_step();++scenery_steps; }
         else {
             const watch_snake_state_t *s=watch_snake_vm_state();
+            snake_from_direction=s->direction;
             memcpy(snake_from,s->body,s->length*sizeof *snake_from);
             unsigned old_length=s->length;watch_snake_vm_step();
             s=watch_snake_vm_state();if(s->length>old_length) snake_from[old_length]=snake_from[old_length-1];
@@ -360,12 +445,12 @@ void flappy_open(void)
 }
 void snake_open(void)
 {
-    snake_contact=false;snake_new();
+    watch_game_background_load(SNAKE);snake_contact=false;snake_new();
     watch_navigation_show(SNAKE);
 }
 void arcade_init(void)
 {
-    page_header(FLAPPY,"",MENU);page_header(SNAKE,"",MENU);
+    page_header(FLAPPY,"",MENU);watch_game_background_init(SNAKE);page_header(SNAKE,"",MENU);
     lv_obj_t *sky=lv_image_create(screens[FLAPPY]);lv_image_set_src(sky,&flappy_sky);lv_obj_remove_flag(sky,LV_OBJ_FLAG_CLICKABLE);
     scenery_init();
     lv_obj_set_style_bg_color(screens[SNAKE],lv_color_hex(0x243F35),0);

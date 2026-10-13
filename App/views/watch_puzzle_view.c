@@ -89,10 +89,11 @@ static void new_game(void)
         lv_obj_set_pos(puzzle_tiles[state->tiles[slot]],slot_x(slot),slot_y(slot));
     puzzle_refresh();
 }
-void puzzle_open(void) { new_game(); watch_navigation_show(PUZZLE); }
+void puzzle_open(void) { watch_game_background_load(PUZZLE);new_game(); watch_navigation_show(PUZZLE); }
 
 void puzzle_init(void)
 {
+    watch_game_background_init(PUZZLE);
     page_header(PUZZLE,"15 Bulmaca",MENU);
     puzzle_status=label_at(screens[PUZZLE],"Hamle: 0 / 1 - 15",64,&lv_font_montserrat_16);
     puzzle_best=label_at(screens[PUZZLE],"En iyi: --",88,&watch_font_turkish_16);

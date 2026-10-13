@@ -36,3 +36,7 @@ try {
     & (Join-Path $toolchain.FullName 'tools\bin\arm-none-eabi-objcopy.exe') -O binary 'Debug/Smartwatch.elf' 'Firmware/Smartwatch.bin'
     if ($LASTEXITCODE -ne 0) { throw 'Firmware binary olusturulamadi.' }
 } finally { Pop-Location }
+$bundledPython = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
+$packagePython = if (Test-Path -LiteralPath $bundledPython) { $bundledPython } else { (Get-Command python -ErrorAction Stop).Source }
+& $packagePython (Join-Path $PSScriptRoot 'tools\package-firmware.py')
+if ($LASTEXITCODE -ne 0) { throw 'DeviceBoot firmware paketi olusturulamadi.' }

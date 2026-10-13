@@ -23,6 +23,7 @@
 #include "stm32u5xx_hal.h"
 #include "smartwatch.h"
 #include "led_button_demo.h"
+#include "device_runtime.h"
 #include "stm32u5x9j_discovery.h"
 #include "stm32u5x9j_discovery_lcd.h"
 
@@ -208,6 +209,7 @@ void GPDMA1_Channel0_IRQHandler(void)
 
 void USART1_IRQHandler(void)
 {
+  device_runtime_rx_irq();
   HAL_UART_IRQHandler(&led_demo_uart);
 }
 

@@ -6,6 +6,10 @@
 #include "services/watch_clock_service.h"
 #include "services/watch_display_service.h"
 #include "viewmodels/watch_viewmodels.h"
+#include "device_runtime.h"
+#include "device_contract.h"
+__attribute__((section(".app_info"),used))
+const device_app_info_t device_app_info={DEVICE_APP_MAGIC,DEVICE_APP_WATCH,1,DEVICE_PROTOCOL};
 volatile uint32_t smartwatch_status,smartwatch_heartbeat,smartwatch_rtc_lse;
 static void SystemClock_Config(void);
 /* Sync-Time.ps1 stops here before processing RTC on the UI thread. */
@@ -24,9 +28,11 @@ int main(void)
     watch_ui_init(); watch_ui_set_rtc_source(smartwatch_rtc_lse!=0);
     watch_ui_set_clock_valid(watch_clock_is_valid()); smartwatch_status=4;
     led_button_demo_init();
+    device_runtime_init(&led_demo_uart,"Smartwatch",NULL);
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
         led_button_demo_poll();
+        device_runtime_poll();
         if(HAL_GetTick()-last_update>=1000) { refresh_rtc(); last_update=HAL_GetTick(); ++smartwatch_heartbeat; }
         watch_platform_display_poll();
         lv_timer_handler();

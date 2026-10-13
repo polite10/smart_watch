@@ -44,9 +44,11 @@ _Min_Stack_Size = 0x2000; /* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 2496K
+  /* The last 16 SRAM bytes form the retained bootloader request mailbox. */
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 2496K - 16
   /* Last two 8 KB pages belong to the settings journal, never the firmware. */
-  ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 4080K
+  /* DeviceBoot: 32 KB boot + 8 KB commit page; application begins at +40 KB. */
+  ROM    (rx)    : ORIGIN = 0x0800A000,   LENGTH = 4040K
 }
 
 /* Sections */
@@ -58,6 +60,11 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
+  } >ROM
+
+  .app_info ORIGIN(ROM) + 0x400 :
+  {
+    KEEP(*(.app_info))
   } >ROM
 
   /* The program code and other data into "ROM" Rom type memory */

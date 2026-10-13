@@ -144,7 +144,7 @@
     ],
     [
       true,
-      "New game button reshuffles and clears the move count"
+      "The removed new-game area cannot reset a puzzle"
     ],
     [
       true,
@@ -164,7 +164,7 @@
     ],
     [
       true,
-      "Restart dismisses the win state"
+      "Reopening dismisses the win state"
     ],
     [
       true,
@@ -580,7 +580,7 @@
     ],
     [
       true,
-      "Puzzle follows the selected light theme"
+      "Puzzle status follows the selected light theme"
     ],
     [
       true,
@@ -612,7 +612,7 @@
     ],
     [
       true,
-      "Content entry animation settles within 300ms"
+      "Content entry animation settles after 440ms"
     ],
     [
       true,
@@ -692,7 +692,7 @@
     ],
     [
       true,
-      "Snake background is solid with no grid lines"
+      "Snake ground has soil grain and grass detail"
     ],
     [
       true,
@@ -1067,7 +1067,7 @@
       "Offscreen Flappy scenery stays frozen"
     ]
   ],
-  "elf_sha256": "e3aed65dd6b3963dfe8f978339d0d364de2ad01bc6e6ea9c47ea874fbdaf7e48",
-  "firmware_sha256": "f44b47e66a2f461505114bb594063422eb6fd2a57b9761201f0d351af8d27f86",
+  "elf_sha256": "74032d0b2de2d69bf6cec3dd18f33708361f49c5ae5139ec788b4307161eb732",
+  "firmware_sha256": "d370e51e32f78028d2980d39d772824df2f74093343ac720dac0fc1334812781",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }

@@ -2,6 +2,6 @@
 #define BUILD_MONTH 10
 #define BUILD_DAY 13
 #define BUILD_HOUR 21
-#define BUILD_MINUTE 0
-#define BUILD_SECOND 34
+#define BUILD_MINUTE 32
+#define BUILD_SECOND 14
 #define BUILD_WEEKDAY 2

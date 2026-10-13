@@ -4,6 +4,14 @@ Uygulama, tek ana döngü üzerinde çalışan hafif bir MVVM düzeni kullanır.
 ViewModel katmanları LVGL, HAL veya ekran nesnelerine bağımlı değildir. Widget
 oluşturma, yerleşim, renkler ve çizim yalnız View katmanındadır. RTOS eklenmemiştir.
 
+DeviceBoot uygulamayı `0x0800A000` adresinden başlatır. `Core/Src/device_runtime.c`
+USART1 RX kesmesi üzerinden sınırlı bir komut ring buffer'ı kullanır. HELLO/STATUS
+uygulama kimliğini ve Flash'taki bootloader descriptor'ını bildirir; BOOT RAM'deki
+16 baytlık mailbox'a istek yazıp sistem reseti yapar. UART TX DMA ile çakışmamak
+için cevaplar UART hazır olduğunda ana döngüden gönderilir. Saatin Model/ViewModel
+katmanları bu bağlantıya bağımlı değildir. Linker ve SystemInit vektör offset'i
+bootloader bellek sözleşmesiyle birlikte değişir.
+
 ## Katmanlar
 
 | Klasör | Sorumluluk |

@@ -49,7 +49,7 @@ static void uart_dma_init(void)
     __HAL_RCC_USART1_CLK_ENABLE();
     __HAL_RCC_GPDMA1_CLK_ENABLE();
     /* PA9/AF7 is wired to the ST-LINK virtual COM port's RX. */
-    gpio.Pin = GPIO_PIN_9;
+    gpio.Pin = GPIO_PIN_9 | GPIO_PIN_10;
     gpio.Mode = GPIO_MODE_AF_PP;
     gpio.Pull = GPIO_PULLUP;
     gpio.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -78,7 +78,7 @@ static void uart_dma_init(void)
     led_demo_uart.Init.WordLength = UART_WORDLENGTH_8B;
     led_demo_uart.Init.StopBits = UART_STOPBITS_1;
     led_demo_uart.Init.Parity = UART_PARITY_NONE;
-    led_demo_uart.Init.Mode = UART_MODE_TX;
+    led_demo_uart.Init.Mode = UART_MODE_TX_RX;
     led_demo_uart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     led_demo_uart.Init.OverSampling = UART_OVERSAMPLING_16;
     led_demo_uart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;

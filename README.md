@@ -2,6 +2,39 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Custom bootloader ve Device Studio — 13 Ekim 2026
+
+Güncel firmware **DeviceBoot** için `0x0800A000` adresine taşındı. İlk 32 KiB
+bootloader'a, sonraki 8 KiB yükleme commit kaydına ayrılır. Son 16 KiB saat
+ayarları günlüğü aynı adreste korunur. Saat ekranları ve uygulama mantığı değişmedi.
+UART RX üzerinden `HELLO`, `STATUS` ve `BOOT` komutları eklendi; mevcut LED TX DMA
+telemetrisi korunur. RAM'in son 16 baytı reset sırasında bootloader isteği taşır.
+
+Bilgisayar uygulaması [DeviceStudio](https://github.com/polite10/DeviceStudio),
+custom bootloader [DeviceBoot](https://github.com/polite10/DeviceBoot) ve ayrı
+animasyon firmware'i [Duello](https://github.com/polite10/Duello) repolarındadır.
+Yeni repolar private'dır; erişim için GitHub hesabınızla giriş gerekir.
+
+`./Build.ps1` hem `Firmware/Smartwatch.bin` hem `Firmware/Smartwatch.dfw` üretir.
+İlk DeviceBoot kurulumu Device Studio'da ST-LINK/SWD ile yapılır ve tam 4 MiB
+Flash yedeği alınır. Ardından `.dfw` seçip yükleyin. `./Flash.ps1 -Port COM5`
+aynı UART güncelleyicisini kullanır; yan klasörde DeviceStudio ve pyserial gerekir.
+**Bu yeni binary, eski `0x08000000` uygulaması gibi doğrudan başlatılmamalıdır.**
+Aşağıdaki eski tarihli adres/yükleme notları bootloader öncesindeki sürümlere aittir.
+
+Tek ST-LINK Micro USB kablosu hem SWD'yi hem sanal COM portunu sağlar. Runtime
+115200 8N1; bootloader 921600 8N1 kullanır. Saat firmware'i yüklendikten sonra
+bilgisayar arayüzü kapatılabilir; cihaz besleniyorsa saat bağımsız çalışır.
+USER basılıyken reset, bootloader kurtarma modunu açar. Saat/Düello aynı uygulama
+alanına sırayla yüklenir; iki tam firmware dahili Flash'ta aynı anda tutulmaz.
+
+Yükleme kesilirse bootloader korunur ve paket baştan yüklenebilir. Önceki uygulamaya
+otomatik rollback yoktur. Bootloader öncesine dönüş, yerel tam Flash yedeğinin SWD
+ile geri yüklenmesidir; güncel saat kayıtları için son 16 KiB ayrıca yedeklenmelidir.
+
+Doğrulama sonuçları [bootloader raporunda](output/verify-deviceboot.json) ve
+Device Studio'nun `hardware-report.json` dosyasında bulunur.
+
 ## Oyun hareketi, manzaralar ve zorluk — 13 Ekim 2026
 
 - Flappy arıları 0–29 puanda 6–8, 30–59 puanda 4–6, 60 ve üstünde 3–4

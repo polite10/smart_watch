@@ -78,17 +78,28 @@ void watch_snake_pause(watch_snake_state_t *s)
     else if(s->phase==WATCH_GAME_PAUSED) s->phase=WATCH_GAME_RUNNING;
 }
 static float gap(uint32_t *random) { return 190.0f+(float)(random_next(random)%101); }
+static unsigned bee_interval(watch_flappy_state_t *s)
+{
+    unsigned minimum=s->score<30 ? 6 : s->score<60 ? 4 : 3;
+    return minimum+random_next(&s->random)%(s->score<60 ? 3 : 2);
+}
 static void pipe_spawn(watch_flappy_state_t *s,watch_pipe_t *p,float x)
 {
     *p=(watch_pipe_t){.x=x,.gap_y=gap(&s->random)};
     p->flower=++s->obstacle_count==s->next_flower;
-    p->bee=!p->flower && s->obstacle_count%3==0;
     if(p->flower)s->next_flower+=2+random_next(&s->random)%4;
+    if(s->obstacle_count==s->next_bee) {
+        /* Difficulty affects new obstacles only: no hazard appears suddenly
+         * in an already visible corridor. Flowers postpone a bee by one pipe. */
+        p->bee=!p->flower;
+        s->next_bee+=p->bee ? bee_interval(s) : 1;
+    }
 }
 void watch_flappy_new(watch_flappy_state_t *s,uint32_t seed)
 {
     memset(s,0,sizeof *s); s->random=seed; s->y=235; s->phase=WATCH_GAME_READY;
     s->next_flower=2+random_next(&s->random)%4;
+    s->next_bee=bee_interval(s);
     for(unsigned i=0;i<WATCH_FLAPPY_PIPES;++i)pipe_spawn(s,&s->pipes[i],350.0f+WATCH_FLAPPY_SPACING*i);
 }
 void watch_flappy_flap(watch_flappy_state_t *s)
@@ -97,7 +108,7 @@ void watch_flappy_flap(watch_flappy_state_t *s)
     if(s->phase==WATCH_GAME_RUNNING) s->velocity=-4.4f;
 }
 /* The free corridor between pipes is 129 px wide. Its center leaves flowers
- * 64 px from both pipe walls, including their projecting caps. */
+ * over 60 px from both projecting pipe caps. */
 bool watch_flappy_flower(unsigned index,const watch_pipe_t *pipe,float *x,float *y)
 {
     if(!pipe->flower || pipe->collected)return false;
@@ -110,10 +121,13 @@ bool watch_flappy_bee(const watch_flappy_state_t *s,unsigned index,float *x,floa
 {
     for(unsigned i=0;i<WATCH_FLAPPY_PIPES;++i)if(s->pipes[i].bee) {
         if(index--)continue;
-        *x=s->pipes[i].x+110;
+        float pace=s->score<30 ? 0.06f : s->score<60 ? 0.08f : 0.095f;
+        float angle=(s->steps%6000)*pace+s->pipes[i].gap_y*0.03f;
+        *x=s->pipes[i].x+110+6*sinf(angle*0.65f);
         /* A single side lane leaves the center route free. Flower corridors
          * never contain bees. Both items scroll with their owning obstacle. */
-        *y=s->pipes[i].gap_y+(i%2 ? -32 : 32)+6*sinf((s->steps%6000)*0.07f+i);
+        float amplitude=s->score<30 ? 10 : s->score<60 ? 12 : 14;
+        *y=s->pipes[i].gap_y+(i%2 ? -1 : 1)*(38+amplitude*sinf(angle));
         return true;
     }
     return false;

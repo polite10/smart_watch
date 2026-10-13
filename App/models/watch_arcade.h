@@ -29,7 +29,7 @@ typedef struct {
     uint16_t score;
     watch_game_phase_t phase;
     uint32_t random;
-    uint32_t steps,obstacle_count,next_flower;
+    uint32_t steps,obstacle_count,next_flower,next_bee;
 } watch_flappy_state_t;
 bool watch_flappy_flower(unsigned index,const watch_pipe_t *pipe,float *x,float *y);
 bool watch_flappy_bee(const watch_flappy_state_t *s,unsigned index,float *x,float *y);

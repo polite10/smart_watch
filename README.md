@@ -2,6 +2,32 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Terminalden LED kontrolü ve dairesel RX DMA — 18 Ekim 2026
+
+PuTTY'den `LED ON`, `LED OFF`, `LED BLINK`, `SET INTERVAL 250`, `GET STATUS`,
+`RESET PRESSES` ve `HELP` komutları gönderilebilir. RX GPDMA1 Channel 1'de
+dairesel linked-list DMA, TX Channel 0'da normal DMA kullanır. Komut ayrıştırıcısı
+HAL/UART/DMA'dan bağımsızdır. Mevcut LCD LED/DMA göstergesi seri komutla değişen
+LED durumu ve aralığını aynı kaynaktan okur.
+
+Device Studio'nun `REQ <seq> HELLO|STATUS|BOOT` / JSON protokolü ortak DMA
+alım/gönderim yolunda korunur; aynı UART'tan ayrıca RXNE ile karakter okunmaz.
+BOOT, kendi cevabının son UART biti gönderildikten 20 ms sonra uygulanır.
+[Bağlantı, komutlar ve mimari açıklaması](docs/led-uart-commands.md).
+
+Güncel derleme ve paket üretimi:
+
+```sh
+python3 output/build-macos.py
+python3 tools/package-firmware.py
+```
+
+Firmware DeviceBoot uygulama adresi **0x0800A000** için üretilir; yükleme paketi
+`Firmware/Smartwatch.dfw` dosyasıdır. Bu çalışma karta yükleme yapmaz.
+**65 yerel parser** ve **85 ARM/HAL entegrasyon** kontrolü geçti. Güncel build
+raporu, uzak daldan gelen `watch_arcade_view.c:325` signedness uyarısını da kaydeder;
+UART değişikliklerinde yeni derleyici uyarısı yoktur.
+
 ## Custom bootloader ve Device Studio — 13 Ekim 2026
 
 Güncel firmware **DeviceBoot** için `0x0800A000` adresine taşındı. İlk 32 KiB
@@ -315,13 +341,18 @@ Kırmızı LD4 saatin alarm uyarısını göstermeye devam eder. Ek kablo gerekm
   **TIM6 kesmesi**, son kenardan sonra seviye 40 ms kararlı kaldığında basışı kabul eder.
   Basılı tutma tek basış sayılır; yeniden basış için kararlı bırakış gerekir.
   Açılışta basılı duran buton bırakılıp yeniden basılmadan hız değiştirmez.
-- **TIM6**, 10 ms'de bir kesme üretir; LED yalnız timer callback'inde değiştirilir.
+- **TIM6**, 10 ms'de bir kesme üretir; yanıp sönme geçişleri timer callback'inde yapılır.
   160 MHz timer saatinde prescaler **15999**, auto-reload **99** olur.
   LED zamanlaması ana döngünün veya ekran çiziminin hızına bağlı değildir.
 - Aynı timer her **1 saniyede** UART durum mesajını hazır bekler hale getirir.
   Ana döngü mesajı oluşturur ve `HAL_UART_Transmit_DMA()` ile gönderir.
   **USART1 TX (PA9 / AF7)** ve **GPDMA1 Channel 0 / USART1_TX isteği** kullanılır.
   EXTI13/TIM6 kesme önceliği 6, DMA/USART1 önceliği 7'dir.
+- **18 Ekim 2026:** USART1 artık çift yönlüdür. **RX PA10 / AF7**, **GPDMA1
+  Channel 1 / USART1_RX**, tek düğümlü dairesel linked-list DMA ve IDLE/HT/TC
+  bildirimleriyle komut alır. Komut ayrıştırıcısı HAL/UART/DMA'dan bağımsızdır;
+  ana döngü komutları uygular. `LED ON/OFF` GPIO'yu kısa kritik bölümde değiştirir;
+  yanıp sönme zamanlaması TIM6'da kalır.
 
 ST-LINK USB **CN5** üzerinden bağlanın ve kartın sanal seri portunu
 **115200 baud, 8 bit, parity yok, 1 stop bit, akış kontrolü yok (8N1)** ile açın.
@@ -329,27 +360,52 @@ macOS'ta port genellikle `/dev/cu.usbmodem…`, Windows'ta `COM…` olarak gör�
 Örnek mesaj:
 
 ```text
-LED=LD3 mode=BLINK state=ON toggle_ms=500 cycle_ms=1000 presses=4 uptime_ms=2000 uart_ok=1 uart_errors=0
+LED=LD3 mode=BLINK state=ON toggle_ms=500 cycle_ms=1000 presses=4 uptime_ms=2000 uart_ok=1 uart_errors=0 interval_ms=500 rx_errors=0 rx_overflows=0
 ```
 
 Sürekli kapalı mod `mode=OFF state=OFF toggle_ms=0 cycle_ms=0` olarak bildirilir.
 Yanıp sönmenin sönük fazı ise `mode=BLINK state=OFF` olduğundan ayırt edilebilir.
 
-`uart_ok` tamamlanmış gönderim, `uart_errors` hata/zaman aşımı sayısıdır.
-DMA normal modda çalışır; SRAM mesaj tamponu son byte'ın **USART1 TC kesmesi**
+`uart_ok` tamamlanmış gönderim, `uart_errors` gönderim toparlanması/zaman aşımı
+sayısıdır. `interval_ms` açık/kapalı modda da saklanan yanıp sönme ayarıdır.
+`rx_errors` alım toparlanması, `rx_overflows` yazılım alım tamponu taşması sayısıdır.
+TX DMA normal modda çalışır; SRAM mesaj tamponu son byte'ın **USART1 TC kesmesi**
 gelene kadar değiştirilmez. Hem GPDMA hem USART1 IRQ handler'ı gereklidir.
 250 ms'de tamamlanmayan aktarım veya DMA hatası ana döngüde durdurulup toparlanır.
 Ana döngü gecikirse bekleyen raporlar tek güncel mesajda birleştirilir.
 Kesme içinde mesaj biçimlendirme veya `HAL_Delay()` yapılmaz.
 
+PuTTY'ye büyük harflerle bir komut yazıp Enter'a basın:
+
+```text
+HELP
+SET INTERVAL 250
+LED OFF
+LED ON
+LED BLINK
+GET STATUS
+RESET PRESSES
+```
+
+`SET INTERVAL` **10–60000 ms**, **10 ms'nin katlarını** kabul eder ve yanıp sönmeyi
+başlatır. Her komuttan sonra `OK ...` veya `ERR ...` cevabını bekleyin; saniyelik
+`LED=...` durum mesajları devam eder. PuTTY'de yazdıklarınızı görmek/düzenlemek
+için **Local echo** ve **Local line editing** ayarlarını **Force on** yapabilirsiniz.
+Ayarlar RAM'dedir; yeniden başlatmada başlangıç değerlerine dönülür.
+Mevcut LCD LED/DMA göstergesi yeni LED durumunu ve aralığını aynı kaynaktan okur.
+
+[Komut protokolü, DMA akışı ve PuTTY kullanım kılavuzu](docs/led-uart-commands.md).
+
 Derleme: `python3 output/build-macos.py` veya Windows'ta `./Build.ps1`.
 Firmware `Firmware/Smartwatch.bin`, ELF `Debug/Smartwatch.elf` olarak üretilir.
 ARM simülasyon testi: `python3 output/verify-led-button.py`
+Donanımdan bağımsız komut testi: `python3 output/verify-led-commands.py`
 (`unicorn` ve `pyelftools` gerekir; macOS sandbox dışında bellek eşleme izni gerekebilir).
 Test derlenmiş uygulama ile gerçek HAL EXTI/TIM6/GPDMA/UART kesme yollarını çalıştırır;
 periferik register'ları, DMA veri hareketi ve UART hattı simüle edilir.
 ARM derlemesi **505 kaynak, 0 hata, 0 uyarı** ile tamamlandı;
-LED/buton/UART simülasyonunda **41 kontrol, 0 başarısızlık**:
+LED/buton/UART RX/TX DMA simülasyonunda **85 kontrol, 0 başarısızlık**;
+yerel komut ayrıştırıcısı testinde **65 kontrol** geçti:
 [derleme raporu](output/build-led-button.json), [test raporu](output/verify-led-button.json).
 Bu önceki raporda fiziksel kart doğrulaması yapılmamıştı; güncel firmware'in
 karta yükleme ve çalışma doğrulaması yukarıdaki bölümde yer alır.
@@ -365,8 +421,8 @@ EXTI kesmesi önerilmişti; bayrak ve debounce ana döngüde işlenecekti.
 | --- | --- | --- |
 | LED | Ana döngü `HAL_GetTick()` ile kontrol eder | TIM6 kesmesi LED'i değiştirir |
 | Buton | EXTI bayrağı, ana döngüde debounce | EXTI iki kenarı kaydeder, TIM6 debounce yapar |
-| UART | Öneride durum gönderimi yoktu | Her saniye USART1 üzerinden DMA ile rapor |
-| Kurulum | Daha az periferik ve daha basit kod | Timer, DMA, UART ve dört IRQ yolu gerekir |
+| UART | Öneride durum gönderimi yoktu | Her saniye TX DMA ile rapor, RX dairesel DMA ile komut |
+| Kurulum | Daha az periferik ve daha basit kod | Timer, iki DMA kanalı, UART ve beş IRQ yolu gerekir |
 | İşlemci işi | Ana döngüde süre/buton kontrolü | 100 Hz timer IRQ; UART byte aktarımını DMA yapar |
 
 Bu projede timer yöntemi, ekranla birlikte çalışan LED'in ana döngü yükünden

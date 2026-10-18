@@ -5,12 +5,28 @@ ViewModel katmanları LVGL, HAL veya ekran nesnelerine bağımlı değildir. Wid
 oluşturma, yerleşim, renkler ve çizim yalnız View katmanındadır. RTOS eklenmemiştir.
 
 DeviceBoot uygulamayı `0x0800A000` adresinden başlatır. `Core/Src/device_runtime.c`
-USART1 RX kesmesi üzerinden sınırlı bir komut ring buffer'ı kullanır. HELLO/STATUS
+ortak UART RX DMA komut yolundan gelen `REQ <seq> <komut>` isteklerini yanıtlar. HELLO/STATUS
 uygulama kimliğini ve Flash'taki bootloader descriptor'ını bildirir; BOOT RAM'deki
-16 baytlık mailbox'a istek yazıp sistem reseti yapar. UART TX DMA ile çakışmamak
-için cevaplar UART hazır olduğunda ana döngüden gönderilir. Saatin Model/ViewModel
+16 baytlık mailbox'a istek yazıp sistem reseti yapar. Cevap ortak TX DMA kuyruğunda
+gönderilir; BOOT reseti yalnız kendi cevabının USART TC tamamlanmasından 20 ms
+sonra ana döngüde uygulanır. Ayrı RXNE okuyucusu yoktur. Saatin Model/ViewModel
 katmanları bu bağlantıya bağımlı değildir. Linker ve SystemInit vektör offset'i
 bootloader bellek sözleşmesiyle birlikte değişir.
+
+## LED komut yolu
+
+LED örneğinin `App/services/watch_led_commands.h/.c` komut ayrıştırıcısı HAL,
+UART, DMA ve LVGL'den bağımsızdır. Bayt akışını CR/LF ile satırlara ayırır,
+komut türü/parametresini üretir; donanıma erişmez. `Core/Src/led_button_demo.c`
+USART1 RX dairesel linked-list DMA adaptörünü, yazılım halkasını ve doğrulanmış
+komutların LED'e uygulanmasını içerir. Kesme sadece baytları aktarır; ana döngü
+parser ve komut uygulamasını çalıştırır. TX DMA cevapları ve saniyelik durum
+raporları aynı sahiplik kurallarıyla sırayla gönderilir. RX ve TX ayrı GPDMA
+kanallarıdır; DMA2D/LTDC ekran yolu ayrı kalır.
+
+Komut alma yöntemi değişirse parser korunur; adaptör yeni kaynaktan aldığı
+baytları aynı `watch_led_commands_push()` girişine besler. Ayrıntılar ve alım
+kapasitesi [LED UART komut kılavuzunda](docs/led-uart-commands.md) açıklanır.
 
 ## Katmanlar
 
@@ -159,6 +175,12 @@ GCC dependency dosyaları ve derleme seçenekleri izlenir. Testler aynı ELF'i �
   süreler, gerçek oyun dokunmaları/sürüklemeleri ve statik İDA; PNG önizlemeler.
 - `output/verify-viewmodels.py`: LVGL başlatmadan Model/ViewModel komutları, taslaklar,
   sınırlar, saat servisi hataları, alarm erteleme ve 916 baytlık kayıt uyumluluğu.
+- `output/verify-led-commands.py`: HAL ve LVGL olmadan yerel C derlemesiyle
+  komut çerçeveleme, parçalı veri, sayısal sınırlar, bozuk/uzun satırlar ve
+  veri kaybından sonra yeniden eşzamanlama; UndefinedBehaviorSanitizer açık.
+- `output/verify-led-button.py`: gerçek ARM ELF'i ve HAL EXTI/TIM6/USART1/GPDMA
+  kesmeleriyle buton, TX DMA ve dairesel RX DMA entegrasyonu; node yükleme,
+  veri hareketi ve periferik register davranışı simüle edilir.
 
 - `output/test-arcade.c`: 512 Yılan başlangıcı, dört yön, ters/çift dönüş engeli,
   dört kenardan geçiş, gövde çarpışması, büyüme, dolu tahta, duraklatma, Flappy fizik/puan/yeniden

@@ -74,12 +74,20 @@ def hook(name, action):
 def call(name, *args):
     for register, value in zip((UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3), args):
         u.reg_write(register, value)
-    u.reg_write(UC_ARM_REG_SP, 0x20270000)
+    u.reg_write(UC_ARM_REG_SP, 0x2026ffe0)  # Below DeviceBoot's retained mailbox.
     u.reg_write(UC_ARM_REG_LR, 0x0fff0001)
     u.emu_start(symbols[name] | 1, 0x0fff0000, count=1000000)
-    assert u.reg_read(UC_ARM_REG_PC) == 0x0fff0000, 'Function did not return: ' + name
+    assert u.reg_read(UC_ARM_REG_PC) == 0x0fff0000 or (name == 'device_runtime_poll' and reset_requested), 'Function did not return: ' + name
 
 checks = []
+reset_requested = False
+
+def reset_write(uc, access, address, size, value, data):
+    global reset_requested
+    if value & 4:
+        reset_requested = True
+        u.emu_stop()
+u.hook_add(UC_HOOK_MEM_WRITE, reset_write, begin=0xe000ed0c, end=0xe000ed0c)
 def check(condition, description):
     checks.append((bool(condition), description))
     print(('PASS: ' if condition else 'FAIL: ') + description, flush=True)
@@ -93,9 +101,12 @@ hook('HAL_RCC_GetSysClockFreq', lambda: ret(160000000))
 hook('Error_Handler', fatal)
 write32(symbols['SystemCoreClock'], 160000000)
 TIMER, UART, DMA = (symbols[n] for n in ('led_demo_timer', 'led_demo_uart', 'led_demo_uart_tx_dma'))
+RXDMA = symbols['led_demo_uart_rx_dma']
+RX_DMA_REG = 0x400200d0
+UART_ACK = (1 << 21) | (1 << 22)
 TIM_REG, UART_REG, DMA_REG, EXTI_REG, GPIOC, GPIOE = 0x40001000, 0x40013800, 0x40020050, 0x46022000, 0x42020800, 0x42021000
 # Simulate TX enable acknowledgement, BSRR output updates and DMA suspension.
-write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), 1 << 21)
+write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK)
 led_edges = []
 def gpio_write(uc, access, address, size, value, data):
     if address == reg(GPIOE, 'GPIO_TypeDef', 'BRR'):
@@ -110,12 +121,33 @@ u.hook_add(UC_HOOK_MEM_WRITE, gpio_write, begin=reg(GPIOE, 'GPIO_TypeDef', 'BSRR
 u.hook_add(UC_HOOK_MEM_WRITE, gpio_write, begin=reg(GPIOE, 'GPIO_TypeDef', 'BRR'), end=reg(GPIOE, 'GPIO_TypeDef', 'BRR'))
 
 def abort_dma():
-    put(DMA, 'DMA_HandleTypeDef', 'State', 1)  # HAL_DMA_STATE_READY
-    put(DMA, 'DMA_HandleTypeDef', 'Lock', 0)  # HAL_UNLOCKED, as in HAL_DMA_Abort
-    write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR'), 0)
-    write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CBR1'), 0)
+    handle = u.reg_read(UC_ARM_REG_R0)
+    base = get(handle, 'DMA_HandleTypeDef', 'Instance')
+    put(handle, 'DMA_HandleTypeDef', 'State', 1)  # HAL_DMA_STATE_READY
+    put(handle, 'DMA_HandleTypeDef', 'Lock', 0)  # HAL_UNLOCKED, as in HAL_DMA_Abort
+    queue = get(handle, 'DMA_HandleTypeDef', 'LinkedListQueue')
+    if queue:
+        put(queue, 'DMA_QListTypeDef', 'State', 1)
+    write32(reg(base, 'DMA_Channel_TypeDef', 'CCR'), 0)
+    write32(reg(base, 'DMA_Channel_TypeDef', 'CBR1'), 0)
     ret()
 hook('HAL_DMA_Abort', abort_dma)
+# Model an immediate abort completion on UART line errors; the real HAL then
+# invokes UART_DMAAbortOnError and our error callback in the USART IRQ path.
+def abort_dma_it():
+    abort_dma()
+    ret(1)  # HAL invokes the completion callback directly on this return path.
+hook('HAL_DMA_Abort_IT', abort_dma_it)
+
+def load_rx_node(uc, access, address, size, value, data):
+    # Hardware fetches this static node when the linked-list channel is enabled.
+    if value & 1 and not read32(address) & 1:
+        node = symbols['rx_node']
+        for offset, name in enumerate(('CTR1', 'CTR2', 'CBR1', 'CSAR', 'CDAR', 'CLLR')):
+            write32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', name), read32(node + offset * 4))
+u.hook_add(UC_HOOK_MEM_WRITE, load_rx_node,
+           begin=reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR'),
+           end=reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR'))
 
 messages = []
 def observe_tx():
@@ -153,17 +185,20 @@ def complete_dma():
     write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR'), read32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & ~1)
 
 def complete_uart():
-    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), (1 << 21) | (1 << 6))
+    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK | (1 << 6))
     call('USART1_IRQHandler')
-    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), 1 << 21)
+    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK)
 
 call('led_button_demo_init')
 # RESET in CCR is self-clearing in hardware.
 write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR'), read32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & ~2)
 check(get(TIMER, 'TIM_HandleTypeDef', 'Init.Prescaler') == 15999 and get(TIMER, 'TIM_HandleTypeDef', 'Init.Period') == 99, 'TIM6 is configured for 10 ms interrupts at 160 MHz')
 check(read32(reg(EXTI_REG, 'EXTI_TypeDef', 'RTSR1')) & (1 << 13) and read32(reg(EXTI_REG, 'EXTI_TypeDef', 'FTSR1')) & (1 << 13), 'PC13 EXTI detects both press and release edges')
-check(get(UART, 'UART_HandleTypeDef', 'Init.BaudRate') == 115200 and get(UART, 'UART_HandleTypeDef', 'Init.Mode') == 8, 'USART1 is configured for 115200 baud, transmit only')
+check(get(UART, 'UART_HandleTypeDef', 'Init.BaudRate') == 115200 and get(UART, 'UART_HandleTypeDef', 'Init.Mode') == 12, 'USART1 is configured for 115200 baud, full duplex 8N1')
 check(get(DMA, 'DMA_HandleTypeDef', 'Init.Request') == 25 and get(DMA, 'DMA_HandleTypeDef', 'Parent') == UART and get(UART, 'UART_HandleTypeDef', 'hdmatx') == DMA, 'GPDMA channel 0 uses USART1_TX request and linked HAL handles')
+check(get(RXDMA, 'DMA_HandleTypeDef', 'Mode') == 0x81 and get(UART, 'UART_HandleTypeDef', 'hdmarx') == RXDMA and get(RXDMA, 'DMA_HandleTypeDef', 'Parent') == UART, 'GPDMA channel 1 is linked for circular USART1 reception')
+check(read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CSAR')) == reg(UART_REG, 'USART_TypeDef', 'RDR') and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CDAR')) == symbols['rx_dma_buffer'], 'RX linked-list node transfers USART1 RDR into the SRAM buffer')
+check(read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CBR1')) == 256 and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & (1 << 9), 'Circular RX starts with 256 bytes and keeps half-transfer interrupts enabled')
 advance(990)
 call('led_button_demo_poll')
 check(not led_edges and not messages, 'Before 1000 ms there is no LED transition or UART report')
@@ -172,9 +207,9 @@ call('led_button_demo_poll')
 check(led_edges == [1000], 'LED changes inside TIM6 IRQ at 1000 ms without polling')
 check(len(messages) == 1 and 'toggle_ms=1000 cycle_ms=2000 presses=0' in messages[-1][2] and messages[-1][2].endswith('\r\n'), 'The first periodic DMA message reports interval, full cycle and press count')
 check(read32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CSAR')) == messages[-1][1] and read32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CDAR')) == reg(UART_REG, 'USART_TypeDef', 'TDR'), 'Real HAL DMA points from the static SRAM message to USART1 TDR')
-buffer_before = bytes(u.mem_read(symbols['uart_message'], 192))
+buffer_before = bytes(u.mem_read(symbols['uart_message'], 256))
 call('led_button_demo_poll')
-check(len(messages) == 1 and bytes(u.mem_read(symbols['uart_message'], 192)) == buffer_before, 'Polling cannot overwrite or restart an active DMA message')
+check(len(messages) == 1 and bytes(u.mem_read(symbols['uart_message'], 256)) == buffer_before, 'Polling cannot overwrite or restart an active DMA message')
 complete_dma()
 check(read32(symbols['uart_busy']) == 1 and read32(symbols['uart_completed']) == 0, 'DMA completion retains the buffer until the final UART TC interrupt')
 complete_uart()
@@ -241,7 +276,9 @@ write32(reg(0x40020000, 'DMA_TypeDef', 'MISR'), 0)
 write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CSR'), 0)
 write32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR'), read32(reg(DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & ~3)
 call('led_button_demo_poll')
-check(read32(symbols['uart_busy']) == 0 and read32(symbols['uart_errors']) == 2, 'A real DMA error IRQ releases ownership through main-loop recovery')
+check(read32(symbols['uart_errors']) == 2 and messages[-1][2].startswith('ERR rx_data_lost') and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & 1, 'A real TX DMA error restarts RX and sends a data-loss notice after main-loop recovery')
+complete_dma()
+complete_uart()
 fail_dma_start = True
 advance(1000)
 call('led_button_demo_poll')
@@ -252,7 +289,7 @@ advance(1000)
 call('led_button_demo_poll')
 complete_dma()
 complete_uart()
-check(read32(symbols['uart_completed']) == 3, 'Successful DMA/UART transmission resumes after both error paths')
+check(read32(symbols['uart_completed']) == 4, 'Successful DMA/UART transmission resumes after both error paths')
 
 # The unsigned debounce subtraction must work across the HAL tick rollover.
 tick = 0xfffffff0
@@ -264,8 +301,228 @@ advance(90)
 check(len(led_edges) == previous_edges, 'Leaving OFF waits the full new interval before lighting the LED')
 advance(10)
 check(len(led_edges) == previous_edges + 1 and read32(symbols['led_on']) == 1, 'After OFF, the next press resumes 100 ms blinking in the timer IRQ')
+
+def rx_irq(flag):
+    write32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CSR'), flag)
+    write32(reg(0x40020000, 'DMA_TypeDef', 'MISR'), 2)
+    call('GPDMA1_Channel1_IRQHandler')
+    write32(reg(0x40020000, 'DMA_TypeDef', 'MISR'), 0)
+    write32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CSR'), 0)
+    if flag & (1 << 10):
+        # DMA RESET is self-clearing and disables the channel in hardware.
+        write32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR'), read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & ~3)
+
+def rx_idle():
+    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK | (1 << 4))
+    call('USART1_IRQHandler')
+    write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK)
+
+def receive(data, idle=True):
+    # Simulate DMA byte movement and node reload; execute real HT/TC/IDLE IRQs.
+    for byte in data:
+        remaining = read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CBR1')) & 0xffff
+        assert 0 < remaining <= 256
+        position = 256 - remaining
+        u.mem_write(symbols['rx_dma_buffer'] + position, bytes([byte]))
+        remaining -= 1
+        write32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CBR1'), remaining or 256)
+        if remaining == 128:
+            rx_irq(1 << 9)
+        elif remaining == 0:
+            rx_irq(1 << 8)
+    if idle:
+        rx_idle()
+
+def drain():
+    for _ in range(256):
+        call('led_button_demo_poll')
+        if read32(symbols['uart_busy']):
+            complete_dma()
+            complete_uart()
+        if (read32(symbols['rx_tail']) == read32(symbols['rx_head']) and
+                not read32(symbols['reply_length']) and not read32(symbols['status_pending'])):
+            return
+    raise AssertionError('Command/reply queue did not drain')
+
+# Error recovery above intentionally discards until a newline.
+receive(b'\n')
+drain()
+before = len(messages)
+receive(b'SET INTER')
+drain()
+check(len(messages) == before, 'An IDLE gap in the middle of a command does not execute it')
+receive(b'VAL 750\r\n')
+check(read32(symbols['blink_interval_ms']) == 100, 'RX IRQs only queue bytes; they never change LED settings')
+drain()
+check(read32(symbols['blink_interval_ms']) == 750 and messages[-1][2].startswith('OK LED=LD3 mode=BLINK') and 'toggle_ms=750 cycle_ms=1500' in messages[-1][2], 'A fragmented command applies an arbitrary 750 ms interval and returns the actual state')
+previous_edges = len(led_edges)
+advance(740)
+check(len(led_edges) == previous_edges, 'A serial interval change resets the blink timer to a full interval')
+advance(10)
+check(len(led_edges) == previous_edges + 1, 'The new serial interval is enforced by TIM6 without polling')
+drain()
+
+receive(b'LED ON\n')
+call('led_button_demo_poll')
+check(read32(symbols['led_on']) == 1 and read32(reg(GPIOE, 'GPIO_TypeDef', 'ODR')) & 1, 'LED ON drives the physical GPIO high on the main loop')
+active_message = bytes(u.mem_read(symbols['uart_message'], 256))
+receive(b'LED OFF\nHELP\n')
+call('led_button_demo_poll')
+check(read32(symbols['led_on']) == 0 and read32(symbols['reply_length']) > 0, 'One command reply waits safely while another TX DMA is active')
+call('led_button_demo_poll')
+check(bytes(u.mem_read(symbols['uart_message'], 256)) == active_message, 'Back-to-back commands cannot overwrite the active TX buffer')
+before = len(messages)
+drain()
+check(len(messages) == before + 2 and messages[-2][2].startswith('OK LED=LD3 mode=OFF') and messages[-1][2].startswith('OK HELP'), 'Queued replies remain ordered and commands wait for reply capacity')
+previous_edges = len(led_edges)
+advance(2000)
+check(len(led_edges) == previous_edges, 'Serial LED OFF remains dark independently of UI polling')
+drain()
+receive(b'LED ON\n')
+drain()
+previous_edges = len(led_edges)
+advance(2000)
+check(len(led_edges) == previous_edges and read32(symbols['led_on']) == 1, 'Serial LED ON stays continuously lit across timer interrupts')
+drain()
+
+position = 256 - read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CBR1'))
+receive(b'\n' * ((252 - position) % 256) + b'LED OFF\r\n')
+before = len(messages)
+drain()
+check(len(messages) == before + 1 and 'mode=OFF state=OFF' in messages[-1][2], 'A command spanning the circular DMA buffer boundary is executed once')
+head = read32(symbols['rx_head'])
+rx_idle()
+call('HAL_UARTEx_RxEventCallback', UART, 128)  # A delayed/stale HT notification.
+check(read32(symbols['rx_head']) == head, 'Duplicate IDLE and stale HT notifications cannot replay received bytes')
+
+before = len(messages)
+receive(b'LED ON\n' * 80, idle=False)
+position = 256 - read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CBR1'))
+receive(b'\n' * ((128 - position) % 128), idle=False)
+drain()
+check(sum(m.startswith('OK LED=LD3 mode=ON') for _, _, m in messages[before:]) == 80, 'Continuous RX with HT/TC and no IDLE delivers all 80 commands exactly once')
+check(get(UART, 'UART_HandleTypeDef', 'RxState') == 0x22 and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & 1, 'Circular DMA reception stays enabled after multiple buffer wraps')
+
+before = len(messages)
+receive(b'SET INTERVAL 15\nSET INTERVAL 4294967296\nLED OFF extra\n')
+drain()
+check([m.split()[1] for _, _, m in messages[before:]] == ['interval_range', 'interval_range', 'invalid_command;'] and read32(symbols['led_mode']) == 1, 'Invalid values, numeric overflow and extra arguments return errors without changing the LED')
+receive(b'X' * 80 + b'LED OFF\n')
+drain()
+check(messages[-1][2].startswith('ERR line_too_long') and read32(symbols['led_mode']) == 1, 'An oversized command cannot execute a valid-looking suffix')
+receive(b'RESET PRESSES\nGET STATUS\nLED BLINK\n')
+drain()
+check(read32(symbols['button_presses']) == 0 and messages[-2][2].startswith('OK LED=LD3 mode=ON') and 'presses=0' in messages[-2][2] and read32(symbols['led_mode']) == 2, 'Reset, explicit status and resuming the retained blink interval work through DMA')
+
+# Saturate the software queue while the main/UI loop is stalled.
+receive(b'LED ON\n')
+drain()
+receive(b'LED OFF\n' + b'\n' * 2200)
+check(read32(symbols['rx_overflow_pending']) == 1, 'A stalled main loop detects software RX ring overflow')
+drain()
+check(read32(symbols['rx_overflows']) == 1 and messages[-1][2].startswith('ERR rx_data_lost') and read32(symbols['led_mode']) == 1, 'Overflow drops queued commands and reports loss without executing a damaged stream')
+receive(b'LED OFF\n')
+drain()
+check(read32(symbols['led_mode']) == 1, 'After data loss, the first damaged line is discarded through its terminator')
+receive(b'LED OFF\n')
+drain()
+check(read32(symbols['led_mode']) == 0, 'A complete command after newline resynchronization is accepted')
+
+receive(b'LED O')
+drain()
+old_rx_errors = read32(symbols['rx_errors'])
+write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK | (1 << 1))  # framing error
+call('USART1_IRQHandler')
+write32(reg(UART_REG, 'USART_TypeDef', 'ISR'), UART_ACK)
+drain()
+check(read32(symbols['rx_errors']) == old_rx_errors + 1 and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & 1, 'A real UART framing-error IRQ aborts and restarts circular RX DMA')
+receive(b'N\nLED ON\n')
+drain()
+check(read32(symbols['led_mode']) == 1 and messages[-1][2].startswith('OK '), 'RX error recovery rejects the old partial command and accepts a fresh one')
+old_rx_errors = read32(symbols['rx_errors'])
+rx_irq(1 << 10)  # DMA data transfer error
+drain()
+check(read32(symbols['rx_errors']) == old_rx_errors + 1 and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & 1, 'An RX DMA data-transfer error recovers without stopping the timer or UI loop')
+receive(b'\nSET INTERVAL 250\n')
+drain()
+check(read32(symbols['blink_interval_ms']) == 250 and read32(symbols['led_mode']) == 2, 'Commands work again after an RX DMA error')
+
+receive(b'GET STATUS\n')
+call('led_button_demo_poll')
+old_rx_errors = read32(symbols['rx_errors'])
+advance(250)
+call('led_button_demo_poll')
+check(read32(symbols['rx_errors']) == old_rx_errors and read32(reg(RX_DMA_REG, 'DMA_Channel_TypeDef', 'CCR')) & 1, 'A TX-only timeout does not abort or restart RX DMA')
+drain()
+receive(b'LED ON\n')
+drain()
+edge(False)
+advance(40)
+edge(True)
+advance(40)
+check(read32(symbols['mode_index']) == 3 and read32(symbols['led_mode']) == 2 and read32(symbols['blink_interval_ms']) == 250 and read32(symbols['button_presses']) == 1, 'A physical button press after serial control selects the next preset and resumes timer blinking')
+telemetry = 0x20260000
+call('watch_dma_service_status', telemetry)
+check(get(telemetry, 'watch_dma_status_t', 'toggle_ms') == 250 and get(telemetry, 'watch_dma_status_t', 'bytes') == read32(symbols['uart_bytes']), 'LCD DMA telemetry reads the same runtime interval and completed TX byte count')
+receive(b'LED OFF\n')
+drain()
+call('watch_dma_service_status', telemetry)
+check(get(telemetry, 'watch_dma_status_t', 'toggle_ms') == 0 and get(telemetry, 'watch_dma_status_t', 'led_on') == 0, 'LCD telemetry immediately reflects serial LED OFF instead of the old button preset')
+
+# Device Studio's existing REQ/JSON protocol must share DMA without RXNE theft.
+app_name = 0x20260100
+u.mem_write(app_name, b'Smartwatch\0')
+call('device_runtime_init', app_name, 0)
+check(not read32(reg(UART_REG, 'USART_TypeDef', 'CR1')) & (1 << 5), 'Device runtime initialization does not enable a competing RXNE interrupt reader')
+before = len(messages)
+receive(b'REQ 7 HE')
+drain()
+check(len(messages) == before, 'A fragmented Device Studio request waits for the line ending')
+receive(b'LLO\nLED ON\nREQ 8 STATUS\n')
+drain()
+replies = [m for _, _, m in messages[before:]]
+hello, status = json.loads(replies[0]), json.loads(replies[2])
+check(len(replies) == 3 and hello['seq'] == 7 and hello['app'] == 'Smartwatch' and hello['protocol'] == 1 and hello['boot'] == 0 and hello['error'] == '' and replies[1].startswith('OK LED=') and status['seq'] == 8, 'Device JSON and LED replies share one ordered TX DMA path without spurious errors')
+receive(b'REQ 9 BOOT\n')
+drain()
+call('device_runtime_poll')
+check(json.loads(messages[-1][2])['error'] == 'bootloader_missing' and not reset_requested, 'BOOT with no installed bootloader reports the existing JSON error and cannot reset')
+receive(b'REQ 10 UNKNOWN\n')
+drain()
+check(json.loads(messages[-1][2])['error'] == 'unsupported_command', 'Unsupported Device Studio commands keep the existing JSON error contract')
+boot_info = 0x08007f00
+u.mem_write(boot_info, struct.pack('<8I', 0x44425631, 1, 0x0800a000, 0x3f2000, 1, 0, 0, 0))
+receive(b'HELP\n')
+call('led_button_demo_poll')
+receive(b'REQ 11 BOOT\n')
+call('led_button_demo_poll')
+complete_dma()
+complete_uart()  # This is the HELP reply, not BOOT's reply.
+advance(30)
+call('device_runtime_poll')
+check(not reset_requested, 'Completing an earlier reply cannot arm a queued BOOT request')
+call('led_button_demo_poll')
+check(json.loads(messages[-1][2])['seq'] == 11 and json.loads(messages[-1][2])['error'] == '' and not reset_requested, 'A valid BOOT request starts its DMA reply before any reset is armed')
+# Even an elapsed delay and DMA TC are insufficient without the UART wire TC.
+advance(30)
+complete_dma()
+call('device_runtime_poll')
+check(not reset_requested and read32(0x2026fff0) == 0, 'DMA completion alone cannot trigger a boot reset before the UART reply finishes')
+complete_uart()
+advance(10)
+call('device_runtime_poll')
+check(not reset_requested, 'BOOT retains the 20 ms USB delivery grace after its own UART TC')
+advance(10)
+call('device_runtime_poll')
+check(reset_requested and read32(0x2026fff0) == 0xb00710ad and read32(0x2026fff4) == (~0xb00710ad & 0xffffffff), 'After the matching reply and grace period, BOOT writes the retained mailbox and requests reset')
+for name in ('button_presses', 'uart_completed', 'uart_errors', 'rx_errors', 'rx_overflows'):
+    write32(symbols[name], 0xffffffff)
+tick = 0xffffffff
+receive(b'GET STATUS\n')
+drain()
+check(messages[-1][2].startswith('OK LED=') and messages[-1][2].endswith('\r\n') and len(messages[-1][2]) < 256, 'The status buffer fits maximum-width counters without truncation')
 report = {'passed': sum(ok for ok, _ in checks), 'failed': sum(not ok for ok, _ in checks),
           'checks': checks, 'elf_sha256': hashlib.sha256((ROOT / 'Debug/Smartwatch.elf').read_bytes()).hexdigest(),
-          'scope': 'Real compiled ARM demo and EXTI/TIM6/GPDMA/UART HAL IRQ paths. MMIO, DMA data movement, TX acknowledgement and DMA abort suspension are simulated; no physical board timing or UART wire data is measured.'}
+          'scope': 'Real compiled ARM command parser/demo and EXTI/TIM6/GPDMA TX/RX/UART HAL IRQ paths. MMIO, DMA byte movement, linked-list node fetch/reload, UART acknowledgement and DMA abort completion are simulated; no physical board timing or UART wire data is measured.'}
 (ROOT / 'output/verify-led-button.json').write_text(json.dumps(report, indent=2) + '\n')
 raise SystemExit(bool(report['failed']))

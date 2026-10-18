@@ -1,5 +1,5 @@
 {
-  "passed": 41,
+  "passed": 85,
   "failed": 0,
   "checks": [
     [
@@ -12,11 +12,23 @@
     ],
     [
       true,
-      "USART1 is configured for 115200 baud, transmit only"
+      "USART1 is configured for 115200 baud, full duplex 8N1"
     ],
     [
       true,
       "GPDMA channel 0 uses USART1_TX request and linked HAL handles"
+    ],
+    [
+      true,
+      "GPDMA channel 1 is linked for circular USART1 reception"
+    ],
+    [
+      true,
+      "RX linked-list node transfers USART1 RDR into the SRAM buffer"
+    ],
+    [
+      true,
+      "Circular RX starts with 256 bytes and keeps half-transfer interrupts enabled"
     ],
     [
       true,
@@ -144,7 +156,7 @@
     ],
     [
       true,
-      "A real DMA error IRQ releases ownership through main-loop recovery"
+      "A real TX DMA error restarts RX and sends a data-loss notice after main-loop recovery"
     ],
     [
       true,
@@ -165,8 +177,172 @@
     [
       true,
       "After OFF, the next press resumes 100 ms blinking in the timer IRQ"
+    ],
+    [
+      true,
+      "An IDLE gap in the middle of a command does not execute it"
+    ],
+    [
+      true,
+      "RX IRQs only queue bytes; they never change LED settings"
+    ],
+    [
+      true,
+      "A fragmented command applies an arbitrary 750 ms interval and returns the actual state"
+    ],
+    [
+      true,
+      "A serial interval change resets the blink timer to a full interval"
+    ],
+    [
+      true,
+      "The new serial interval is enforced by TIM6 without polling"
+    ],
+    [
+      true,
+      "LED ON drives the physical GPIO high on the main loop"
+    ],
+    [
+      true,
+      "One command reply waits safely while another TX DMA is active"
+    ],
+    [
+      true,
+      "Back-to-back commands cannot overwrite the active TX buffer"
+    ],
+    [
+      true,
+      "Queued replies remain ordered and commands wait for reply capacity"
+    ],
+    [
+      true,
+      "Serial LED OFF remains dark independently of UI polling"
+    ],
+    [
+      true,
+      "Serial LED ON stays continuously lit across timer interrupts"
+    ],
+    [
+      true,
+      "A command spanning the circular DMA buffer boundary is executed once"
+    ],
+    [
+      true,
+      "Duplicate IDLE and stale HT notifications cannot replay received bytes"
+    ],
+    [
+      true,
+      "Continuous RX with HT/TC and no IDLE delivers all 80 commands exactly once"
+    ],
+    [
+      true,
+      "Circular DMA reception stays enabled after multiple buffer wraps"
+    ],
+    [
+      true,
+      "Invalid values, numeric overflow and extra arguments return errors without changing the LED"
+    ],
+    [
+      true,
+      "An oversized command cannot execute a valid-looking suffix"
+    ],
+    [
+      true,
+      "Reset, explicit status and resuming the retained blink interval work through DMA"
+    ],
+    [
+      true,
+      "A stalled main loop detects software RX ring overflow"
+    ],
+    [
+      true,
+      "Overflow drops queued commands and reports loss without executing a damaged stream"
+    ],
+    [
+      true,
+      "After data loss, the first damaged line is discarded through its terminator"
+    ],
+    [
+      true,
+      "A complete command after newline resynchronization is accepted"
+    ],
+    [
+      true,
+      "A real UART framing-error IRQ aborts and restarts circular RX DMA"
+    ],
+    [
+      true,
+      "RX error recovery rejects the old partial command and accepts a fresh one"
+    ],
+    [
+      true,
+      "An RX DMA data-transfer error recovers without stopping the timer or UI loop"
+    ],
+    [
+      true,
+      "Commands work again after an RX DMA error"
+    ],
+    [
+      true,
+      "A TX-only timeout does not abort or restart RX DMA"
+    ],
+    [
+      true,
+      "A physical button press after serial control selects the next preset and resumes timer blinking"
+    ],
+    [
+      true,
+      "LCD DMA telemetry reads the same runtime interval and completed TX byte count"
+    ],
+    [
+      true,
+      "LCD telemetry immediately reflects serial LED OFF instead of the old button preset"
+    ],
+    [
+      true,
+      "Device runtime initialization does not enable a competing RXNE interrupt reader"
+    ],
+    [
+      true,
+      "A fragmented Device Studio request waits for the line ending"
+    ],
+    [
+      true,
+      "Device JSON and LED replies share one ordered TX DMA path without spurious errors"
+    ],
+    [
+      true,
+      "BOOT with no installed bootloader reports the existing JSON error and cannot reset"
+    ],
+    [
+      true,
+      "Unsupported Device Studio commands keep the existing JSON error contract"
+    ],
+    [
+      true,
+      "Completing an earlier reply cannot arm a queued BOOT request"
+    ],
+    [
+      true,
+      "A valid BOOT request starts its DMA reply before any reset is armed"
+    ],
+    [
+      true,
+      "DMA completion alone cannot trigger a boot reset before the UART reply finishes"
+    ],
+    [
+      true,
+      "BOOT retains the 20 ms USB delivery grace after its own UART TC"
+    ],
+    [
+      true,
+      "After the matching reply and grace period, BOOT writes the retained mailbox and requests reset"
+    ],
+    [
+      true,
+      "The status buffer fits maximum-width counters without truncation"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
-  "scope": "Real compiled ARM demo and EXTI/TIM6/GPDMA/UART HAL IRQ paths. MMIO, DMA data movement, TX acknowledgement and DMA abort suspension are simulated; no physical board timing or UART wire data is measured."
+  "elf_sha256": "e563829510c4aa8141c8c67f1a986b28e99319445d75d442a238c5ffd56c34e8",
+  "scope": "Real compiled ARM command parser/demo and EXTI/TIM6/GPDMA TX/RX/UART HAL IRQ paths. MMIO, DMA byte movement, linked-list node fetch/reload, UART acknowledgement and DMA abort completion are simulated; no physical board timing or UART wire data is measured."
 }

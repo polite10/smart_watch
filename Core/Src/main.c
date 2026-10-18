@@ -28,7 +28,7 @@ int main(void)
     watch_ui_init(); watch_ui_set_rtc_source(smartwatch_rtc_lse!=0);
     watch_ui_set_clock_valid(watch_clock_is_valid()); smartwatch_status=4;
     led_button_demo_init();
-    device_runtime_init(&led_demo_uart,"Smartwatch",NULL);
+    device_runtime_init("Smartwatch",NULL);
     uint32_t last_update=HAL_GetTick()-1000;
     while(1) {
         led_button_demo_poll();

@@ -7,6 +7,7 @@
 extern TIM_HandleTypeDef led_demo_timer;
 extern UART_HandleTypeDef led_demo_uart;
 extern DMA_HandleTypeDef led_demo_uart_tx_dma;
+extern DMA_HandleTypeDef led_demo_uart_rx_dma;
 
 void led_button_demo_init(void);
 void led_button_demo_poll(void);

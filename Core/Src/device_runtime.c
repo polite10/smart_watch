@@ -9,6 +9,7 @@ static const char *app_name;
 static device_command_handler_t app_handler;
 static volatile bool boot_armed;
 static volatile uint32_t boot_reply_at;
+extern const device_app_info_t device_app_info;
 
 void device_runtime_init(const char *app, device_command_handler_t handler)
 {
@@ -31,8 +32,12 @@ int device_runtime_format_reply(uint32_t sequence, const char *command,
     else error = "unsupported_command";
     if(!state) state = "{}";
     return snprintf(message, capacity,
-        "{\"seq\":%lu,\"app\":\"%s\",\"version\":1,\"protocol\":1,\"boot\":%d,\"ready\":true,\"error\":\"%s\",\"state\":%s}\r\n",
-        (unsigned long)sequence, app_name ? app_name : "Smartwatch", device_boot_installed() ? 1 : 0, error, state);
+        "{\"seq\":%lu,\"app\":\"%s\",\"id\":%lu,\"version\":%lu,\"protocol\":1,\"boot\":%d,\"boot_version\":%lu,\"ready\":true,\"error\":\"%s\",\"state\":%s}\r\n",
+        (unsigned long)sequence, app_name ? app_name : "Smartwatch",
+        (unsigned long)device_app_info.id, (unsigned long)device_app_info.version,
+        device_boot_installed() ? 1 : 0,
+        (unsigned long)(device_boot_installed() ? ((const device_boot_info_t *)DEVICE_BOOT_INFO)->version : 0U),
+        error, state);
 }
 
 /* Called only after the matching BOOT reply's final UART stop bit was sent. */

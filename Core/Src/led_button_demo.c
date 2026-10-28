@@ -16,7 +16,7 @@
 #define UART_IRQ_PRIO       7U
 #define RX_DMA_SIZE         256U
 #define RX_RING_SIZE        2048U
-#define UART_MESSAGE_SIZE   256U
+#define UART_MESSAGE_SIZE   512U
 
 TIM_HandleTypeDef led_demo_timer;
 UART_HandleTypeDef led_demo_uart;

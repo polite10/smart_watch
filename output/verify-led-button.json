@@ -343,6 +343,6 @@
       "The status buffer fits maximum-width counters without truncation"
     ]
   ],
-  "elf_sha256": "e563829510c4aa8141c8c67f1a986b28e99319445d75d442a238c5ffd56c34e8",
+  "elf_sha256": "259c5daa9151a9466704ccd52e325c4c29996949ef3f911e2edaaf971bda2efa",
   "scope": "Real compiled ARM command parser/demo and EXTI/TIM6/GPDMA TX/RX/UART HAL IRQ paths. MMIO, DMA byte movement, linked-list node fetch/reload, UART acknowledgement and DMA abort completion are simulated; no physical board timing or UART wire data is measured."
 }

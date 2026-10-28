@@ -2,6 +2,14 @@
 
 STM32U5A9J-DK için STM32CubeIDE projesi. LVGL 9.3.0 kullanır; TouchGFX gerekmez.
 
+## Ortak SDK ve üçüncü firmware hazırlığı — 28 Ekim 2026
+
+DeviceBoot/Düello derlemeleri artık kardeş SDK'yı `smart_watch-main`, `Smartwatch` veya `smart_watch` adıyla bulur. Farklı konum açıkça verilebilir. Ortak derleme yardımcısı `tools/device_build.py`, iki projedeki `build.py` / Windows `Build.ps1` girişlerinden kullanılır. Düello güncel iki parametreli runtime API'sini ve UART komut ayrıştırıcısını kullanır.
+
+Runtime HELLO/STATUS cevapları uygulama descriptor'ındaki kimlik/sürümü ve kurulu bootloader revizyonunu bildirir. Ortak TX tamponu uygulama durum JSON'u için 512 bayttır. DeviceBoot revizyon 2, protokol 1 üzerinde üçüncü ve sonraki uygulama kimliklerini kabul eder; Studio genel komut/durum sekmesi sunar. Yeni uygulama sözleşmesi ve paket komutları kardeş `DeviceStudio/README.md` içindedir. Bu değişiklikler kayıt formatını veya Flash yerleşimini değiştirmez.
+
+Bu sürümde üç ARM derlemesi, 34 Studio testi, 26 bootloader ARM simülasyon kontrolü, 9 Düello runtime kontrolü ve 85 UART/DMA regresyon kontrolü geçti. Smartwatch/Düello'nun yeni paketleri fiziksel karta yüklenmedi. DeviceBoot revizyon 2 ve ADASLab ise 28 Ekim'de karta yüklenip ayrıca doğrulandı; aşağıdaki önceki raporlar kendi sürümlerine aittir.
+
 ## Terminalden LED kontrolü ve dairesel RX DMA — 18 Ekim 2026
 
 PuTTY'den `LED ON`, `LED OFF`, `LED BLINK`, `SET INTERVAL 250`, `GET STATUS`,
@@ -842,3 +850,6 @@ dizinlerinde korunmuştur. LVGL v9.3.0 lisansı `Middlewares/lvgl/LICENCE.txt` d
 - https://www.st.com/resource/en/user_manual/um2967-discovery-kits-with-stm32u5x9nj-mcus-stmicroelectronics.pdf
 - https://support.apple.com/en-ie/guide/watch/apde9218b440/watchos
 - https://www.samsung.com/us/support/answer/ANS10002950/
+
+
+ADASLab artık kardeş `../ADASLab` projesinde ID 3 firmware olarak bulunur. Studio sanal yol fiziğini yürütür; kararlar kartın saf C denetleyicisinden gelir. Gerçek kartla dört senaryoda toplam 960 örnek doğrulandı; bozuk CRC, tekrar zaman damgası, veri eskime koruması ve saat günlüğünün korunması geçti. Donanım raporu `../DeviceStudio/adas-hardware-report.json`, teknik tasarım `../ADASLab/README.md` içindedir. Yeni projeyi derlemek için `python3 ../ADASLab/build.py` kullanılır.

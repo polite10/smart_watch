@@ -68,8 +68,9 @@ def main(project,target,sdk):
         sources=sorted((project/'src').glob('*.c'))
         if not (project/'src/main.c').is_file():raise SystemExit('Application src/main.c missing')
         # Current DMA transport uses the HAL-independent command parser too.
+        # The application picker's Turkish glyph fonts come with them too.
         keep={'App/platform/watch_display_stm32.o','App/platform/watch_gpu_stm32.o',
-              'App/services/watch_led_commands.o'}
+              'App/services/watch_led_commands.o','App/views/watch_fonts.o'}
         debug=sdk/'Debug'
         object_file=debug/('objects.list' if os.name=='nt' else 'objects.rsp')
         if not object_file.is_file():raise SystemExit('SDK object list missing; build without --skip-sdk-build first')

@@ -2,6 +2,7 @@
 #include "stm32u5xx_hal.h"
 #include "device_runtime.h"
 #include "device_contract.h"
+#include "app_manager_runtime.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -28,6 +29,9 @@ int device_runtime_format_reply(uint32_t sequence, const char *command,
     } else if(!strcmp(command, "BOOT")) {
         if(!device_boot_installed()) error = "bootloader_missing";
         else *request_boot = true;
+    } else if(!strcmp(command, "APPS")) {
+        app_manager_open();
+        state = "{\"manager\":true}";
     } else if(app_handler) state = app_handler(command);
     else error = "unsupported_command";
     if(!state) state = "{}";
@@ -49,6 +53,7 @@ void device_runtime_boot_reply_complete(void)
 
 void device_runtime_poll(void)
 {
+    app_manager_poll();
     if(boot_armed && HAL_GetTick() - boot_reply_at >= 20U) {
         boot_armed = false;
         device_request_boot();

@@ -46,13 +46,16 @@ def main(project,target,sdk):
     includes=['Core/Inc','Drivers/CMSIS/Include','Drivers/CMSIS/Device/ST/STM32U5xx/Include',
               'Drivers/STM32U5xx_HAL_Driver/Inc']
     if target=='DeviceBoot':
-        sources=[project/'src/boot.c',sdk/'Core/Src/system_stm32u5xx.c',
+        sources=[project/'src/boot.c',sdk.parent/'AppManager/src/am_manager.c',
+                 sdk.parent/'AppManager/platform/am_nor_stm32.c',sdk.parent/'AppManager/platform/am_port.c',
+                 sdk/'Core/Src/system_stm32u5xx.c',
                  sdk/'Example/Startup/startup_stm32u5a9njhxq.s',
                  sdk/'Example/User/syscalls.c',sdk/'Example/User/sysmem.c']
         for name in ('hal','hal_cortex','hal_gpio','hal_rcc','hal_rcc_ex','hal_pwr','hal_pwr_ex',
-                     'hal_flash','hal_flash_ex','hal_uart','hal_uart_ex'):
+                     'hal_flash','hal_flash_ex','hal_uart','hal_uart_ex','hal_xspi'):
             sources.append(sdk/f'Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_{name}.c')
-        common+=['-Os','-DDEVICE_BOOT_BUILD','-I'+str(project/'include')]
+        common+=['-Os','-flto','-fno-inline','-fno-ipa-cp','-fno-ipa-sra',
+                 '-DDEVICE_BOOT_BUILD','-I'+str(project/'include')]
         linker=project/'DeviceBoot.ld';libraries=[]
     else:
         if not args.skip_sdk_build:
@@ -88,6 +91,7 @@ def main(project,target,sdk):
         linker=sdk/'STM32U5A9NJHXQ_FLASH.ld'
         libraries=[sdk/'Middlewares/NemaGFX/lib/core/cortex_m33_revC/gcc/libnemagfx-float-abi-hard.a','-lm']
     common+=['-I'+str(sdk/path) for path in includes]
+    common+=['-I'+str(sdk.parent/'AppManager'/path) for path in ('include','platform','ui')]
     out=project/'build';out.mkdir(exist_ok=True)
     objects=[]
     for source in sources:

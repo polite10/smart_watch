@@ -853,3 +853,23 @@ dizinlerinde korunmuştur. LVGL v9.3.0 lisansı `Middlewares/lvgl/LICENCE.txt` d
 
 
 ADASLab artık kardeş `../ADASLab` projesinde ID 3 firmware olarak bulunur. Studio sanal yol fiziğini yürütür; kararlar kartın saf C denetleyicisinden gelir. Gerçek kartla dört senaryoda toplam 960 örnek doğrulandı; bozuk CRC, tekrar zaman damgası, veri eskime koruması ve saat günlüğünün korunması geçti. Donanım raporu `../DeviceStudio/adas-hardware-report.json`, teknik tasarım `../ADASLab/README.md` içindedir. Yeni projeyi derlemek için `python3 ../ADASLab/build.py` kullanılır.
+
+## Kart üzerinde uygulama seçimi — 31 Ekim 2026
+
+Kardeş AppManager klasörü ortak runtime ve LVGL uygulama seçme menüsünü sağlar.
+USER butonuna1,5 saniye basılı tutun veya runtime `APPS` komutunu gönderin.
+Menü açıkken dokunmalar alttaki saat ekranına iletilmez. DeviceBoot v3 ve NOR’a
+önceden yüklenmiş katalog gerekir. Uygulamalar hâlâ aynı `0x0800A000` adresinde
+çalışır; saat kayıt alanı korunur. Aktif ADAS sürüşünü duraklatıp sonra uygulama
+değiştirin; kaynak doğrulama ve kurulum sırasında haberleşme bekleyebilir.
+
+CubeIDE Debug/Release yapılandırmaları AppManager kaynaklarını bağlı klasör
+olarak içerir. macOS derlemesi ve ortak DeviceBoot/Düello/ADASLab build.py
+girişleri de aynı kaynakları kullanır. [Tam derleme ve kullanım](https://github.com/polite10/AppManager/blob/main/README.md).
+
+## Fiziksel uygulama yöneticisi doğrulaması — 31 Ekim2026
+
+DeviceBoot v3 ve üç uygulama NOR deposu karta yüklendi. Menü üzerinden geçişler,
+güncel ADAS modları ve boot/saat alanlarının korunması fiziksel kartta doğrulandı.
+Ortak modül [AppManager](https://github.com/polite10/AppManager) kardeş klasörde
+bulunmalıdır. [Donanım raporu](https://github.com/polite10/AppManager/blob/main/reports/hardware-verification.json).

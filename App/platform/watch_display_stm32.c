@@ -2,6 +2,7 @@
 #include "stm32u5x9j_discovery_lcd.h"
 #include "stm32u5x9j_discovery_ts.h"
 #include "watch_ui.h"
+#include "am_picker.h"
 #include <string.h>
 #include "services/watch_display_service.h"
 #include "platform/watch_dirty_rows.h"
@@ -174,7 +175,7 @@ static void read_touch(lv_indev_t *input, lv_indev_data_t *data)
         data->point.y=(int16_t)state.TouchY;
         data->state=LV_INDEV_STATE_PRESSED;
     } else data->state=LV_INDEV_STATE_RELEASED;
-    watch_ui_touch(data, HAL_GetTick());
+    if(!am_picker_is_open()) watch_ui_touch(data, HAL_GetTick());
 }
 void watch_platform_display_init(void)
 {    if(BSP_LCD_Init(0,LCD_ORIENTATION_PORTRAIT)!=BSP_ERROR_NONE) Error_Handler();

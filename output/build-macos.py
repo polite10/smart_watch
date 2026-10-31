@@ -32,18 +32,20 @@ flags = ['-mcpu=cortex-m33', '-mthumb', '-mfpu=fpv5-sp-d16', '-mfloat-abi=hard',
          '-ffunction-sections', '-fdata-sections', '-fshort-enums', '-Wall', '-Wno-format',
          '-DDEBUG', '-DUSE_HAL_DRIVER', '-DSTM32U5A9xx', '-DLV_CONF_INCLUDE_SIMPLE']
 flags += [f'-I{ROOT / i}' for i in includes]
+flags += [f'-I{ROOT.parent / "AppManager" / i}' for i in ('include','platform','ui')]
 sources = []
 for entry in config.findall('.//sourceEntries/entry'):
     folder = ROOT / entry.get('name')
     excluded = set(entry.get('excluding', '').split('|'))
     sources.extend(p for p in folder.rglob('*') if p.suffix in ('.c', '.s') and p.name not in excluded)
+sources += [ROOT.parent/'AppManager/src/am_manager.c', ROOT.parent/'AppManager/platform/am_port.c', ROOT.parent/'AppManager/platform/am_nor_stm32.c', ROOT.parent/'AppManager/ui/am_picker.c']
 sources.sort()
 signature = json.dumps({'compiler': str(BIN), 'flags': flags, 'app_wextra': True})
 cache = OUT / 'macos-build-config.json'
 rebuild = args.clean or not cache.exists() or cache.read_text() != signature
 
 def compile_one(source):
-    obj = OUT / (str(source.relative_to(ROOT)).replace('/', '_') + '.o')
+    obj = OUT / (str(source.relative_to(ROOT) if source.is_relative_to(ROOT) else source.relative_to(ROOT.parent)).replace('/', '_') + '.o')
     dep = obj.with_suffix('.d')
     warning_file = obj.with_suffix('.warnings')
     if not rebuild and obj.exists() and dep.exists() and warning_file.exists():
@@ -57,7 +59,7 @@ def compile_one(source):
                             capture_output=True, text=True)
     if result.returncode:
         obj.unlink(missing_ok=True)
-        raise RuntimeError(str(source.relative_to(ROOT)) + '\n' + result.stderr)
+        raise RuntimeError(str(source.relative_to(ROOT.parent)) + '\n' + result.stderr)
     warning_file.write_text(result.stderr)
     return obj, result.stderr, True
 

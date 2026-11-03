@@ -1,7 +1,11 @@
 {
-  "passed": 88,
+  "passed": 96,
   "failed": 0,
   "checks": [
+    [
+      true,
+      "The periodic status line starts off"
+    ],
     [
       true,
       "TIM6 is configured for 10 ms interrupts at 160 MHz"
@@ -264,6 +268,34 @@
     ],
     [
       true,
+      "LOG OFF is acknowledged"
+    ],
+    [
+      true,
+      "LOG OFF silences the periodic status line"
+    ],
+    [
+      true,
+      "Explicit status still replies while the log is off"
+    ],
+    [
+      true,
+      "LOG ON restores the periodic status line"
+    ],
+    [
+      true,
+      "Ctrl+L turns the status line off without Enter"
+    ],
+    [
+      true,
+      "The status line stays off after Ctrl+L"
+    ],
+    [
+      true,
+      "A second Ctrl+L turns the status line back on"
+    ],
+    [
+      true,
       "A stalled main loop detects software RX ring overflow"
     ],
     [
@@ -355,6 +387,6 @@
       "The status buffer fits maximum-width counters without truncation"
     ]
   ],
-  "elf_sha256": "e0e033dd8f57c123b0063126d969e4b4e34ee769217b8bf2087151bd4bad9f64",
+  "elf_sha256": "4c0fd5622754be1ef28ad296cf74fa1767f364abfab7c6c30f930623f32840ea",
   "scope": "Real compiled ARM command parser/demo and EXTI/TIM6/GPDMA TX/RX/UART HAL IRQ paths. MMIO, DMA byte movement, linked-list node fetch/reload, UART acknowledgement and DMA abort completion are simulated; no physical board timing or UART wire data is measured."
 }

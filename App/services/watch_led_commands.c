@@ -44,6 +44,10 @@ static watch_led_input_result_t parse(char *line, watch_led_command_t *command)
         else if(!strcmp(words[1], "TOGGLE")) command->kind = WATCH_LED_CMD_TOGGLE;
         else if(!strcmp(words[1], "STATUS")) command->kind = WATCH_LED_CMD_STATUS;
         else return WATCH_LED_INPUT_INVALID;
+    } else if(count == 2U && !strcmp(words[0], "LOG")) {
+        if(!strcmp(words[1], "ON")) command->kind = WATCH_LED_CMD_LOG_ON;
+        else if(!strcmp(words[1], "OFF")) command->kind = WATCH_LED_CMD_LOG_OFF;
+        else return WATCH_LED_INPUT_INVALID;
     } else if(count == 2U && !strcmp(words[0], "GET") && !strcmp(words[1], "STATUS"))
         command->kind = WATCH_LED_CMD_STATUS;
     else if(count == 2U && !strcmp(words[0], "RESET") && !strcmp(words[1], "PRESSES"))
@@ -68,6 +72,11 @@ watch_led_input_result_t watch_led_commands_push(watch_led_commands_t *parser,
                                                 uint8_t byte,
                                                 watch_led_command_t *command)
 {
+    /* Ctrl+L needs no Enter and leaves a partly typed line intact. */
+    if(byte == WATCH_LED_LOG_TOGGLE_KEY) {
+        command->kind = WATCH_LED_CMD_LOG_TOGGLE;
+        return WATCH_LED_INPUT_COMMAND;
+    }
     if(byte == '\r' || byte == '\n') {
         watch_led_input_result_t result = parser->error;
         if(!parser->discard && result == WATCH_LED_INPUT_PENDING) {

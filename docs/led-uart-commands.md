@@ -19,7 +19,8 @@ aynı çalışma durumundan beslendiği için yeni LED durumunu ve aralığını
 
 macOS'ta PuTTY `brew install putty` ile kurulur ve port `/dev/cu.usbmodem…` olarak
 görünür. `tools/led-terminal.sh` portu bulur, yukarıdaki ayarlarla `STM32-LED`
-oturumunu yazar ve PuTTY'yi açar. Device Studio aynı portu kullanır; önce kapatın.
+oturumunu yazar ve PuTTY'yi açar. Bu oturumda `Ctrl+L` için satır düzenleme
+kapalıdır, yani Backspace çalışmaz: yanlış yazınca Enter'a basıp komutu yeniden yazın. Device Studio aynı portu kullanır; önce kapatın.
 
 USART1 **TX PA9 / AF7**, **RX PA10 / AF7** kullanır. Bilgisayardaki USB seri
 haberleşmesi, ST-LINK sanal COM portu üzerinden UART'a çevrilir. UART her
@@ -34,7 +35,7 @@ nerede bittiğini ise aşağıdaki metin protokolü belirler.
 - Komut birden fazla DMA bildiriminde gelebilir; tek bildirimde birden fazla
   komut bulunabilir. **UART IDLE, komut sonu değildir.**
 - Başarılı cevap `OK ` ile, hata cevabı `ERR ` ile başlar ve CRLF ile biter.
-- Her saniye gelen kendiliğinden durum satırı `LED=` ile başlar.
+- `LOG ON` veya `Ctrl+L` ile açılan saniyelik durum satırı `LED=` ile başlar.
 - Bilgisayar uygulaması her komut için `OK`/`ERR` cevabını beklemelidir.
   Cevap beklemeden sınırsız komut göndermek, sınırlı alım tamponunu doldurabilir.
 
@@ -48,6 +49,9 @@ nerede bittiğini ise aşağıdaki metin protokolü belirler.
 | `SET INTERVAL 250` | Aralığı ayarlar ve yanıp sönmeyi başlatır; ilk geçiş tam bir aralık sonra olur. |
 | `GET STATUS` | Yeni bir durum görüntüsünü `OK LED=...` cevabıyla verir. |
 | `RESET PRESSES` | Fiziksel butona basılma sayacını sıfırlar; çalışma modunu değiştirmez. |
+| `LOG ON` | Her saniye gelen `LED=` durum satırını açar. Kart açılışta bu satırı göndermez. |
+| `LOG OFF` | Durum satırını kapatır; komut cevapları sürer. |
+| `Ctrl+L` | Durum satırını açar veya kapatır; Enter gerekmez. Cevap `OK LOG=ON` veya `OK LOG=OFF`. |
 | `HELP` | Komut listesini gönderir. |
 
 Aralık **10–60000 ms** ve **10 ms'nin katı** olmalıdır. Timer 10 ms adımlarla
@@ -167,9 +171,9 @@ python3 output/verify-led-button.py
 Windows derlemesi: `./Build.ps1`. Derleyici `.cproject` içindeki App ve Core
 kaynak klasörlerinden yeni parser dosyasını da alır.
 
-- Yerel C parser testi: **69 kontrol**, UndefinedBehaviorSanitizer açık.
+- Yerel C parser testi: **76 kontrol**, UndefinedBehaviorSanitizer açık.
   Uygun makinelerde `--address` ile AddressSanitizer da etkinleştirilebilir.
-- ARM/HAL entegrasyonu: **88 kontrol, 0 başarısızlık**. Parçalı/bitişik komutlar,
+- ARM/HAL entegrasyonu: **96 kontrol, 0 başarısızlık**. Parçalı/bitişik komutlar,
   CR/LF, kesintisiz HT/TC alımı, DMA tampon sınırı, eski bildirimler, hatalı
   girdiler, TX sahipliği, RX taşması, UART/DMA toparlanması, LCD telemetri kaynağı
   ve Device Studio / BOOT yanıt sıralaması doğrulanır.

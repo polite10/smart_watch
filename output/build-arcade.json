@@ -3,7 +3,7 @@
   "sources": 518,
   "compiled": 2,
   "warnings": "/Users/polite/Development/STM32_projects/smart_watch-main/App/views/watch_arcade_view.c: In function 'snake_render':\n/Users/polite/Development/STM32_projects/smart_watch-main/App/views/watch_arcade_view.c:325:53: warning: comparison of integer expressions of different signedness: 'unsigned int' and 'int' [-Wsign-compare]\n  325 |             snake_tube(positions[i],positions[i-1],i==s->length-1 ? 4 : 6,i);\n      |                                                     ^~\n",
-  "size": "   text\t   data\t    bss\t    dec\t    hex\tfilename\n4119240\t    848\t2523056\t6643144\t 655dc8\t/Users/polite/Development/STM32_projects/smart_watch-main/Debug/Smartwatch.elf\n",
-  "elf_sha256": "e0e033dd8f57c123b0063126d969e4b4e34ee769217b8bf2087151bd4bad9f64",
-  "firmware_sha256": "867242274a8a98f866ae86f9c255412ef1c1a601f5a027a31ef96ea8c7b5c387"
+  "size": "   text\t   data\t    bss\t    dec\t    hex\tfilename\n4119464\t    848\t2523056\t6643368\t 655ea8\t/Users/polite/Development/STM32_projects/smart_watch-main/Debug/Smartwatch.elf\n",
+  "elf_sha256": "4c0fd5622754be1ef28ad296cf74fa1767f364abfab7c6c30f930623f32840ea",
+  "firmware_sha256": "b7e9cf19f23d2a976b02d565111712e1400effca081a410b9eaf298e2b0316f0"
 }

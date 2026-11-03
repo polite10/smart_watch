@@ -34,6 +34,8 @@ static volatile uint32_t blink_interval_ms = 1000U;
 static volatile uint32_t last_button_edge;
 static volatile uint32_t debounce_pending;
 static volatile uint32_t status_pending;
+/* The periodic status line starts off so it cannot interrupt typing. */
+static volatile uint32_t status_log_enabled;
 static volatile uint32_t uart_busy;
 static volatile uint32_t uart_error_pending;
 static volatile uint32_t uart_completed;
@@ -243,7 +245,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *timer)
     status_elapsed_ms += TIMER_STEP_MS;
     if(status_elapsed_ms >= STATUS_INTERVAL_MS) {
         status_elapsed_ms = 0;
-        status_pending = 1;
+        status_pending = status_log_enabled;
     }
 }
 
@@ -341,13 +343,19 @@ static void execute_command(const watch_led_command_t *command)
     case WATCH_LED_CMD_BLINK:
         led_mode = LED_MODE_BLINK; blink_elapsed_ms = 0; break;
     case WATCH_LED_CMD_RESET_PRESSES: button_presses = 0; break;
+    case WATCH_LED_CMD_LOG_ON: status_log_enabled = 1; break;
+    case WATCH_LED_CMD_LOG_OFF: status_log_enabled = 0; status_pending = 0; break;
+    case WATCH_LED_CMD_LOG_TOGGLE: status_log_enabled ^= 1U; status_pending = 0; break;
     default: break;
     }
     __set_PRIMASK(primask);
     int length;
     if(command->kind == WATCH_LED_CMD_HELP)
         length = snprintf(command_reply, sizeof command_reply,
-            "OK HELP: LED ON|OFF|TOGGLE|BLINK|STATUS; SET INTERVAL <10..60000 ms, step 10>; GET STATUS; RESET PRESSES; HELP\r\n");
+            "OK HELP: LED ON|OFF|TOGGLE|BLINK|STATUS; SET INTERVAL <10..60000 ms, step 10>; GET STATUS; RESET PRESSES; LOG ON|OFF or Ctrl+L; HELP\r\n");
+    else if(command->kind == WATCH_LED_CMD_LOG_ON || command->kind == WATCH_LED_CMD_LOG_OFF ||
+            command->kind == WATCH_LED_CMD_LOG_TOGGLE)
+        length = snprintf(command_reply, sizeof command_reply, "OK LOG=%s\r\n", status_log_enabled ? "ON" : "OFF");
     else length = format_status(command_reply, sizeof command_reply, "OK ");
     if(length > 0 && (size_t)length < sizeof command_reply) reply_length = (size_t)length;
 }

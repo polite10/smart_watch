@@ -8,7 +8,8 @@ if [ -z "$port" ]; then
 fi
 mkdir -p "$HOME/.putty/sessions"
 # PuTTY ignores -serial after -load, so the port goes into the session itself.
-# LocalEcho/LocalEdit 0 = Force on: the firmware neither echoes nor accepts raw Backspace.
+# LocalEcho 0 = Force on: the firmware does not echo. LocalEdit 1 = Force off: keys go at once,
+# so Ctrl+L works without Enter; Backspace is unavailable. CRImpliesLF keeps replies off the typed line.
 cat > "$HOME/.putty/sessions/STM32-LED" <<EOF
 Protocol=serial
 SerialLine=$port
@@ -18,6 +19,7 @@ SerialStopHalfbits=2
 SerialParity=0
 SerialFlowControl=0
 LocalEcho=0
-LocalEdit=0
+LocalEdit=1
+CRImpliesLF=1
 EOF
 exec putty -load STM32-LED

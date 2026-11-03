@@ -17,6 +17,10 @@ aynı çalışma durumundan beslendiği için yeni LED durumunu ve aralığını
    satır düzenlemeyi terminal yapar. Ham backspace/DEL karakterleri komutta geçersizdir.
 6. `HELP` yazıp Enter'a basın. `OK HELP: ...` cevabını görün.
 
+macOS'ta PuTTY `brew install putty` ile kurulur ve port `/dev/cu.usbmodem…` olarak
+görünür. `tools/led-terminal.sh` portu bulur, yukarıdaki ayarlarla `STM32-LED`
+oturumunu yazar ve PuTTY'yi açar. Device Studio aynı portu kullanır; önce kapatın.
+
 USART1 **TX PA9 / AF7**, **RX PA10 / AF7** kullanır. Bilgisayardaki USB seri
 haberleşmesi, ST-LINK sanal COM portu üzerinden UART'a çevrilir. UART her
 karakteri 1 start + 8 veri + 1 stop biti olarak taşır. Uygulama komutunun
@@ -38,6 +42,8 @@ nerede bittiğini ise aşağıdaki metin protokolü belirler.
 |---|---|
 | `LED ON` | LED'i hemen sürekli açık tutar. |
 | `LED OFF` | LED'i hemen sürekli kapalı tutar. |
+| `LED TOGGLE` | LED'in o anki durumunu tersine çevirir ve yeni durumda sabit tutar; yanıp sönme varsa durur. |
+| `LED STATUS` | `GET STATUS` ile aynıdır. |
 | `LED BLINK` | Saklanan aralıkla yanıp sönmeyi başlatır; ilk geçiş tam bir aralık sonra olur. |
 | `SET INTERVAL 250` | Aralığı ayarlar ve yanıp sönmeyi başlatır; ilk geçiş tam bir aralık sonra olur. |
 | `GET STATUS` | Yeni bir durum görüntüsünü `OK LED=...` cevabıyla verir. |
@@ -161,9 +167,9 @@ python3 output/verify-led-button.py
 Windows derlemesi: `./Build.ps1`. Derleyici `.cproject` içindeki App ve Core
 kaynak klasörlerinden yeni parser dosyasını da alır.
 
-- Yerel C parser testi: **65 kontrol**, UndefinedBehaviorSanitizer açık.
+- Yerel C parser testi: **69 kontrol**, UndefinedBehaviorSanitizer açık.
   Uygun makinelerde `--address` ile AddressSanitizer da etkinleştirilebilir.
-- ARM/HAL entegrasyonu: **85 kontrol, 0 başarısızlık**. Parçalı/bitişik komutlar,
+- ARM/HAL entegrasyonu: **88 kontrol, 0 başarısızlık**. Parçalı/bitişik komutlar,
   CR/LF, kesintisiz HT/TC alımı, DMA tampon sınırı, eski bildirimler, hatalı
   girdiler, TX sahipliği, RX taşması, UART/DMA toparlanması, LCD telemetri kaynağı
   ve Device Studio / BOOT yanıt sıralaması doğrulanır.

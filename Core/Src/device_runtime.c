@@ -2,6 +2,7 @@
 #include "stm32u5xx_hal.h"
 #include "device_runtime.h"
 #include "device_contract.h"
+#include "app_manager_runtime.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@ static const char *app_name;
 static device_command_handler_t app_handler;
 static volatile bool boot_armed;
 static volatile uint32_t boot_reply_at;
+extern const device_app_info_t device_app_info;
 
 void device_runtime_init(const char *app, device_command_handler_t handler)
 {
@@ -27,12 +29,19 @@ int device_runtime_format_reply(uint32_t sequence, const char *command,
     } else if(!strcmp(command, "BOOT")) {
         if(!device_boot_installed()) error = "bootloader_missing";
         else *request_boot = true;
+    } else if(!strcmp(command, "APPS")) {
+        app_manager_open();
+        state = "{\"manager\":true}";
     } else if(app_handler) state = app_handler(command);
     else error = "unsupported_command";
     if(!state) state = "{}";
     return snprintf(message, capacity,
-        "{\"seq\":%lu,\"app\":\"%s\",\"version\":1,\"protocol\":1,\"boot\":%d,\"ready\":true,\"error\":\"%s\",\"state\":%s}\r\n",
-        (unsigned long)sequence, app_name ? app_name : "Smartwatch", device_boot_installed() ? 1 : 0, error, state);
+        "{\"seq\":%lu,\"app\":\"%s\",\"id\":%lu,\"version\":%lu,\"protocol\":1,\"boot\":%d,\"boot_version\":%lu,\"ready\":true,\"error\":\"%s\",\"state\":%s}\r\n",
+        (unsigned long)sequence, app_name ? app_name : "Smartwatch",
+        (unsigned long)device_app_info.id, (unsigned long)device_app_info.version,
+        device_boot_installed() ? 1 : 0,
+        (unsigned long)(device_boot_installed() ? ((const device_boot_info_t *)DEVICE_BOOT_INFO)->version : 0U),
+        error, state);
 }
 
 /* Called only after the matching BOOT reply's final UART stop bit was sent. */
@@ -44,6 +53,7 @@ void device_runtime_boot_reply_complete(void)
 
 void device_runtime_poll(void)
 {
+    app_manager_poll();
     if(boot_armed && HAL_GetTick() - boot_reply_at >= 20U) {
         boot_armed = false;
         device_request_boot();

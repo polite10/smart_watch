@@ -41,6 +41,8 @@ static watch_led_input_result_t parse(char *line, watch_led_command_t *command)
         if(!strcmp(words[1], "ON")) command->kind = WATCH_LED_CMD_ON;
         else if(!strcmp(words[1], "OFF")) command->kind = WATCH_LED_CMD_OFF;
         else if(!strcmp(words[1], "BLINK")) command->kind = WATCH_LED_CMD_BLINK;
+        else if(!strcmp(words[1], "TOGGLE")) command->kind = WATCH_LED_CMD_TOGGLE;
+        else if(!strcmp(words[1], "STATUS")) command->kind = WATCH_LED_CMD_STATUS;
         else return WATCH_LED_INPUT_INVALID;
     } else if(count == 2U && !strcmp(words[0], "GET") && !strcmp(words[1], "STATUS"))
         command->kind = WATCH_LED_CMD_STATUS;

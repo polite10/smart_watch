@@ -31,4 +31,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	</projectDescription>
+	<linkedResources><link><name>AppManager</name><type>2</type><locationURI>PARENT-1-PROJECT_LOC/AppManager</locationURI></link></linkedResources></projectDescription>

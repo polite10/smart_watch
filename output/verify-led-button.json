@@ -1,5 +1,5 @@
 {
-  "passed": 85,
+  "passed": 88,
   "failed": 0,
   "checks": [
     [
@@ -252,6 +252,18 @@
     ],
     [
       true,
+      "LED TOGGLE inverts a blinking LED on the GPIO and holds the new state"
+    ],
+    [
+      true,
+      "LED TOGGLE stops timer-driven blink edges"
+    ],
+    [
+      true,
+      "A second LED TOGGLE inverts back and LED STATUS reports that state"
+    ],
+    [
+      true,
       "A stalled main loop detects software RX ring overflow"
     ],
     [
@@ -343,6 +355,6 @@
       "The status buffer fits maximum-width counters without truncation"
     ]
   ],
-  "elf_sha256": "e563829510c4aa8141c8c67f1a986b28e99319445d75d442a238c5ffd56c34e8",
+  "elf_sha256": "e0e033dd8f57c123b0063126d969e4b4e34ee769217b8bf2087151bd4bad9f64",
   "scope": "Real compiled ARM command parser/demo and EXTI/TIM6/GPDMA TX/RX/UART HAL IRQ paths. MMIO, DMA byte movement, linked-list node fetch/reload, UART acknowledgement and DMA abort completion are simulated; no physical board timing or UART wire data is measured."
 }

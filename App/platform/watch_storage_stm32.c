@@ -9,8 +9,12 @@
 #define STORE_PAGE 8192U
 #define STORE_SLOT 1024U
 #define STORE_MAGIC 0x53574132U
+#define STORE_PAGE_SLOTS (STORE_PAGE / STORE_SLOT)
 typedef struct { uint32_t magic, sequence, crc, size; } store_header_t;
 static uint32_t latest_address, latest_sequence;
+/* Slots that rejected a write. They can still read as erased because 0xFF
+ * contents do not show ECC bits; only erasing their page clears them. */
+static uint16_t failed_slots;
 static watch_records_t saved_records;
 enum { PAYLOAD_SIZE=sizeof(watch_data_t)+sizeof(watch_records_t) };
 static uint8_t record[STORE_SLOT] __attribute__((aligned(16)));
@@ -34,6 +38,7 @@ static bool valid_record(uint32_t address)
 bool watch_storage_load(watch_data_t *data)
 {
     latest_address = latest_sequence = 0;
+    failed_slots = 0;
     saved_records=(watch_records_t){.version=1};
     for(uint32_t address = STORE_BASE; address < STORE_BASE + STORE_PAGE * 2; address += STORE_SLOT) {
         const store_header_t *h = (const store_header_t *)address;
@@ -54,14 +59,15 @@ static bool erased_slot(uint32_t address)
     for(unsigned i = 0; i < STORE_SLOT / 4; ++i) if(p[i] != 0xFFFFFFFFU) return false;
     return true;
 }
-bool watch_storage_save(const watch_data_t *data)
+static uint16_t slot_bit(uint32_t address) { return (uint16_t)(1U << ((address - STORE_BASE) / STORE_SLOT)); }
+static bool usable_slot(uint32_t address) { return !(failed_slots & slot_bit(address)) && erased_slot(address); }
+/* retry is set only when the next free slot can be tried without another erase. */
+static bool write_record(const watch_data_t *data, bool *retry)
 {
-    if(latest_address && ((const store_header_t *)latest_address)->size==PAYLOAD_SIZE &&
-       !memcmp(data,(const void *)(latest_address+16),sizeof *data) &&
-       !memcmp(&saved_records,(const void *)(latest_address+16+sizeof *data),sizeof saved_records)) return true;
+    *retry = false;
     uint32_t page = latest_address ? (latest_address - STORE_BASE) / STORE_PAGE : 0;
     uint32_t address = STORE_BASE + page * STORE_PAGE;
-    while(address < STORE_BASE + (page + 1) * STORE_PAGE && !erased_slot(address)) address += STORE_SLOT;
+    while(address < STORE_BASE + (page + 1) * STORE_PAGE && !usable_slot(address)) address += STORE_SLOT;
     bool erase = address == STORE_BASE + (page + 1) * STORE_PAGE;
     if(erase) { page ^= 1; address = STORE_BASE + page * STORE_PAGE; }
     /* A previous firmware may have programmed 0xFF including its ECC bits.
@@ -77,6 +83,7 @@ bool watch_storage_save(const watch_data_t *data)
         e.Page = 254 + page;
         e.NbPages = 1;
         status = HAL_FLASHEx_Erase(&e, &error);
+        if(status == HAL_OK) failed_slots &= (uint16_t)~(0xFFU << (page * STORE_PAGE_SLOTS));
     }
     memset(record, 0xFF, sizeof record);
     memcpy(record+16,data,sizeof *data);
@@ -89,10 +96,24 @@ bool watch_storage_save(const watch_data_t *data)
     if(status == HAL_OK) status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, address, (uint32_t)record);
     HAL_FLASH_Lock();
     /* ICACHE also caches flash data reads; refresh journal reads after writes. */
-    if(HAL_ICACHE_Invalidate() != HAL_OK) return false;
-    if(status != HAL_OK || !valid_record(address)) return false;
+    if(HAL_ICACHE_Invalidate() != HAL_OK || status != HAL_OK || !valid_record(address)) {
+        failed_slots |= slot_bit(address);
+        *retry = !erase;
+        return false;
+    }
     latest_address = address; latest_sequence = h.sequence;
     return true;
+}
+bool watch_storage_save(const watch_data_t *data)
+{
+    if(latest_address && ((const store_header_t *)latest_address)->size==PAYLOAD_SIZE &&
+       !memcmp(data,(const void *)(latest_address+16),sizeof *data) &&
+       !memcmp(&saved_records,(const void *)(latest_address+16+sizeof *data),sizeof saved_records)) return true;
+    /* The last try may rotate; a page's slots plus that one cover every case. */
+    bool retry = true;
+    for(unsigned attempt = 0; retry && attempt <= STORE_PAGE_SLOTS; ++attempt)
+        if(write_record(data, &retry)) return true;
+    return false;
 }
 
 bool watch_storage_records_load(watch_records_t *records)

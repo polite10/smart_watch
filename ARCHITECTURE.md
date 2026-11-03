@@ -6,7 +6,7 @@ oluşturma, yerleşim, renkler ve çizim yalnız View katmanındadır. RTOS ekle
 
 DeviceBoot uygulamayı `0x0800A000` adresinden başlatır. `Core/Src/device_runtime.c`
 ortak UART RX DMA komut yolundan gelen `REQ <seq> <komut>` isteklerini yanıtlar. HELLO/STATUS
-uygulama kimliğini ve Flash'taki bootloader descriptor'ını bildirir; BOOT RAM'deki
+uygulama adını, `.app_info` içindeki kimlik/sürümü ve Flash'taki bootloader revizyonunu bildirir; BOOT RAM'deki
 16 baytlık mailbox'a istek yazıp sistem reseti yapar. Cevap ortak TX DMA kuyruğunda
 gönderilir; BOOT reseti yalnız kendi cevabının USART TC tamamlanmasından 20 ms
 sonra ana döngüde uygulanır. Ayrı RXNE okuyucusu yoktur. Saatin Model/ViewModel
@@ -360,3 +360,12 @@ ilerletse bile sunum bitince timer hemen hazır edilir. Böylece güvenli tampon
 devri korunur ve yeni çizime fazladan 16 ms bekleme eklenmez.
 `smartwatch_frame_total_ms` ve birikimli/max sayaçları çizim, vblank beklemesi ve
 eşitleme dahil uçtan uca kare süresini gösterir; saf GPU süresi değildir.
+
+## Paylaşılan SDK ve yeni firmware'ler
+
+`tools/device_build.py`, kardeş DeviceBoot/Duello projelerinin Windows ve macOS ARM derlemelerini ortaklaştırır. Giriş noktaları bu projelerdeki `build.py` ve Windows `Build.ps1` dosyalarıdır. SDK klasörü `smart_watch-main`, `Smartwatch`, `smart_watch` adlarıyla keşfedilir veya açıkça verilir. Düello saatin ekran/GPU adaptörlerini, UART/DMA altyapısını ve HAL bağımsız `watch_led_commands` ayrıştırıcısını bağlar; saat View/Model katmanlarını bağlamaz. Ortak UART TX/cevap tamponu, uygulama durum JSON'u için 512 bayttır.
+
+DeviceBoot revizyon 2 aynı protokol 1 üzerinde 1..0xFFFFFFFE uygulama kimliklerini kabul eder. 1/2 Smartwatch/Düello'ya ayrılmıştır. Yeni uygulamalar için descriptor, paketleme ve Studio genel kontrol sözleşmesi `../DeviceStudio/README.md` içinde açıklanır. Bellek adresleri ve kalıcı kullanıcı kayıt formatı değişmez.
+
+
+ADASLab artık kardeş `../ADASLab` projesinde ID 3 firmware olarak bulunur. Studio sanal yol fiziğini yürütür; kararlar kartın saf C denetleyicisinden gelir. Gerçek kartla dört senaryoda toplam 960 örnek doğrulandı; bozuk CRC, tekrar zaman damgası, veri eskime koruması ve saat günlüğünün korunması geçti. Donanım raporu `../DeviceStudio/adas-hardware-report.json`, teknik tasarım `../ADASLab/README.md` içindedir. Yeni projeyi derlemek için `python3 ../ADASLab/build.py` kullanılır.

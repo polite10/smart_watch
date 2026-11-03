@@ -243,6 +243,6 @@
       "Wallpaper command rejects an out-of-range image"
     ]
   ],
-  "elf_sha256": "74032d0b2de2d69bf6cec3dd18f33708361f49c5ae5139ec788b4307161eb732",
+  "elf_sha256": "19b01f127db6cae15d479b7b17b0b4de1913393c2d3964905e16e8d9f84ab132",
   "scope": "Compiled ARM Models/ViewModels; LVGL never initialized; flash and RTC ports are fakes."
 }

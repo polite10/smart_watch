@@ -37,12 +37,14 @@ int main(void)
     FEED(" \t\r\n\n"); CHECK(commands == 7 && errors == 0);
     FEED("SET\tINTERVAL  10\n"); CHECK(command.interval_ms == 10);
     FEED("SET INTERVAL 60000\n"); CHECK(command.interval_ms == 60000);
+    FEED("LED TOGGLE\n"); CHECK(command.kind == WATCH_LED_CMD_TOGGLE);
+    FEED("LED STATUS\n"); CHECK(command.kind == WATCH_LED_CMD_STATUS);
     const char *invalid[] = {"SET INTERVAL 0\n", "SET INTERVAL 9\n", "SET INTERVAL 15\n",
         "SET INTERVAL 60010\n", "SET INTERVAL 4294967296\n", "SET INTERVAL 999999999999999999999999999999999999\n"};
     for(unsigned i = 0; i < sizeof invalid / sizeof *invalid; ++i) {
         feed(invalid[i], strlen(invalid[i])); CHECK(last == WATCH_LED_INPUT_RANGE);
     }
-    const char *malformed[] = {"LED\n", "LED ON extra\n", "HELP extra\n", "GET\n", "GET STATUS extra\n",
+    const char *malformed[] = {"LED\n", "LED ON extra\n", "LED TOGGLE extra\n", "LED STATUS extra\n", "HELP extra\n", "GET\n", "GET STATUS extra\n",
         "RESET PRESSES extra\n", "SET INTERVAL -10\n", "SET INTERVAL +10\n", "SET INTERVAL 1e3\n",
         "SET INTERVAL 100x\n", "SET INTERVAL\n", "UNKNOWN\n", "led off\n", "A B C D E\n"};
     for(unsigned i = 0; i < sizeof malformed / sizeof *malformed; ++i) {

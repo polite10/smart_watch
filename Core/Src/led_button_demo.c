@@ -329,6 +329,11 @@ static void execute_command(const watch_led_command_t *command)
         led_mode = LED_MODE_ON; led_on = 1; BSP_LED_On(LED_GREEN); break;
     case WATCH_LED_CMD_OFF:
         led_mode = LED_MODE_OFF; led_on = 0; BSP_LED_Off(LED_GREEN); break;
+    case WATCH_LED_CMD_TOGGLE:
+        /* Invert what the LED shows now; a running blink stops on the new state. */
+        if(led_on) { led_mode = LED_MODE_OFF; led_on = 0; BSP_LED_Off(LED_GREEN); }
+        else { led_mode = LED_MODE_ON; led_on = 1; BSP_LED_On(LED_GREEN); }
+        break;
     case WATCH_LED_CMD_INTERVAL:
         blink_interval_ms = command->interval_ms;
         /* SET INTERVAL also starts blinking, with a full first interval. */
@@ -342,7 +347,7 @@ static void execute_command(const watch_led_command_t *command)
     int length;
     if(command->kind == WATCH_LED_CMD_HELP)
         length = snprintf(command_reply, sizeof command_reply,
-            "OK HELP: LED ON|OFF|BLINK; SET INTERVAL <10..60000 ms, step 10>; GET STATUS; RESET PRESSES; HELP\r\n");
+            "OK HELP: LED ON|OFF|TOGGLE|BLINK|STATUS; SET INTERVAL <10..60000 ms, step 10>; GET STATUS; RESET PRESSES; HELP\r\n");
     else length = format_status(command_reply, sizeof command_reply, "OK ");
     if(length > 0 && (size_t)length < sizeof command_reply) reply_length = (size_t)length;
 }

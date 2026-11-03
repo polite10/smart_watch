@@ -413,6 +413,17 @@ check(messages[-1][2].startswith('ERR line_too_long') and read32(symbols['led_mo
 receive(b'RESET PRESSES\nGET STATUS\nLED BLINK\n')
 drain()
 check(read32(symbols['button_presses']) == 0 and messages[-2][2].startswith('OK LED=LD3 mode=ON') and 'presses=0' in messages[-2][2] and read32(symbols['led_mode']) == 2, 'Reset, explicit status and resuming the retained blink interval work through DMA')
+was_on = read32(symbols['led_on'])
+receive(b'LED TOGGLE\n')
+drain()
+check(read32(symbols['led_on']) == 1 - was_on and read32(symbols['led_mode']) == 1 - was_on and read32(reg(GPIOE, 'GPIO_TypeDef', 'ODR')) & 1 == 1 - was_on, 'LED TOGGLE inverts a blinking LED on the GPIO and holds the new state')
+previous_edges = len(led_edges)
+advance(2000)
+drain()
+check(len(led_edges) == previous_edges, 'LED TOGGLE stops timer-driven blink edges')
+receive(b'LED TOGGLE\nLED STATUS\n')
+drain()
+check(read32(symbols['led_on']) == was_on and messages[-1][2].startswith('OK LED=LD3 mode=' + ('ON' if was_on else 'OFF')), 'A second LED TOGGLE inverts back and LED STATUS reports that state')
 
 # Saturate the software queue while the main/UI loop is stalled.
 receive(b'LED ON\n')

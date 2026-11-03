@@ -1,5 +1,5 @@
 {
-  "passed": 11,
+  "passed": 15,
   "failed": 0,
   "checks": [
     [
@@ -45,8 +45,24 @@
     [
       true,
       "Corrupt latest CRC falls back to the previous valid snapshot"
+    ],
+    [
+      true,
+      "Rejected last slot of a page rotates to the other page in the same save"
+    ],
+    [
+      true,
+      "Save after a rejected slot survives a reload"
+    ],
+    [
+      true,
+      "Rejected middle slot moves to the next slot without erasing"
+    ],
+    [
+      true,
+      "Failing flash reports failure, keeps the last record and erases only once per save"
     ]
   ],
-  "elf_sha256": "666f2c252f3f80301ed776170033b4ed3dabb420f46ae1c16debf69b54cee377",
+  "elf_sha256": "19b01f127db6cae15d479b7b17b0b4de1913393c2d3964905e16e8d9f84ab132",
   "scope": "Real ARM storage journal with flash program/erase primitives simulated; physical flash timing and power loss are not verified."
 }

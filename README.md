@@ -796,7 +796,9 @@ isterseniz CubeProgrammer'da `nSWBOOT0=1` yapın. Bu seçim BOOT0 pininin açıl
 
 Son iki 8 KB flash sayfası (0x083FC000–0x083FFFFF) ayarlar günlüğüne ayrılmıştır; linker firmware alanını
 4080 KB ile sınırlar. 1 KB kayıtlar CRC32 ve sıra numarası taşır. Başlık son yazılır; sayfa geçişinde en son
-geçerli kayıt korunur. Değişmeyen veri yeniden yazılmaz. Kayıt hatası ekranda gösterilir.
+geçerli kayıt korunur. Değişmeyen veri yeniden yazılmaz. Yazmayı reddeden yuva, `0xFF` okunsa bile
+atlanır ve kayıt aynı işlemde sıradaki yuvaya veya diğer sayfaya yapılır. Tüm denemeler başarısız olursa
+kayıt hatası ekranda gösterilir.
 Normal firmware yüklemesi bu sayfaları korur; toplu flash silme kayıtları da siler.
 
 ## Önceki sürümlerin cihaz doğrulaması

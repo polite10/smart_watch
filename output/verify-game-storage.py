@@ -17,17 +17,21 @@ regs=[UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3]
 def ret(value=0):u.reg_write(UC_ARM_REG_R0,value);u.reg_write(UC_ARM_REG_PC,u.reg_read(UC_ARM_REG_LR))
 def replace(name,callback):
  address=symbols[name]&~1;u.hook_add(UC_HOOK_CODE,lambda uc,a,size,data:callback(),begin=address,end=address)
-program_calls=0;fail_after=None
+program_calls=0;fail_after=None;rejected=set();erases=0
 def program():
  global program_calls
  program_calls+=1
  if fail_after is not None and program_calls>=fail_after:ret(1);return
  address=u.reg_read(UC_ARM_REG_R1);source=u.reg_read(UC_ARM_REG_R2)
+ if address&~1023 in rejected:ret(1);return
  before=bytes(u.mem_read(address,16));data=bytes(u.mem_read(source,16))
  assert all((a&b)==b for a,b in zip(before,data)),'Attempted to overwrite programmed flash'
  u.mem_write(address,data);ret()
 def erase():
+ global erases
+ erases+=1
  info=u.reg_read(UC_ARM_REG_R0);_,bank,page,count=struct.unpack('<IIII',u.mem_read(info,16));assert bank==2 and page in (254,255) and count==1
+ rejected.difference_update(range(0x08200000+page*8192,0x08200000+(page+1)*8192))
  u.mem_write(0x08200000+page*8192,b'\xff'*8192);ret()
 for name in ['HAL_FLASH_Unlock','HAL_FLASH_Lock','HAL_ICACHE_Invalidate']:replace(name,lambda:ret())
 replace('HAL_FLASH_Program',program);replace('HAL_FLASHEx_Erase',erase)
@@ -72,6 +76,29 @@ check(bytes(u.mem_read(LOADED,916))==changed and struct.unpack('<IIHH',u.mem_rea
 latest=struct.unpack('<I',u.mem_read(symbols['latest_address'],4))[0];bad=bytearray(u.mem_read(latest+16,928));bad[-1]^=1;u.mem_write(latest+16,bytes(bad))
 call('watch_storage_load',LOADED);call('watch_storage_records_load',RECORDS)
 check(struct.unpack('<IIHH',u.mem_read(RECORDS,12))==(1,60,38,43),'Corrupt latest CRC falls back to the previous valid snapshot')
+# A slot can read erased yet reject every write (seen on the board at sequence 248).
+def journal(*slots):
+ u.mem_write(BASE,b'\xff'*16384)
+ for slot,sequence in slots:
+  payload=changed+records
+  u.mem_write(BASE+slot*1024,struct.pack('<IIII',0x53574132,sequence,zlib.crc32(payload),len(payload))+payload)
+ call('watch_storage_load',LOADED);call('watch_storage_records_load',RECORDS)
+def latest_state():return struct.unpack('<II',u.mem_read(symbols['latest_address'],4)+u.mem_read(symbols['latest_sequence'],4))
+journal(*[(i,241+i) for i in range(7)],*[(8+i,233+i) for i in range(8)]);rejected={BASE+7*1024};erases=0
+newer=struct.pack('<IIHH',1,80,7,9);u.mem_write(RECORDS,newer)
+saved=call('watch_storage_records_save',DATA,RECORDS)==1
+check(saved and latest_state()==(BASE+8192,248) and erases==1,'Rejected last slot of a page rotates to the other page in the same save')
+call('watch_storage_load',LOADED);call('watch_storage_records_load',RECORDS)
+check(bytes(u.mem_read(LOADED,916))==changed and bytes(u.mem_read(RECORDS,12))==newer,'Save after a rejected slot survives a reload')
+journal((0,50),(1,51),(2,52));rejected={BASE+3*1024};erases=0
+u.mem_write(RECORDS,struct.pack('<IIHH',1,81,7,9))
+saved=call('watch_storage_records_save',DATA,RECORDS)==1
+check(saved and latest_state()==(BASE+4*1024,53) and erases==0,'Rejected middle slot moves to the next slot without erasing')
+journal((0,60));rejected=set();erases=0;fail_after=program_calls+1
+u.mem_write(RECORDS,struct.pack('<IIHH',1,82,7,9))
+failed=call('watch_storage_records_save',DATA,RECORDS)==0
+fail_after=None
+check(failed and latest_state()==(BASE,60) and erases==1,'Failing flash reports failure, keeps the last record and erases only once per save')
 report={'passed':sum(ok for ok,_ in checks),'failed':sum(not ok for ok,_ in checks),'checks':checks,'elf_sha256':hashlib.sha256((ROOT/'Debug/Smartwatch.elf').read_bytes()).hexdigest(),'scope':'Real ARM storage journal with flash program/erase primitives simulated; physical flash timing and power loss are not verified.'}
 (ROOT/'output/verify-game-storage.json').write_text(json.dumps(report,indent=2)+'\n')
 raise SystemExit(bool(report['failed']))

@@ -1067,7 +1067,7 @@
       "Offscreen Flappy scenery stays frozen"
     ]
   ],
-  "elf_sha256": "1b9f653fc651033aae45b3cf3d837c1351b249b1f02e177322c1798c05493f6e",
-  "firmware_sha256": "c106b0933f314c68f1ecbf265e1f4c4a995dc1e38eb47d879100cd7ad04a3acf",
+  "elf_sha256": "19b01f127db6cae15d479b7b17b0b4de1913393c2d3964905e16e8d9f84ab132",
+  "firmware_sha256": "73c2567b011984d3b14e04e0953fb6dd67e5e15e53baba1de26ebdd87b3cb4e8",
   "scope": "Real compiled ARM UI and LVGL. Panel/RTC/flash hardware timing is not emulated."
 }
